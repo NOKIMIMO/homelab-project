@@ -1,0 +1,22 @@
+services:
+  photo-module:
+    build: .
+    container_name: photo-module
+    ports:
+      - "8081:8081"
+    volumes:
+      - photo-storage:/app/public/storage
+    restart: always
+    labels:
+      - "com.homelab.managed=true"
+    networks:
+      homelab-network:
+        aliases:
+          - photo-module
+
+networks:
+  homelab-network:
+    external: true
+
+volumes:
+  photo-storage:

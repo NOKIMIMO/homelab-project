@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   homelab-backend:
     build: ./homelab-backend
@@ -9,23 +7,36 @@ services:
       - /proc:/host/proc:ro
       - /sys:/host/sys:ro
       - /etc/os-release:/host/etc/os-release:ro
+      - //var/run/docker.sock:/var/run/docker.sock
+      - .:/app_root:ro
     environment:
       - JAVA_OPTS=-Doshi.os.windows.proc.path=/host/proc -Doshi.os.windows.sys.path=/host/sys
+      - HOMELAB_APP_ROOT=/app_root
+      - HOMELAB_MODULES_SCAN_PATH=/app_root/modules
     restart: always
+    networks:
+      - homelab-network
 
   homelab-frontend:
     build: ./homelab-frontend
     ports:
       - "80:80"
     restart: always
+    networks:
+      - homelab-network
+  # photo-module:
+  #   build: ./modules/photo-module
+  #   ports:
+  #     - "8081:8081"
+  #   volumes:
+  #     - photo-storage:/app/public/storage
+  #   restart: always
+  #   networks:
+  #     - homelab-network
 
-  photo-module:
-    build: ./photo-module
-    ports:
-      - "8081:8081"
-    volumes:
-      - photo-storage:/app/public/storage
-    restart: always
+networks:
+  homelab-network:
+    name: homelab-network
 
 volumes:
   photo-storage:

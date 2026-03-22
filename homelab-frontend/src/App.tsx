@@ -4,11 +4,13 @@ import Dashboard from './components/Dashboard';
 import ModuleView from './components/ModuleView';
 import './index.css';
 
-interface Module {
+export interface Module {
   id: string;
   name: string;
   status: string;
   icon: string;
+  description?: string;
+  uptimeStart?: number;
 }
 
 function App() {
@@ -16,12 +18,23 @@ function App() {
   const [activeModule, setActiveModule] = useState<string | null>(() => {
     return localStorage.getItem('homelab_last_module') || null;
   });
+  const [isModulesRefreshing, setIsModulesRefreshing] = useState(false);
+
+  const fetchModules = async () => {
+    setIsModulesRefreshing(true);
+    try {
+      const response = await fetch('/api/modules');
+      const data = await response.json();
+      setModules(data);
+    } catch (error) {
+      console.error('Error fetching modules:', error);
+    } finally {
+      setIsModulesRefreshing(false);
+    }
+  };
 
   useEffect(() => {
-    fetch('http://localhost:8080/api/modules')
-      .then(res => res.json())
-      .then(data => setModules(data))
-      .catch(err => console.error(err));
+    fetchModules();
   }, []);
 
   useEffect(() => {
@@ -48,7 +61,12 @@ function App() {
         </div>
 
         <main className="flex-1 w-full h-[100dvh] overflow-hidden">
-          {activeModule === null ? <Dashboard /> : <ModuleView moduleId={activeModule} />}
+          {activeModule === null ? <Dashboard
+            modules={modules}
+            onRefresh={fetchModules}
+            isModulesRefreshing={isModulesRefreshing}
+          />
+            : <ModuleView moduleId={activeModule} />}
         </main>
       </div>
 

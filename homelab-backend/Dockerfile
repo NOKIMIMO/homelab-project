@@ -6,6 +6,7 @@ RUN gradle build --no-daemon -x test
 
 # Runtime stage
 FROM eclipse-temurin:21-jre-alpine
+RUN apk add --no-cache docker-cli docker-cli-compose
 RUN mkdir /app
 COPY --from=build /home/gradle/src/build/libs/*.jar /app/homelab.jar
 ENTRYPOINT ["java", "-jar", "/app/homelab.jar"]

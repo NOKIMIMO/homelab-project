@@ -1,0 +1,10 @@
+{
+  "id": "photo-module",
+  "name": "Stockage Photo",
+  "port": 8081,
+  "icon": "Image",
+  "description": "Gestion et stockage de photos avec extraction de métadonnées EXIF.",
+  "installCommand": "npm install",
+  "startCommand": "npm run server",
+  "type": "DOCKER"
+}

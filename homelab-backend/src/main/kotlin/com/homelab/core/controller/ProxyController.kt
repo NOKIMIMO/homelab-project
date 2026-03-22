@@ -26,11 +26,16 @@ class ProxyController(private val moduleService: ModuleService) {
     ): ResponseEntity<ByteArray> {
         val module = moduleService.getModule(moduleId) ?: return ResponseEntity.notFound().build()
 
-        val path = request.getAttribute(org.springframework.web.servlet.HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE)
+        val path =
+                request.getAttribute(
+                                org.springframework.web.servlet.HandlerMapping
+                                        .PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE
+                        )
                         .toString()
                         .substringAfter("/proxy/$moduleId")
 
-        val targetUri = org.springframework.web.util.UriComponentsBuilder.fromHttpUrl(module.internalUrl)
+        val targetUri =
+                org.springframework.web.util.UriComponentsBuilder.fromHttpUrl(module.internalUrl)
                         .path(path)
                         .query(request.queryString)
                         .build(true)
@@ -49,9 +54,22 @@ class ProxyController(private val moduleService: ModuleService) {
         val entity = HttpEntity(body, proxyHeaders)
 
         return try {
-            restTemplate.exchange(targetUri, method, entity, ByteArray::class.java)
+            val response = restTemplate.exchange(targetUri, method, entity, ByteArray::class.java)
+            val responseHeaders = HttpHeaders()
+            response.headers.forEach { name, values ->
+                if (!name.equals("transfer-encoding", ignoreCase = true)) {
+                    responseHeaders.addAll(name, values)
+                }
+            }
+            ResponseEntity.status(response.statusCode).headers(responseHeaders).body(response.body)
+        } catch (e: org.springframework.web.client.HttpStatusCodeException) {
+            ResponseEntity.status(e.statusCode)
+                    .headers(e.responseHeaders)
+                    .body(e.responseBodyAsByteArray)
         } catch (e: Exception) {
-            ResponseEntity.status(502).body("Bad Gateway".toByteArray())
+            println("Proxy error for $targetUri: ${e.message}")
+            ResponseEntity.status(502)
+                    .body("Bad Gateway: ${e.message} for $targetUri".toByteArray())
         }
     }
 }
