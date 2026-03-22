@@ -1,0 +1,13 @@
+.vscode
+.idea
+.env
+
+homelab-backend/build
+homelab-backend/target
+homelab-backend/.vscode
+
+homelab-frontend/node_modules
+
+
+photo-module/node_modules
+photo-module/storage

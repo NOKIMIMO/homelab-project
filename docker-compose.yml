@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  homelab-backend:
+    build: ./homelab-backend
+    ports:
+      - "8080:8080"
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /etc/os-release:/host/etc/os-release:ro
+    environment:
+      - JAVA_OPTS=-Doshi.os.windows.proc.path=/host/proc -Doshi.os.windows.sys.path=/host/sys
+    restart: always
+
+  homelab-frontend:
+    build: ./homelab-frontend
+    ports:
+      - "80:80"
+    restart: always
+
+  photo-module:
+    build: ./photo-module
+    ports:
+      - "8081:8081"
+    volumes:
+      - photo-storage:/app/public/storage
+    restart: always
+
+volumes:
+  photo-storage:
