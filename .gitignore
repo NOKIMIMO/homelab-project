@@ -1,13 +1,10 @@
-.vscode
-.idea
-.env
+*node_modules*
+*target*
+*build*
+*.vscode*
+*.idea*
+*.env*
+*.DS_Store*
 
-homelab-backend/build
-homelab-backend/target
-homelab-backend/.vscode
-
-homelab-frontend/node_modules
-
-
-photo-module/node_modules
-photo-module/storage
+# specific
+modules/photo-module/public/storage

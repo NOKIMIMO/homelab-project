@@ -1,22 +1,43 @@
 import { useState, useEffect } from 'react';
-import { Clock, RefreshCw, Cpu, MemoryStick, HardDrive, FolderOpen, Activity } from 'lucide-react';
+import { Clock, RefreshCw, Cpu, MemoryStick, HardDrive, FolderOpen, Activity, Play, Square, Settings2, ShieldCheck, ShieldAlert } from 'lucide-react';
 import React from 'react';
+import type { Module } from '../App';
 
-export default function Dashboard() {
+interface DashboardProps {
+  modules: Module[];
+  onRefresh: () => void;
+  isModulesRefreshing: boolean;
+}
+
+export default function Dashboard({ modules, onRefresh, isModulesRefreshing }: DashboardProps) {
   const [telemetry, setTelemetry] = useState<any>(null);
   const [countdown, setCountdown] = useState(30);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
 
   const fetchTelemetry = async () => {
     setIsRefreshing(true);
     try {
       const res = await fetch('http://localhost:8080/api/telemetry');
       setTelemetry(await res.json());
+      onRefresh();
     } catch (err) {
       console.error(err);
     } finally {
       setIsRefreshing(false);
       setCountdown(30);
+    }
+  };
+
+  const handleModuleAction = async (id: string, action: 'start' | 'stop') => {
+    setActionLoading(id);
+    try {
+      await fetch(`http://localhost:8080/api/modules/${id}/${action}`, { method: 'POST' });
+      onRefresh();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setActionLoading(null);
     }
   };
 
@@ -63,6 +84,97 @@ export default function Dashboard() {
           </button>
         </div>
       </header>
+
+      {/* Modules Management Section */}
+      <section className="mb-12">
+        <div className="flex justify-between items-center mb-6">
+          <div className="flex items-center gap-4"> {/* Adjusted structure to keep badge separate */}
+            <h2 className="text-2xl font-bold flex items-center gap-2">
+              <Settings2 className="text-primary w-8 h-8" />
+              Gestion des Modules
+            </h2>
+            <span className="badge badge-outline text-xs font-bold opacity-50">{modules.length} modules découverts</span>
+          </div>
+          <button 
+            onClick={onRefresh}
+            className="btn btn-outline btn-sm gap-2"
+            disabled={isModulesRefreshing}
+          >
+            {isModulesRefreshing ? <span className="loading loading-spinner loading-xs"></span> : <RefreshCw className="w-4 h-4" />}
+            Rafraîchir les Modules
+          </button>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+          {modules.map(mod => (
+            <div key={mod.id} className="card bg-base-300 border border-base-content/5 shadow-md overflow-hidden group">
+              <div className="card-body p-5">
+                <div className="flex justify-between items-start mb-2">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-base-100 rounded-xl">
+                      <Activity size={20} className="text-primary" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-lg">{mod.name}</h3>
+                      <p className="text-xs text-base-content/50 font-mono">ID: {mod.id}</p>
+                    </div>
+                  </div>
+                  <div className={`badge font-bold gap-1 p-3 ${
+                    mod.status === 'ACTIVE' ? 'badge-success text-success-content' : 
+                    mod.status === 'INACTIVE' ? 'badge-ghost opacity-50' : 'badge-warning'
+                  }`}>
+                    {mod.status === 'ACTIVE' ? <ShieldCheck size={12} /> : <ShieldAlert size={12} />}
+                    {mod.status}
+                  </div>
+                </div>
+                
+                <p className="text-sm text-base-content/70 mt-2 line-clamp-2 min-h-[40px]">
+                  {mod.description || "Aucune description fournie pour ce module."}
+                </p>
+
+                <div className="divider my-2 opacity-10"></div>
+
+                <div className="flex items-center justify-between mt-2">
+                  <div className="flex flex-col">
+                    <span className="text-[10px] uppercase font-bold text-base-content/40 tracking-wider">Uptime</span>
+                    <span className="text-sm font-bold font-mono">
+                      {mod.uptimeStart ? `${Math.floor((Date.now() - mod.uptimeStart) / 3600000)}h ${Math.floor(((Date.now() - mod.uptimeStart) % 3600000) / 60000)}m` : "--:--"}
+                    </span>
+                  </div>
+                  
+                  <div className="flex gap-2">
+                    {mod.status === 'ACTIVE' ? (
+                      <button 
+                        className="btn btn-error btn-sm btn-square" 
+                        onClick={() => handleModuleAction(mod.id, 'stop')}
+                        disabled={actionLoading === mod.id}
+                      >
+                        {actionLoading === mod.id ? <span className="loading loading-spinner loading-xs"></span> : <Square size={16} />}
+                      </button>
+                    ) : (
+                      <button 
+                        className="btn btn-success btn-sm gap-2 px-4" 
+                        onClick={() => handleModuleAction(mod.id, 'start')}
+                        disabled={actionLoading === mod.id}
+                      >
+                        {actionLoading === mod.id ? <span className="loading loading-spinner loading-xs"></span> : <Play size={16} />}
+                        Lancer
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+          {modules.length === 0 && (
+            <div className="col-span-full py-10 text-center bg-base-100/30 rounded-3xl border-2 border-dashed border-base-content/10">
+              <p className="text-base-content/50 font-medium italic">Aucun module dynamique découvert. Vérifiez vos fichiers homelab-module.json.</p>
+            </div>
+          )}
+        </div>
+      </section>
+
+      <div className="divider opacity-50 mb-10 text-xs font-bold uppercase tracking-[.3em] text-base-content/20">Ressources Système</div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <div className="card bg-base-100 shadow-xl border border-base-content/5 hover:-translate-y-1 transition-transform duration-300">

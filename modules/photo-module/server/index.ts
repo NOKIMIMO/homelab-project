@@ -11,17 +11,17 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 interface PhotoMetadata {
-  stats: fs.Stats;
-  exif?: Record<string, unknown>;
-  error?: string;
+    stats: fs.Stats;
+    exif?: Record<string, unknown>;
+    error?: string;
 }
 
 interface PhotoResponse {
-  name: string;
-  url: string;
-  date: number;
-  uploadDate: number;
-  metadata: PhotoMetadata;
+    name: string;
+    url: string;
+    date: number;
+    uploadDate: number;
+    metadata: PhotoMetadata;
 }
 
 const app = express();
@@ -32,7 +32,16 @@ app.use(express.json());
 
 const storageDir = path.join(__dirname, '..', 'public', 'storage');
 const distDir = path.join(__dirname, '..', 'dist');
-if (!fs.existsSync(storageDir)) fs.mkdirSync(storageDir, { recursive: true });
+console.log(`Paths: dist=${distDir}, storage=${storageDir}`);
+if (!fs.existsSync(storageDir)) {
+    console.log(`Creating storage: ${storageDir}`);
+    fs.mkdirSync(storageDir, { recursive: true });
+}
+if (fs.existsSync(distDir)) {
+    console.log(`Frontend found in ${distDir}. Static serving enabled.`);
+} else {
+    console.log(`Frontend NOT found in ${distDir}. Falling back to dev proxy.`);
+}
 
 const storage = multer.diskStorage({
     destination: (_req, _file, cb) => cb(null, storageDir),
