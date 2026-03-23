@@ -26,15 +26,11 @@ function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
     return !!localStorage.getItem('homelab_token');
   });
-  const [userName, setUserName] = useState(() => {
-    return localStorage.getItem('homelab_user_name') || '';
-  });
 
   const handleLoginSuccess = (token: string, keyName: string) => {
     localStorage.setItem('homelab_token', token);
     localStorage.setItem('homelab_user_name', keyName);
     setIsAuthenticated(true);
-    setUserName(keyName);
   };
 
   const handleLogout = () => {

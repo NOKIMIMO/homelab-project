@@ -5,6 +5,8 @@ services:
       dockerfile: Dockerfile.dev
     container_name: homelab-backend-dev
     working_dir: /app
+    env_file:
+      - .env.dev
     volumes:
       - ./homelab-backend:/app
       - //var/run/docker.sock:/var/run/docker.sock
@@ -13,9 +15,6 @@ services:
     environment:
       - HOMELAB_APP_ROOT=/app_root
       - HOMELAB_MODULES_SCAN_PATH=/app_root/modules
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://homelab-db:5432/homelab
-      - SPRING_DATASOURCE_USERNAME=homelab
-      - SPRING_DATASOURCE_PASSWORD=homelab
       - SPRING_JPA_HIBERNATE_DDL_AUTO=update
     ports:
       - "8080:8080"
@@ -30,10 +29,10 @@ services:
   homelab-db:
     image: postgres:16-alpine
     container_name: homelab-db
+    env_file:
+      - .env.dev
     environment:
       - POSTGRES_DB=homelab
-      - POSTGRES_USER=homelab
-      - POSTGRES_PASSWORD=homelab
     ports:
       - "5432:5432"
     networks:
@@ -62,6 +61,7 @@ networks:
   homelab-network:
     name: homelab-network
   db-network:
+
 
 volumes:
   gradle-cache:

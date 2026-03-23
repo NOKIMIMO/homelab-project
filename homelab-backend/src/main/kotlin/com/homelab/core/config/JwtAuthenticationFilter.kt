@@ -14,23 +14,53 @@ import org.springframework.web.filter.OncePerRequestFilter
 class JwtAuthenticationFilter(private val jwtService: JwtService) : OncePerRequestFilter() {
 
     override fun doFilterInternal(
-        request: HttpServletRequest,
-        response: HttpServletResponse,
-        filterChain: FilterChain
+            request: HttpServletRequest,
+            response: HttpServletResponse,
+            filterChain: FilterChain
     ) {
-        val authHeader = request.getHeader("Authorization")
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+        val requestUri = request.requestURI
+
+        var token =
+                request.getHeader("Authorization")?.let {
+                    if (it.startsWith("Bearer ")) {
+                        val t = it.substring(7)
+                        println("Token found in Authorization header for $requestUri")
+                        t
+                    } else null
+                }
+
+        if (token == null) {
+            token =
+                    request.getParameter("token")?.let {
+                        println("Token found in query parameter for $requestUri")
+                        it
+                    }
+        }
+
+        if (token == null) {
+            token =
+                    request.cookies?.find { it.name == "homelab_token" }?.value?.let {
+                        println("Token found in cookie for $requestUri")
+                        it
+                    }
+        }
+
+        if (token == null) {
+            if (requestUri.startsWith("/api/proxy/") && !requestUri.contains("/assets/")) {
+                println("No token found for proxy request: $requestUri")
+            }
             filterChain.doFilter(request, response)
             return
         }
 
-        val token = authHeader.substring(7)
         val username = jwtService.validateToken(token)
 
         if (username != null && SecurityContextHolder.getContext().authentication == null) {
             val authToken = UsernamePasswordAuthenticationToken(username, null, emptyList())
             authToken.details = WebAuthenticationDetailsSource().buildDetails(request)
             SecurityContextHolder.getContext().authentication = authToken
+        } else if (username == null && requestUri.startsWith("/api/proxy/")) {
+            println("Invalid/Expired token for: $requestUri")
         }
 
         filterChain.doFilter(request, response)

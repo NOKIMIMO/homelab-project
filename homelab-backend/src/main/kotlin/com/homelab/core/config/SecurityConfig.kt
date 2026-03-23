@@ -14,21 +14,35 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource
 class SecurityConfig {
 
     @Bean
-    fun securityFilterChain(http: HttpSecurity, jwtFilter: JwtAuthenticationFilter): SecurityFilterChain {
+    fun securityFilterChain(
+            http: HttpSecurity,
+            jwtFilter: JwtAuthenticationFilter
+    ): SecurityFilterChain {
         http
-            .csrf { it.disable() }
-            .cors { it.configurationSource(corsConfigurationSource()) }
-            .authorizeHttpRequests { auth ->
-                auth.requestMatchers("/api/auth/**").permitAll()
-                auth.requestMatchers("/proxy/**").permitAll()
-                auth.anyRequest().authenticated()
-            }
-            .sessionManagement { it.sessionCreationPolicy(org.springframework.security.config.http.SessionCreationPolicy.STATELESS) }
-            .addFilterBefore(jwtFilter, org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter::class.java)
-            .headers { it.frameOptions { fo -> fo.disable() } }
-            .httpBasic { it.disable() }
-            .formLogin { it.disable() }
-        
+                .csrf { it.disable() }
+                .cors { it.configurationSource(corsConfigurationSource()) }
+                .authorizeHttpRequests { auth ->
+                    auth.requestMatchers("/api/auth/**").permitAll()
+                    auth.requestMatchers("/proxy/**").permitAll()
+                    auth.requestMatchers("/api/proxy/**").permitAll()
+                    auth.requestMatchers("/api/modules/**").authenticated()
+                    auth.anyRequest().authenticated()
+                }
+                .sessionManagement {
+                    it.sessionCreationPolicy(
+                            org.springframework.security.config.http.SessionCreationPolicy.STATELESS
+                    )
+                }
+                .addFilterBefore(
+                        jwtFilter,
+                        org.springframework.security.web.authentication
+                                        .UsernamePasswordAuthenticationFilter::class
+                                .java
+                )
+                .headers { it.frameOptions { fo -> fo.disable() } }
+                .httpBasic { it.disable() }
+                .formLogin { it.disable() }
+
         return http.build()
     }
 

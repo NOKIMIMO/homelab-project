@@ -32,7 +32,7 @@ export default function ModuleView({ module }: { module?: Module }) {
   return (
     <div className="w-full h-full bg-base-100 flex flex-col">
       <iframe
-        src={getApiUrl(`/proxy/${module.id}/`)}
+        src={getApiUrl(`/api/proxy/${module.id}/?token=${localStorage.getItem('homelab_token')}`)}
         title={`Module ${module.name}`}
         className="flex-1 w-full border-none shadow-inner"
         sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals"
