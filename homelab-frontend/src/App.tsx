@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { BarChart, Camera, Box, Menu, Settings } from 'lucide-react';
 import Dashboard from './components/Dashboard';
 import ModuleView from './components/ModuleView';
+import { getApiUrl } from './api';
 import './index.css';
 
 export interface Module {
@@ -23,8 +24,10 @@ function App() {
   const fetchModules = async () => {
     setIsModulesRefreshing(true);
     try {
-      const response = await fetch('/api/modules');
+      const response = await fetch(getApiUrl('/api/modules'));
+      console.log("modules : ", response)
       const data = await response.json();
+      console.log(data)
       setModules(data);
     } catch (error) {
       console.error('Error fetching modules:', error);

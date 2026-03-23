@@ -15,8 +15,9 @@ export default defineConfig({
     },
     proxy: {
       '/api': {
-        target: 'http://homelab-backend-dev:8080',
-        changeOrigin: true
+        target: 'http://homelab-backend:8080',
+        changeOrigin: true,
+        secure: false
       }
     }
   }

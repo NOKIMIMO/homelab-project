@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Clock, RefreshCw, Cpu, MemoryStick, HardDrive, FolderOpen, Activity, Play, Square, Settings2, ShieldCheck, ShieldAlert } from 'lucide-react';
 import React from 'react';
 import type { Module } from '../App';
+import { getApiUrl } from '../api';
 
 interface DashboardProps {
   modules: Module[];
@@ -18,7 +19,7 @@ export default function Dashboard({ modules, onRefresh, isModulesRefreshing }: D
   const fetchTelemetry = async () => {
     setIsRefreshing(true);
     try {
-      const res = await fetch('http://localhost:8080/api/telemetry');
+      const res = await fetch(getApiUrl('/api/telemetry'));
       setTelemetry(await res.json());
       onRefresh();
     } catch (err) {
@@ -32,7 +33,7 @@ export default function Dashboard({ modules, onRefresh, isModulesRefreshing }: D
   const handleModuleAction = async (id: string, action: 'start' | 'stop') => {
     setActionLoading(id);
     try {
-      await fetch(`http://localhost:8080/api/modules/${id}/${action}`, { method: 'POST' });
+      await fetch(getApiUrl(`/api/modules/${id}/${action}`), { method: 'POST' });
       onRefresh();
     } catch (err) {
       console.error(err);
