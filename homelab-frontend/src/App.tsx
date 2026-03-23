@@ -69,7 +69,7 @@ function App() {
             onRefresh={fetchModules}
             isModulesRefreshing={isModulesRefreshing}
           />
-            : <ModuleView moduleId={activeModule} />}
+            : <ModuleView module={modules.find(m => m.id === activeModule)} />}
         </main>
       </div>
 
