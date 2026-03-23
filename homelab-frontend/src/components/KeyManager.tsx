@@ -25,8 +25,11 @@ export default function KeyManager() {
   };
 
   const fetchKeys = async () => {
+    const token = localStorage.getItem('homelab_token');
     try {
-      const res = await fetch(getApiUrl('/api/auth/keys'));
+      const res = await fetch(getApiUrl('/api/auth/keys'), {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
       setKeys(await res.json());
     } catch (err) {
       console.error(err);
@@ -38,10 +41,14 @@ export default function KeyManager() {
   const handleAddKey = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsAdding(true);
+    const token = localStorage.getItem('homelab_token');
     try {
       const res = await fetch(getApiUrl('/api/auth/keys'), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify({ name: newName, publicKey: newPubKey })
       });
       if (res.ok) {
@@ -60,7 +67,7 @@ export default function KeyManager() {
     if (!confirm('Voulez-vous vraiment supprimer cette clé ?')) return;
     const token = localStorage.getItem('homelab_token');
     try {
-      await fetch(getApiUrl(`/api/auth/keys/${id}`), { 
+      await fetch(getApiUrl(`/api/auth/keys/${id}`), {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
