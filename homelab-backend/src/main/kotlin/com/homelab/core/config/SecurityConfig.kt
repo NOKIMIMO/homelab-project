@@ -25,6 +25,7 @@ class SecurityConfig {
             }
             .sessionManagement { it.sessionCreationPolicy(org.springframework.security.config.http.SessionCreationPolicy.STATELESS) }
             .addFilterBefore(jwtFilter, org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter::class.java)
+            .headers { it.frameOptions { fo -> fo.disable() } }
             .httpBasic { it.disable() }
             .formLogin { it.disable() }
         

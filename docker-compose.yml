@@ -1,8 +1,24 @@
 services:
+  homelab-db:
+    image: postgres:16-alpine
+    container_name: homelab-db
+    environment:
+      - POSTGRES_DB=homelab
+      - POSTGRES_USER=homelab
+      - POSTGRES_PASSWORD=homelab
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    networks:
+      - db-network
+    restart: always
+
   homelab-backend:
     build: ./homelab-backend
+    container_name: homelab-backend
     ports:
       - "8080:8080"
+    depends_on:
+      - homelab-db
     volumes:
       - /proc:/host/proc:ro
       - /sys:/host/sys:ro
@@ -13,30 +29,46 @@ services:
       - JAVA_OPTS=-Doshi.os.windows.proc.path=/host/proc -Doshi.os.windows.sys.path=/host/sys
       - HOMELAB_APP_ROOT=/app_root
       - HOMELAB_MODULES_SCAN_PATH=/app_root/modules
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://homelab-db:5432/homelab
+      - SPRING_DATASOURCE_USERNAME=homelab
+      - SPRING_DATASOURCE_PASSWORD=homelab
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=update
     restart: always
     networks:
       - homelab-network
+      - db-network
 
   homelab-frontend:
     build: ./homelab-frontend
+    container_name: homelab-frontend
     ports:
       - "80:80"
     restart: always
     networks:
       - homelab-network
-  # photo-module:
-  #   build: ./modules/photo-module
-  #   ports:
-  #     - "8081:8081"
-  #   volumes:
-  #     - photo-storage:/app/public/storage
-  #   restart: always
-  #   networks:
-  #     - homelab-network
+
+  photo-module:
+    build: ./modules/photo-module
+    container_name: photo-module
+    depends_on:
+      - homelab-backend
+    ports:
+      - "8081:8081"
+    volumes:
+      - photo-storage:/app/public/storage
+      - .:/app_root:ro
+    environment:
+      - HOMELAB_APP_ROOT=/app_root
+    restart: always
+    networks:
+      - homelab-network
 
 networks:
   homelab-network:
     name: homelab-network
+  db-network:
+    name: db-network
 
 volumes:
   photo-storage:
+  db-data:

@@ -61,6 +61,14 @@ class ProxyController(private val moduleService: ModuleService) {
                     responseHeaders.addAll(name, values)
                 }
             }
+            // Unsafe => i-frame header bypass
+            // TODO: Better header management
+            // responseHeaders.remove("X-Frame-Options")
+            // responseHeaders.remove("Content-Security-Policy")
+
+            // responseHeaders.add("Content-Security-Policy", "frame-ancestors *")
+            // responseHeaders.add("X-Frame-Options", "SAMEORIGIN")
+
             ResponseEntity.status(response.statusCode).headers(responseHeaders).body(response.body)
         } catch (e: org.springframework.web.client.HttpStatusCodeException) {
             ResponseEntity.status(e.statusCode)

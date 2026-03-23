@@ -112,6 +112,11 @@ if (fs.existsSync(distDir)) {
         changeOrigin: true,
         ws: true,
         pathRewrite: (p) => '/proxy/photo' + p,
+        onProxyRes: (proxyRes) => {
+            // header deletion only on proxy
+            proxyRes.headers['x-frame-options'] = '';
+            proxyRes.headers['content-security-policy'] = '';
+        },
         onError: (_err, _req, res) => {
             (res as Response).status(502).send("Express can't connect to Vite on 5173. Run 'npm run dev'.");
         }
