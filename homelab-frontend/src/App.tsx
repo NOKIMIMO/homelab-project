@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { BarChart, Camera, Box, Menu, Settings } from 'lucide-react';
 import Dashboard from './components/Dashboard';
 import ModuleView from './components/ModuleView';
+import Login from './components/Login';
+import KeyManager from './components/KeyManager';
 import { getApiUrl } from './api';
 import './index.css';
 
@@ -20,14 +22,39 @@ function App() {
     return localStorage.getItem('homelab_last_module') || null;
   });
   const [isModulesRefreshing, setIsModulesRefreshing] = useState(false);
+  const [showKeyManager, setShowKeyManager] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    return !!localStorage.getItem('homelab_token');
+  });
+  const [userName, setUserName] = useState(() => {
+    return localStorage.getItem('homelab_user_name') || '';
+  });
+
+  const handleLoginSuccess = (token: string, keyName: string) => {
+    localStorage.setItem('homelab_token', token);
+    localStorage.setItem('homelab_user_name', keyName);
+    setIsAuthenticated(true);
+    setUserName(keyName);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('homelab_token');
+    localStorage.removeItem('homelab_user_name');
+    setIsAuthenticated(false);
+  };
 
   const fetchModules = async () => {
     setIsModulesRefreshing(true);
+    const token = localStorage.getItem('homelab_token');
     try {
-      const response = await fetch(getApiUrl('/api/modules'));
-      console.log("modules : ", response)
+      const response = await fetch(getApiUrl('/api/modules'), {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      // console.log("modules : ", response)
       const data = await response.json();
-      console.log(data)
+      // console.log(data)
       setModules(data);
     } catch (error) {
       console.error('Error fetching modules:', error);
@@ -47,6 +74,27 @@ function App() {
       localStorage.removeItem('homelab_last_module');
     }
   }, [activeModule]);
+  if (!isAuthenticated) {
+    return (
+      <div className="relative">
+        {showKeyManager ? (
+          <div className="min-h-screen bg-base-300 flex flex-col pt-12">
+            <div className="max-w-4xl mx-auto w-full px-4 text-center mb-6">
+              <button className="btn btn-ghost btn-sm gap-2" onClick={() => setShowKeyManager(false)}>
+                ← Retour à la connexion
+              </button>
+            </div>
+            <KeyManager />
+          </div>
+        ) : (
+          <Login
+            onLoginSuccess={handleLoginSuccess}
+            onShowBootstrap={() => setShowKeyManager(true)}
+          />
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="drawer lg:drawer-open" data-theme="night">
@@ -64,12 +112,17 @@ function App() {
         </div>
 
         <main className="flex-1 w-full h-[100dvh] overflow-hidden">
-          {activeModule === null ? <Dashboard
-            modules={modules}
-            onRefresh={fetchModules}
-            isModulesRefreshing={isModulesRefreshing}
-          />
-            : <ModuleView module={modules.find(m => m.id === activeModule)} />}
+          {showKeyManager ? (
+            <KeyManager />
+          ) : activeModule === null ? (
+            <Dashboard
+              modules={modules}
+              onRefresh={fetchModules}
+              isModulesRefreshing={isModulesRefreshing}
+            />
+          ) : (
+            <ModuleView module={modules.find(m => m.id === activeModule)} />
+          )}
         </main>
       </div>
 
@@ -82,7 +135,10 @@ function App() {
 
           <ul className="flex-1 space-y-2 mt-4 lg:mt-0">
             <li>
-              <button className={activeModule === null ? 'active font-medium' : 'font-medium'} onClick={() => setActiveModule(null)}>
+              <button
+                className={activeModule === null && !showKeyManager ? 'active font-medium' : 'font-medium'}
+                onClick={() => { setActiveModule(null); setShowKeyManager(false); }}
+              >
                 <BarChart size={20} className="mr-1 opacity-70" />
                 <span className="text-[15px]">Vue d'ensemble</span>
               </button>
@@ -90,7 +146,10 @@ function App() {
             <div className="divider text-xs text-base-content/50 uppercase tracking-widest my-6">Applications</div>
             {modules.map(mod => (
               <li key={mod.id}>
-                <button className={activeModule === mod.id ? 'active flex justify-between' : 'flex justify-between'} onClick={() => setActiveModule(mod.id)}>
+                <button
+                  className={activeModule === mod.id && !showKeyManager ? 'active flex justify-between' : 'flex justify-between'}
+                  onClick={() => { setActiveModule(mod.id); setShowKeyManager(false); }}
+                >
                   <span className="flex items-center gap-3 font-medium">
                     {mod.icon === 'Image' ? <Camera size={18} className="opacity-70" /> : <Box size={18} className="opacity-70" />}
                     <span className="text-[15px]">{mod.name}</span>
@@ -100,8 +159,16 @@ function App() {
               </li>
             ))}
           </ul>
-          <div className="mt-auto px-2">
-            <button className="btn btn-outline btn-sm w-full gap-2"><Settings size={16} /> Options</button>
+          <div className="mt-auto px-2 space-y-2">
+            <button
+              className={`btn btn-sm w-full gap-2 ${showKeyManager ? 'btn-primary' : 'btn-outline'}`}
+              onClick={() => setShowKeyManager(true)}
+            >
+              <Settings size={16} /> Options
+            </button>
+            <button className="btn btn-ghost btn-sm w-full gap-2 text-error" onClick={handleLogout}>
+              Quitter
+            </button>
           </div>
         </div>
       </div>

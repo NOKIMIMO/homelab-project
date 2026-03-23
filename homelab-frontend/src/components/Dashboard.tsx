@@ -17,9 +17,11 @@ export default function Dashboard({ modules, onRefresh, isModulesRefreshing }: D
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
   const fetchTelemetry = async () => {
-    setIsRefreshing(true);
+    const token = localStorage.getItem('homelab_token');
     try {
-      const res = await fetch(getApiUrl('/api/telemetry'));
+      const res = await fetch(getApiUrl('/api/telemetry'), {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
       setTelemetry(await res.json());
       onRefresh();
     } catch (err) {
@@ -31,9 +33,12 @@ export default function Dashboard({ modules, onRefresh, isModulesRefreshing }: D
   };
 
   const handleModuleAction = async (id: string, action: 'start' | 'stop') => {
-    setActionLoading(id);
+    const token = localStorage.getItem('homelab_token');
     try {
-      await fetch(getApiUrl(`/api/modules/${id}/${action}`), { method: 'POST' });
+      await fetch(getApiUrl(`/api/modules/${id}/${action}`), { 
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
       onRefresh();
     } catch (err) {
       console.error(err);

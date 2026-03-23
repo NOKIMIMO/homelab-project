@@ -13,14 +13,33 @@ services:
     environment:
       - HOMELAB_APP_ROOT=/app_root
       - HOMELAB_MODULES_SCAN_PATH=/app_root/modules
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://homelab-db:5432/homelab
+      - SPRING_DATASOURCE_USERNAME=homelab
+      - SPRING_DATASOURCE_PASSWORD=homelab
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=update
     ports:
       - "8080:8080"
     networks:
-      homelab-network:
-        aliases:
-          - homelab-backend
+      - homelab-network
+      - db-network
     stop_grace_period: 30s
     command: sh -c "chmod +x gradlew && ./gradlew bootRun --no-daemon"
+    depends_on:
+      - homelab-db
+
+  homelab-db:
+    image: postgres:16-alpine
+    container_name: homelab-db
+    environment:
+      - POSTGRES_DB=homelab
+      - POSTGRES_USER=homelab
+      - POSTGRES_PASSWORD=homelab
+    ports:
+      - "5432:5432"
+    networks:
+      - db-network
+    volumes:
+      - db-data:/var/lib/postgresql/data
 
   homelab-frontend-dev:
     image: node:20-alpine
@@ -42,6 +61,8 @@ services:
 networks:
   homelab-network:
     name: homelab-network
+  db-network:
 
 volumes:
   gradle-cache:
+  db-data:
