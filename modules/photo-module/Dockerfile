@@ -5,4 +5,4 @@ RUN npm install
 COPY . .
 RUN npm run build
 EXPOSE 8081
-CMD ["npm", "run", "server"]
+CMD ["npx", "tsx", "--tsconfig", "server/tsconfig.json", "server/index.ts"]
