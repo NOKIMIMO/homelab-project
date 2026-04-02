@@ -75,6 +75,7 @@ function getPhotoMetadata(filename: string): PhotoResponse {
 app.use('/storage', express.static(storageDir));
 
 app.get('/api/photos', (_req: Request, res: Response) => {
+    console.log('Listing photos in storage');
     fs.readdir(storageDir, (err, files) => {
         if (err) return res.status(500).json({ error: 'Err' });
         res.json(files.filter(f => /\.(jpg|jpeg|png|gif|webp)$/i.test(f)).map(getPhotoMetadata));
@@ -82,6 +83,7 @@ app.get('/api/photos', (_req: Request, res: Response) => {
 });
 
 app.post('/api/photos', upload.single('photo'), (req: Request, res: Response) => {
+    console.log(`Received upload: ${req.file?.originalname} as ${req.file?.filename}`);
     if (!req.file) return res.status(400).json({ error: 'NoFile' });
     const filepath = path.join(storageDir, req.file.filename);
     const lastModified = req.body.lastModified ? Number(req.body.lastModified) : null;
@@ -111,14 +113,21 @@ if (fs.existsSync(distDir)) {
         target: 'http://localhost:5173',
         changeOrigin: true,
         ws: true,
-        pathRewrite: (p) => '/proxy/photo' + p,
-        onProxyRes: (proxyRes) => {
-            // header deletion only on proxy
-            proxyRes.headers['x-frame-options'] = '';
-            proxyRes.headers['content-security-policy'] = '';
+        pathRewrite: {
+            '^/': '/' // Ensure paths are rewritten correctly
         },
-        onError: (_err, _req, res) => {
-            (res as Response).status(502).send("Express can't connect to Vite on 5173. Run 'npm run dev'.");
+        onProxyReq: (proxyReq, req) => {
+            console.log(`Proxying request: ${req.method} ${req.url}`);
+        },
+        onProxyRes: (proxyRes, req, res) => {
+            console.log(`Proxy response for: ${req.method} ${req.url} - Status: ${proxyRes.statusCode}`);
+            delete proxyRes.headers['x-frame-options'];
+            delete proxyRes.headers['content-security-policy'];
+            proxyRes.headers['proxyed-by'] = 'Local Express Server';
+        },
+        onError: (err, req, res) => {
+            console.error('Proxy error:', err.message);
+            res.status(502).send("Express can't connect to Vite on port 5173. Ensure 'npm run dev' is running.");
         }
     }));
 }
