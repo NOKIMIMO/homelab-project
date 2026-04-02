@@ -14,6 +14,9 @@ export class Board {
     @Column("integer", { default: 0 })
     width!: number;
 
+    @Column("text", { nullable: true })
+    previewsrc?: string;
+
     @UpdateDateColumn({ type: "timestamptz" })
     last_update!: Date;
 

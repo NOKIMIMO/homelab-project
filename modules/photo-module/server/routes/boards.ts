@@ -17,15 +17,18 @@ interface BoardPayload {
     name?: string;
     height?: number;
     width?: number;
+    previewsrc?: string;
     assets?: BoardAssetPayload[];
 }
+
+import path from "path";
 
 const normalizeAssets = (boardId: string, assets: BoardAssetPayload[]): BoardAsset[] => {
     return assets.map((asset) => {
         const boardAsset = new BoardAsset();
         boardAsset.board_id = boardId;
-        boardAsset.asset_name = asset.asset_name;
-        boardAsset.src = asset.src;
+        boardAsset.asset_name = asset.src.split('/')[asset.src.split('/').length - 1]; 
+        boardAsset.src = asset.src.split('/')[asset.src.split('/').length - 1]; // Keep the full src for frontend reference if needed
         boardAsset.scale = asset.scale ?? 1.0;
         boardAsset.rotation = asset.rotation ?? 0.0;
         boardAsset.x_position = asset.x_position ?? 0.0;
@@ -73,70 +76,50 @@ export const createBoardsRouter = (): Router => {
         }
     });
 
-    router.post("/", async (req: Request, res: Response) => {
-        const body = req.body as BoardPayload;
-        if (!body.name) {
-            return res.status(400).json({ error: "NameRequired" });
-        }
-
-        try {
-            await PhotoDataSource.transaction(async (manager) => {
-                const boardRepository = manager.getRepository(Board);
-                const boardAssetRepository = manager.getRepository(BoardAsset);
-
-                const board = boardRepository.create({
-                    name: body.name,
-                    height: body.height ?? 0,
-                    width: body.width ?? 0,
-                });
-
-                const savedBoard = await boardRepository.save(board);
-
-                if (Array.isArray(body.assets) && body.assets.length > 0) {
-                    const boardAssets = normalizeAssets(savedBoard.id, body.assets);
-                    await boardAssetRepository.save(boardAssets);
-                }
-            });
-
-            await recordSyncCheckpoint();
-            return res.status(201).json({ success: true });
-        } catch (error) {
-            console.error("Failed to create board", error);
-            return res.status(500).json({ error: "Err" });
-        }
-    });
-
     router.put("/:id", async (req: Request, res: Response) => {
         const body = req.body as BoardPayload;
+        const boardId = req.params.id;
 
         try {
-            const board = await PhotoDataSource.getRepository(Board).findOne({ where: { id: req.params.id } });
-            if (!board) {
-                return res.status(404).json({ error: "NotFound" });
-            }
-
             await PhotoDataSource.transaction(async (manager) => {
                 const boardRepository = manager.getRepository(Board);
                 const boardAssetRepository = manager.getRepository(BoardAsset);
 
-                board.name = body.name ?? board.name;
-                board.height = body.height ?? board.height;
-                board.width = body.width ?? board.width;
+                let board = await boardRepository.findOne({ where: { id: boardId } });
+                
+                if (!board) {
+                    // Create new board with the provided client-side UUID
+                    board = boardRepository.create({
+                        id: boardId,
+                        name: body.name || "Untitled Board",
+                        height: body.height ?? 1080,
+                        width: body.width ?? 1920,
+                        previewsrc: body.previewsrc,
+                    });
+                } else {
+                    // Update existing board properties
+                    board.name = body.name ?? board.name;
+                    board.height = body.height ?? board.height;
+                    board.width = body.width ?? board.width;
+                    board.previewsrc = body.previewsrc ?? board.previewsrc;
+                }
+
                 await boardRepository.save(board);
 
+                // Handle Assets (Full replace pattern for Boards)
                 if (Array.isArray(body.assets)) {
-                    await boardAssetRepository.delete({ board_id: board.id });
+                    await boardAssetRepository.delete({ board_id: boardId });
                     if (body.assets.length > 0) {
-                        const boardAssets = normalizeAssets(board.id, body.assets);
+                        const boardAssets = normalizeAssets(boardId, body.assets);
                         await boardAssetRepository.save(boardAssets);
                     }
                 }
             });
 
             await recordSyncCheckpoint();
-            return res.json({ success: true });
+            return res.json({ success: true, id: boardId });
         } catch (error) {
-            console.error("Failed to update board", error);
+            console.error("Failed to upsert board", error);
             return res.status(500).json({ error: "Err" });
         }
     });
