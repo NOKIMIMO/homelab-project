@@ -8,7 +8,9 @@
     "strict": true,
     "skipLibCheck": true,
     "outDir": "../dist-server",
-    "typeRoots": ["./types", "../node_modules/@types"]
+    "typeRoots": ["./types", "../node_modules/@types"],
+      "emitDecoratorMetadata": true,
+    "experimentalDecorators": true
   },
   "include": [".", "types"]
 }
