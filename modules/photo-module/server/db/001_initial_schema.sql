@@ -26,7 +26,8 @@ CREATE TABLE IF NOT EXISTS "board" (
     "height"       INTEGER      NOT NULL DEFAULT 0,
     "width"        INTEGER      NOT NULL DEFAULT 0,
     "last_update"  TIMESTAMPTZ  NOT NULL DEFAULT now(),
-    "created_at"   TIMESTAMPTZ  NOT NULL DEFAULT now()
+    "created_at"   TIMESTAMPTZ  NOT NULL DEFAULT now(),
+    "previewsrc"   TEXT 
 );
 
 -- -------------------------------------------------------------

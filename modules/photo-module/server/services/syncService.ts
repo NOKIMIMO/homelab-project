@@ -1,7 +1,4 @@
 import { PhotoDataSource } from "../db/db";
-import { Asset } from "../entities/Asset";
-import { Board } from "../entities/Board";
-import { BoardAsset } from "../entities/BoardAsset";
 import { Synchro } from "../entities/Synchro";
 
 const toDate = (value: unknown): Date | null => {
@@ -23,21 +20,9 @@ export const recordSyncCheckpoint = async (): Promise<void> => {
 
 export const getLatestSyncDate = async (): Promise<Date | null> => {
     const synchroRepository = PhotoDataSource.getRepository(Synchro);
-    const assetRepository = PhotoDataSource.getRepository(Asset);
-    const boardRepository = PhotoDataSource.getRepository(Board);
-    const boardAssetRepository = PhotoDataSource.getRepository(BoardAsset);
 
-    const [lastSynchro, maxAssetUpload, maxBoardUpdate, maxBoardAssetUpdate] = await Promise.all([
-        synchroRepository.createQueryBuilder("synchro").orderBy("synchro.date", "DESC").getOne(),
-        assetRepository.createQueryBuilder("asset").select("MAX(asset.date_upload)", "max").getRawOne(),
-        boardRepository.createQueryBuilder("board").select("MAX(board.last_update)", "max").getRawOne(),
-        boardAssetRepository.createQueryBuilder("boardAsset").select("MAX(boardAsset.last_update)", "max").getRawOne(),
-    ]);
-
+    const lastSynchro = await synchroRepository.createQueryBuilder("synchro").orderBy("synchro.date", "DESC").getOne()
     return maxDate([
-        lastSynchro?.date ?? null,
-        toDate(maxAssetUpload?.max),
-        toDate(maxBoardUpdate?.max),
-        toDate(maxBoardAssetUpdate?.max),
+        lastSynchro?.date ?? null
     ]);
 };

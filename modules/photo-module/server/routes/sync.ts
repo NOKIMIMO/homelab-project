@@ -4,6 +4,15 @@ import { getLatestSyncDate } from "../services/syncService";
 export const createSyncRouter = (): Router => {
     const router = Router();
 
+    router.get("/health", async (_req: Request, res: Response) => {
+        try {
+            return res.json({ status: "ok" });
+        } catch (error) {
+            console.error("Failed to retrieve latest sync", error);
+            return res.status(500).json({ error: "Err" });
+        }
+    });
+
     router.get("/last", async (_req: Request, res: Response) => {
         try {
             const lastSync = await getLatestSyncDate();
