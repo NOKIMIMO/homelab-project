@@ -28,11 +28,11 @@ const normalizeAssets = (boardId: string, assets: BoardAssetPayload[]): BoardAss
         const boardAsset = new BoardAsset();
         boardAsset.board_id = boardId;
         boardAsset.asset_name = asset.src.split('/')[asset.src.split('/').length - 1]; 
-        boardAsset.src = asset.src.split('/')[asset.src.split('/').length - 1]; // Keep the full src for frontend reference if needed
+        boardAsset.src = asset.src; // Keep the full src for frontend reference if needed
         boardAsset.scale = asset.scale ?? 1.0;
         boardAsset.rotation = asset.rotation ?? 0.0;
         boardAsset.x_position = asset.x_position ?? 0.0;
-        boardAsset.y_position = asset.y_position ?? 0.0;
+        boardAsset.y_position = asset.y_position ?? 0.0;    
         return boardAsset;
     });
 };
