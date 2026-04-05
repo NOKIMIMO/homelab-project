@@ -1,0 +1,44 @@
+services:
+  photo-module-db-temp:
+    image: postgres:16-alpine
+    container_name: photo-module-db-temp
+    environment:
+      - POSTGRES_USER=photo_user
+      - POSTGRES_PASSWORD=photo_password
+      - POSTGRES_DB=photo_module
+    ports:
+      - "5434:5432"
+    volumes:
+      - photo-module-db-temp-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U photo_user -d photo_module"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  photo-module-temp:
+    build: .
+    container_name: photo-module-temp
+    depends_on:
+      photo-module-db-temp:
+        condition: service_healthy
+    ports:
+      - "8081:8081"
+    environment:
+      - DB_HOST=photo-module-db-temp
+      - DB_PORT=5432
+      - DB_USERNAME=photo_user
+      - DB_PASSWORD=photo_password
+      - DB_DATABASE=photo_module
+      - CORE_DB_HOST=photo-module-db-temp
+      - CORE_DB_PORT=5432
+      - CORE_DB_USERNAME=photo_user
+      - CORE_DB_PASSWORD=photo_password
+      - CORE_DB_DATABASE=photo_module
+    volumes:
+      - ./data/storage-temp:/app/public/storage
+    restart: unless-stopped
+
+volumes:
+  photo-module-db-temp-data:

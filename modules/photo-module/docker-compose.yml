@@ -4,8 +4,15 @@ services:
     container_name: photo-module
     ports:
       - "8081:8081"
+    environment:
+      - DB_HOST=${DB_HOST:-homelab-db}
+      - DB_PORT=${DB_PORT:-5432}
+      - DB_USERNAME=${DB_USERNAME:-homelab_user}
+      - DB_PASSWORD=${DB_PASSWORD:-homelab_password}
+      - DB_DATABASE=${DB_DATABASE:-photo_module}
+      - CORE_DB_DATABASE=${CORE_DB_DATABASE:-homelab}
     volumes:
-      - photo-storage:/app/public/storage
+      - ${PHOTO_STORAGE_PATH:-./data/storage}:/app/public/storage
     restart: always
     labels:
       - "com.homelab.managed=true"
@@ -13,10 +20,12 @@ services:
       homelab-network:
         aliases:
           - photo-module
+      db-network:
 
 networks:
   homelab-network:
     external: true
+  db-network:
+    external: true
+    name: ${DB_NETWORK_NAME:-db-network}
 
-volumes:
-  photo-storage:
