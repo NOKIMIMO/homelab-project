@@ -1,6 +1,6 @@
 package com.homelab.core.controller
 
-import com.homelab.core.service.ModuleService
+import com.homelab.core.service.module.ModuleService
 import jakarta.servlet.http.HttpServletRequest
 import org.springframework.core.io.ByteArrayResource
 import org.springframework.http.HttpEntity

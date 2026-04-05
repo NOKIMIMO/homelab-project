@@ -40,9 +40,7 @@ const dbUsername = process.env.DB_USERNAME || process.env.CORE_DB_USERNAME || "h
 const dbPassword = process.env.DB_PASSWORD || process.env.CORE_DB_PASSWORD || "homelab_password";
 const photoDatabaseName = process.env.DB_DATABASE || "photo_module";
 
-const quoteIdentifier = (identifier: string): string => `"${identifier.replace(/"/g, "\"\"")}"`;
-
-const ensurePhotoDatabaseExists = async () => {
+const ensurePhotoDatabaseIsAvailable = async () => {
     const adminDatabase = process.env.CORE_DB_DATABASE || "homelab";
     const adminDataSource = new DataSource({
         type: "postgres",
@@ -56,13 +54,18 @@ const ensurePhotoDatabaseExists = async () => {
         entities: [],
     });
 
+    console.log(`Checking availability of photo database '${photoDatabaseName}' using admin connection to '${adminDatabase}'...`);
+    console.log("Admin DB Config:", { host: dbHost, port: dbPort, username: dbUsername, database: adminDatabase });
+
     try {
         await adminDataSource.initialize();
         const existing = await adminDataSource.query("SELECT 1 FROM pg_database WHERE datname = $1", [photoDatabaseName]);
         if (existing.length === 0) {
-            await adminDataSource.query(`CREATE DATABASE ${quoteIdentifier(photoDatabaseName)}`);
-            console.log(`Created database: ${photoDatabaseName}`);
+            throw new Error(
+                `Database '${photoDatabaseName}' does not exist. Core backend must provision it before module start.`
+            );
         }
+        console.log(`Database '${photoDatabaseName}' is available.`);
     } finally {
         if (adminDataSource.isInitialized) {
             await adminDataSource.destroy();
@@ -101,7 +104,7 @@ export const CoreDataSource = new DataSource({
 export const initDB = async () => {
     try {
         await withRetries("Photo database", async () => {
-            await ensurePhotoDatabaseExists();
+            await ensurePhotoDatabaseIsAvailable();
             if (!PhotoDataSource.isInitialized) {
                 await PhotoDataSource.initialize();
             }

@@ -14,7 +14,11 @@ services:
       - gradle-cache:/home/gradle/.gradle
     environment:
       - HOMELAB_APP_ROOT=/app_root
+      - HOMELAB_HOST_PROJECT_ROOT=/run/desktop/mnt/host/e/homelab_test
       - HOMELAB_MODULES_SCAN_PATH=/app_root/modules
+      - HOMELAB_ENABLE_DEV_MODE=true
+      - SPRING_DEVTOOLS_RESTART_ENABLED=true
+      - SPRING_DEVTOOLS_RESTART_ADDITIONAL_PATHS=/app/src/main/kotlin,/app/src/main/resources
       - SPRING_JPA_HIBERNATE_DDL_AUTO=update
     ports:
       - "8080:8080"
@@ -22,7 +26,7 @@ services:
       - homelab-network
       - db-network
     stop_grace_period: 30s
-    command: sh -c "chmod +x gradlew && ./gradlew bootRun --no-daemon"
+    command: sh -c "chmod +x gradlew && ./gradlew bootRun --continuous --no-daemon"
     depends_on:
       - homelab-db
 
@@ -49,6 +53,7 @@ services:
       - /app/node_modules
     environment:
       - VITE_API_URL=http://localhost:8080
+      - VITE_ENABLE_DEV_CONTROLS=true
     ports:
       - "80:80"
     command: sh -c "npm install && npm run dev"
@@ -61,6 +66,7 @@ networks:
   homelab-network:
     name: homelab-network
   db-network:
+    name: db-network
 
 
 volumes:

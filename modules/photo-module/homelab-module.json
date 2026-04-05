@@ -4,7 +4,12 @@
   "port": 8081,
   "icon": "Image",
   "description": "Gestion et stockage de photos avec extraction de métadonnées EXIF.",
+  "databaseName": "photo_module",
   "installCommand": "npm install",
   "startCommand": "npm run server",
+  "developmentCommand": "npm run dev",
+  "mobile" : {
+    "Mode": "Declarative"
+  },
   "type": "DOCKER"
 }
