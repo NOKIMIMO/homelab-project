@@ -1,6 +1,6 @@
 package com.homelab.core.controller
 
-import com.homelab.core.service.ModuleService
+import com.homelab.core.service.module.ModuleService
 import org.springframework.web.bind.annotation.*
 
 @RestController
@@ -16,6 +16,9 @@ class ModuleController(private val moduleService: ModuleService) {
 
     @PostMapping("/{id}/start")
     fun startModule(@PathVariable id: String) = mapOf("success" to moduleService.startModule(id))
+
+    @PostMapping("/{id}/dev")
+    fun startModuleDev(@PathVariable id: String) = mapOf("success" to moduleService.startModuleDev(id))
 
     @PostMapping("/{id}/stop")
     fun stopModule(@PathVariable id: String) = mapOf("success" to moduleService.stopModule(id))

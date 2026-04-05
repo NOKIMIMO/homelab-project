@@ -15,6 +15,7 @@ export default function Dashboard({ modules, onRefresh, isModulesRefreshing }: D
   const [countdown, setCountdown] = useState(30);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const devControlsEnabled = import.meta.env.VITE_ENABLE_DEV_CONTROLS === 'true';
 
   const fetchTelemetry = async () => {
     const token = localStorage.getItem('homelab_token');
@@ -32,8 +33,9 @@ export default function Dashboard({ modules, onRefresh, isModulesRefreshing }: D
     }
   };
 
-  const handleModuleAction = async (id: string, action: 'start' | 'stop') => {
+  const handleModuleAction = async (id: string, action: 'start' | 'stop' | 'dev') => {
     const token = localStorage.getItem('homelab_token');
+    setActionLoading(id);
     try {
       await fetch(getApiUrl(`/api/modules/${id}/${action}`), { 
         method: 'POST',
@@ -158,14 +160,26 @@ export default function Dashboard({ modules, onRefresh, isModulesRefreshing }: D
                         {actionLoading === mod.id ? <span className="loading loading-spinner loading-xs"></span> : <Square size={16} />}
                       </button>
                     ) : (
-                      <button 
-                        className="btn btn-success btn-sm gap-2 px-4" 
-                        onClick={() => handleModuleAction(mod.id, 'start')}
-                        disabled={actionLoading === mod.id}
-                      >
-                        {actionLoading === mod.id ? <span className="loading loading-spinner loading-xs"></span> : <Play size={16} />}
-                        Lancer
-                      </button>
+                      <>
+                        <button 
+                          className="btn btn-success btn-sm gap-2 px-4" 
+                          onClick={() => handleModuleAction(mod.id, 'start')}
+                          disabled={actionLoading === mod.id}
+                        >
+                          {actionLoading === mod.id ? <span className="loading loading-spinner loading-xs"></span> : <Play size={16} />}
+                          Lancer
+                        </button>
+                        {devControlsEnabled && (
+                          <button 
+                            className="btn btn-warning btn-sm gap-2 px-3" 
+                            onClick={() => handleModuleAction(mod.id, 'dev')}
+                            disabled={actionLoading === mod.id}
+                          >
+                            {actionLoading === mod.id ? <span className="loading loading-spinner loading-xs"></span> : <Play size={16} />}
+                            Dev
+                          </button>
+                        )}
+                      </>
                     )}
                   </div>
                 </div>

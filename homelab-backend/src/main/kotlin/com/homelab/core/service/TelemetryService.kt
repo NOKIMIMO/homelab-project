@@ -1,9 +1,11 @@
 package com.homelab.core.service
 
+import com.homelab.core.helper.Formater
 import com.homelab.core.model.DiskData
 import com.homelab.core.model.ModuleStatus
 import com.homelab.core.model.RamData
 import com.homelab.core.model.TelemetryData
+import com.homelab.core.service.module.ModuleService
 import jakarta.annotation.PostConstruct
 import java.nio.file.Files
 import java.nio.file.Path
@@ -34,15 +36,12 @@ class TelemetryService(private val moduleService: ModuleService) {
                         val cpuLoad = processor.getSystemCpuLoad(500) * 100.0
 
                         val memory = hal.memory
-                        val totalRamGb = memory.total.toDouble() / (1024 * 1024 * 1024)
-                        val availableRamGb = memory.available.toDouble() / (1024 * 1024 * 1024)
-                        val usedRamGb = totalRamGb - availableRamGb
+                        val totalRamGb = Formater.bytesToGigabytes(memory.total)
+                        val usedRamGb = Formater.bytesToGigabytes(memory.total - memory.available)
 
                         val pid = ProcessHandle.current().pid().toInt()
                         val coreProcess = os.getProcess(pid)
-                        val coreRamGb =
-                                (coreProcess?.residentSetSize ?: 0L).toDouble() /
-                                        (1024 * 1024 * 1024)
+                        val coreRamGb = Formater.bytesToGigabytes(coreProcess?.residentSetSize ?: 0L)
 
                         val modulesRamGb = 0.0
 
@@ -58,55 +57,33 @@ class TelemetryService(private val moduleService: ModuleService) {
                                         else emptySet()
                                 )
 
-                        val coreStorageGb = coreSizeBytes.toDouble() / (1024 * 1024 * 1024)
-                        val modulesStorageGb = modulesSizeBytes.toDouble() / (1024 * 1024 * 1024)
+                        val coreStorageGb = Formater.bytesToGigabytes(coreSizeBytes)
+                        val modulesStorageGb = Formater.bytesToGigabytes(modulesSizeBytes)
 
                         val fileStore = Files.getFileStore(appRoot)
-                        val totalDiskGb = fileStore.totalSpace.toDouble() / (1024 * 1024 * 1024)
+                        val totalDiskGb = Formater.bytesToGigabytes(fileStore.totalSpace)
                         val usedDiskGb =
-                                (fileStore.totalSpace - fileStore.unallocatedSpace).toDouble() /
-                                        (1024 * 1024 * 1024)
+                                Formater.bytesToGigabytes(
+                                        fileStore.totalSpace - fileStore.unallocatedSpace
+                                )
 
                         val data =
                                 TelemetryData(
-                                        cpu = "%.1f".format(cpuLoad).replace(',', '.').toDouble(),
+                                        cpu = Formater.round(cpuLoad, 1),
                                         ram =
                                                 RamData(
-                                                        total =
-                                                                "%.1f".format(totalRamGb)
-                                                                        .replace(',', '.')
-                                                                        .toDouble(),
-                                                        used =
-                                                                "%.1f".format(usedRamGb)
-                                                                        .replace(',', '.')
-                                                                        .toDouble(),
-                                                        coreUsed =
-                                                                "%.3f".format(coreRamGb)
-                                                                        .replace(',', '.')
-                                                                        .toDouble(),
-                                                        modulesUsed =
-                                                                "%.3f".format(modulesRamGb)
-                                                                        .replace(',', '.')
-                                                                        .toDouble()
+                                                        total = Formater.round(totalRamGb, 1),
+                                                        used = Formater.round(usedRamGb, 1),
+                                                        coreUsed = Formater.round(coreRamGb, 3),
+                                                        modulesUsed = Formater.round(modulesRamGb, 3)
                                                 ),
                                         disk =
                                                 DiskData(
-                                                        total =
-                                                                "%.1f".format(totalDiskGb)
-                                                                        .replace(',', '.')
-                                                                        .toDouble(),
-                                                        used =
-                                                                "%.1f".format(usedDiskGb)
-                                                                        .replace(',', '.')
-                                                                        .toDouble(),
-                                                        coreStorageUsed =
-                                                                "%.5f".format(coreStorageGb)
-                                                                        .replace(',', '.')
-                                                                        .toDouble(),
+                                                        total = Formater.round(totalDiskGb, 1),
+                                                        used = Formater.round(usedDiskGb, 1),
+                                                        coreStorageUsed = Formater.round(coreStorageGb, 5),
                                                         modulesStorageUsed =
-                                                                "%.5f".format(modulesStorageGb)
-                                                                        .replace(',', '.')
-                                                                        .toDouble()
+                                                                Formater.round(modulesStorageGb, 5)
                                                 ),
                                         activeModulesCount =
                                                 moduleService.getModules().count {
@@ -119,6 +96,8 @@ class TelemetryService(private val moduleService: ModuleService) {
                         println("Telemetry update failed: ${e.message}")
                 }
         }
+
+
 
         private fun folderSizeBytes(root: Path, excludedRoots: Set<Path> = emptySet()): Long {
                 if (!Files.exists(root)) return 0L

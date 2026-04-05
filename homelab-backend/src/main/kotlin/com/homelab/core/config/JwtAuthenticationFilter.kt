@@ -24,7 +24,7 @@ class JwtAuthenticationFilter(private val jwtService: JwtService) : OncePerReque
                 request.getHeader("Authorization")?.let {
                     if (it.startsWith("Bearer ")) {
                         val t = it.substring(7)
-                        println("Token found in Authorization header for $requestUri")
+                        // println("Token found in Authorization header for $requestUri")
                         t
                     } else null
                 }
@@ -32,7 +32,7 @@ class JwtAuthenticationFilter(private val jwtService: JwtService) : OncePerReque
         if (token == null) {
             token =
                     request.getParameter("token")?.let {
-                        println("Token found in query parameter for $requestUri")
+                        // println("Token found in query parameter for $requestUri")
                         it
                     }
         }
@@ -40,14 +40,14 @@ class JwtAuthenticationFilter(private val jwtService: JwtService) : OncePerReque
         if (token == null) {
             token =
                     request.cookies?.find { it.name == "homelab_token" }?.value?.let {
-                        println("Token found in cookie for $requestUri")
+                        // println("Token found in cookie for $requestUri")
                         it
                     }
         }
 
         if (token == null) {
             if (requestUri.startsWith("/api/proxy/") && !requestUri.contains("/assets/")) {
-                println("No token found for proxy request: $requestUri")
+                // println("No token found for proxy request: $requestUri")
             }
             filterChain.doFilter(request, response)
             return
