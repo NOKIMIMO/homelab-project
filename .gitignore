@@ -1,0 +1,17 @@
+*.log
+*.tmp
+*.DS_Store
+*.idea
+*.gradle
+*.kotlin
+*.vscode
+*.env
+.env.*
+*.swp
+*.swo
+npm-debug.log*
+yarn-debug.log*
+/build
+coverage/
+dist/
+HomeStock-frontend/node_modules
