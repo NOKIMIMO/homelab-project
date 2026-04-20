@@ -1,6 +1,7 @@
 import React from 'react';
 import { Info, Plus, X } from 'lucide-react';
-import AppButton from '../ui/AppButton';
+import AppButton from '../../ui/AppButton';
+
 
 interface Props {
   open: boolean;
@@ -19,8 +20,23 @@ const CreateBoardModal: React.FC<Props> = ({
 }) => {
   if (!open) return null;
 
+  const handleClose = () => {
+    onBoardNameChange('');
+    onClose();
+  };
+
+  // thing that makes you close if click outside of modal
+  const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.target === e.currentTarget) {
+      handleClose();
+    }
+  };
+
   return (
-    <div className="fixed inset-0 z-[250] bg-black/80 backdrop-blur-2xl flex items-center justify-center p-4">
+    <div
+      className="fixed inset-0 z-[250] bg-black/80 backdrop-blur-2xl flex items-center justify-center p-4"
+      onClick={handleOverlayClick}
+    >
       <form
         onSubmit={onSubmit}
         className="bg-base-100 p-10 rounded-[48px] max-w-lg w-full shadow-2xl border border-white/10 animate-in zoom-in duration-300 ring-1 ring-white/5"
@@ -32,7 +48,7 @@ const CreateBoardModal: React.FC<Props> = ({
             </div>
             <h3 className="text-3xl font-black tracking-tight">Nouveau Tableau</h3>
           </div>
-          <AppButton type="button" variant="ghost" size="icon" className="rounded-full" onClick={onClose}>
+          <AppButton type="button" variant="ghost" size="icon" className="rounded-full" onClick={handleClose}>
             <X />
           </AppButton>
         </div>

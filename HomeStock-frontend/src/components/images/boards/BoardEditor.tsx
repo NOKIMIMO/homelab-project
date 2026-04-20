@@ -3,7 +3,7 @@ import {
   Plus, Layout, Trash2, X, Move, RotateCw, Maximize, Save, 
   Image as ImageIcon, Layers, Zap, AlertCircle, Loader2, MousePointer2
 } from 'lucide-react';
-import { apiUrl } from '../lib/api';
+import { apiUrl } from '../../../lib/api';
 
 interface Photo {
   name: string;
@@ -32,7 +32,8 @@ interface Props {
   boardId: string;
   onClose: () => void;
 }
-
+//TODO: trop gros, je commence meme pas a expliquer
+// split la zone canvas du reste
 const BoardEditor: React.FC<Props> = ({ boardId, onClose }) => {
   const [board, setBoard] = useState<Board | null>(null);
   const [library, setLibrary] = useState<Photo[]>([]);
@@ -247,6 +248,7 @@ const BoardEditor: React.FC<Props> = ({ boardId, onClose }) => {
         </div>
 
         <div className="flex-1 overflow-y-auto px-6 pb-12">
+          {/* doit devenir son propre truc */}
           {!showLibrary ? (
             <div className="space-y-10 py-4">
               {selectedAsset ? (
@@ -329,6 +331,7 @@ const BoardEditor: React.FC<Props> = ({ boardId, onClose }) => {
       </div>
 
       {/* 3. The Canvas */}
+      {/* Doit devenir son propre truc */}
       <div 
         ref={containerRef}
         className="flex-1 h-full bg-base-300 relative flex items-center justify-center p-20 pt-24 cursor-default overflow-hidden"

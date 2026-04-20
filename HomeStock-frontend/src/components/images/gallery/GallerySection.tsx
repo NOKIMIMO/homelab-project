@@ -1,6 +1,6 @@
 import React from 'react';
 import { Trash2 } from 'lucide-react';
-import type { Photo } from '../../types/photo';
+import type { Photo } from '../../../types/photo';
 
 interface Props {
   date: string;

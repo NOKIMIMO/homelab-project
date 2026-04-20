@@ -1,6 +1,6 @@
 import React from 'react';
 import { Trash2 } from 'lucide-react';
-import AppButton from '../ui/AppButton';
+import AppButton from '../../ui/AppButton';
 
 interface Props {
   open: boolean;

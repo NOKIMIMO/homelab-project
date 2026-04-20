@@ -6,7 +6,7 @@ HomeStock is a self-hosted media storage and delivery server for photos, videos,
 Purpose
 - Centralize and serve personal media from a private instance.
 
-This project is currenty in an infantile steps, give it a bit of time and come back later to see what we made :) 
+This project is currenty in an infantile state, give it a bit of time and come back later to see what we made :) 
 
 
 Prerequisites

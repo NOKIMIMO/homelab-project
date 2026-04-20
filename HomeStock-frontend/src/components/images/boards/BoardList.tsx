@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Layout } from 'lucide-react';
-import { apiUrl } from '../lib/api';
-import BoardCard from './boards/BoardCard';
-import AppButton from './ui/AppButton';
+import { apiUrl } from '../../../lib/api';
+import AppButton from '../../ui/AppButton';
+import BoardCard from './BoardCard';
+
 
 interface BoardAsset {
   asset_name: string;
