@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Layout } from 'lucide-react';
-import { apiUrl } from '../../../lib/api';
 import AppButton from '../../ui/AppButton';
 import BoardCard from './BoardCard';
 
@@ -35,7 +34,7 @@ const BoardList: React.FC<Props> = ({ onSelectBoard, onCreateBoard }) => {
 
   const fetchBoards = async () => {
     try {
-      const res = await fetch(apiUrl('/api/boards'));
+      const res = await fetch('/api/boards');
       if (res.ok) {
         const data = await res.json();
         setBoards(data);
@@ -53,7 +52,7 @@ const BoardList: React.FC<Props> = ({ onSelectBoard, onCreateBoard }) => {
     e.stopPropagation();
     if (!confirm("Voulez-vous vraiment supprimer ce tableau ?")) return;
     try {
-      const res = await fetch(apiUrl(`/api/boards/${id}`), { method: 'DELETE' });
+      const res = await fetch(`/api/boards/${id}`, { method: 'DELETE' });
       if (res.ok) fetchBoards();
     } catch (err) {
       console.error(err);

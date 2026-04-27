@@ -1,6 +1,6 @@
 import { BrowserRouter, Route, Routes,  } from 'react-router-dom';
-import Header from './components/Header';
-import routes from './config/routes';
+import Header from '@components/Header';
+import routes from '@config/routes';
 
 const App = () => {
 
@@ -10,7 +10,7 @@ const App = () => {
         <Header />
         {/* Main Header, pages can have ther own header */}
       </header>
-      <div className="flex-grow pt-16">
+      <div className="grow pt-16">
         <Routes>
           {routes.map((route, index) => (
             // make a Route for each path possible later

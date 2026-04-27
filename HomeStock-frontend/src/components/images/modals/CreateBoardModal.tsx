@@ -34,7 +34,7 @@ const CreateBoardModal: React.FC<Props> = ({
 
   return (
     <div
-      className="fixed inset-0 z-[250] bg-black/80 backdrop-blur-2xl flex items-center justify-center p-4"
+      className="fixed inset-0 z-250 bg-black/80 backdrop-blur-2xl flex items-center justify-center p-4"
       onClick={handleOverlayClick}
     >
       <form

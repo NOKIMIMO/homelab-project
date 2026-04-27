@@ -23,7 +23,7 @@ const GallerySection: React.FC<Props> = ({ date, photos, onSelectPhoto, onDelete
         {photos.map((photo) => (
           <div
             key={photo.name}
-            className="group relative aspect-[3/4] rounded-[40px] overflow-hidden bg-base-200 border border-white/5 cursor-pointer shadow-xl transition-all duration-700 hover:-translate-y-3 hover:shadow-[0_40px_80px_-20px_rgba(0,0,0,0.5)] active:scale-95"
+            className="group relative aspect-3/4 rounded-[40px] overflow-hidden bg-base-200 border border-white/5 cursor-pointer shadow-xl transition-all duration-700 hover:-translate-y-3 hover:shadow-[0_40px_80px_-20px_rgba(0,0,0,0.5)] active:scale-95"
           >
             <img
               src={photo.url}
@@ -31,7 +31,7 @@ const GallerySection: React.FC<Props> = ({ date, photos, onSelectPhoto, onDelete
               className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
               onClick={() => onSelectPhoto(photo)}
             />
-            <div className="absolute top-6 right-6 translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-500 delay-100 relative z-20">
+            <div className="absolute top-6 right-6 translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-500 delay-100 z-20">
               <button
                 className="btn btn-circle btn-sm btn-error shadow-2xl text-white border-none hover:scale-110 active:scale-90"
                 onClick={(e) => {
@@ -42,7 +42,7 @@ const GallerySection: React.FC<Props> = ({ date, photos, onSelectPhoto, onDelete
                 <Trash2 size={14} />
               </button>
             </div>
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500 pointer-events-none">
+            <div className="absolute inset-0 bg-linear-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500 pointer-events-none">
               <div className="absolute bottom-6 left-6 right-6">
                 <p className="text-white text-[10px] font-black truncate uppercase tracking-widest opacity-80">{photo.name}</p>
               </div>

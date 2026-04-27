@@ -20,6 +20,7 @@ class PhotoController(private val photoService: PhotoService) {
 
     @GetMapping
     fun listPhotos(): ResponseEntity<Any> {
+        println("Received request to list photos")
         return try {
             val baseUrl = ServletUriComponentsBuilder.fromCurrentContextPath().build().toUriString()
             ResponseEntity.ok(photoService.listPhotos(baseUrl))

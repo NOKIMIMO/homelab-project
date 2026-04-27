@@ -1,6 +1,6 @@
 import { Info, X, Settings, Image as ImageIcon, HardDrive, Calendar, Trash2 } from 'lucide-react';
-import styles from '../../../lib/style';
-import type { Photo } from '../../../types/photo';
+import styles from '@lib/style';
+import type { Photo } from '@spe_types/photo';
 
 interface PhotoDetailModalProps {
   photo: Photo;

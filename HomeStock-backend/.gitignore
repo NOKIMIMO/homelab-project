@@ -45,3 +45,5 @@ logs/
 tmp/
 temp/
 public/
+
+.env

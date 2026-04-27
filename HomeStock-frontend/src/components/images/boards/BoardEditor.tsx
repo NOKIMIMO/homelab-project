@@ -3,7 +3,6 @@ import {
   Plus, Layout, Trash2, X, Move, RotateCw, Maximize, Save, 
   Image as ImageIcon, Layers, Zap, AlertCircle, Loader2, MousePointer2
 } from 'lucide-react';
-import { apiUrl } from '../../../lib/api';
 
 interface Photo {
   name: string;
@@ -52,28 +51,18 @@ const BoardEditor: React.FC<Props> = ({ boardId, onClose }) => {
   const dragStart = useRef({ x: 0, y: 0, assetX: 0, assetY: 0 });
 
   const fetchEverything = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const [boardRes, photoRes] = await Promise.all([
-        fetch(apiUrl(`/api/boards/${boardId}`)),
-        fetch(apiUrl('/api/photos'))
-      ]);
-      
-      if (!boardRes.ok) throw new Error("Failed to load board");
-      const boardData = await boardRes.json();
-      setBoard(boardData);
-
-      if (photoRes.ok) {
-        setLibrary(await photoRes.json());
-      }
-    } catch (err) {
-      console.error(err);
-      setError(err instanceof Error ? err.message : "Connection error");
-    } finally {
-      setLoading(false);
-    }
-  }, [boardId]);
+        try {
+            const res = await fetch(`/api/boards/${boardId}`);
+            if (res.ok) {
+                const data = await res.json();
+                setBoard(data);
+            }
+        } catch (err) {
+            console.error("Failed to fetch board", err);
+        } finally {
+            setLoading(false);
+        }
+    }, [boardId]);
 
   useEffect(() => { fetchEverything(); }, [fetchEverything]);
 
@@ -104,7 +93,7 @@ const BoardEditor: React.FC<Props> = ({ boardId, onClose }) => {
     if (!board) return;
     setIsSaving(true);
     try {
-      const res = await fetch(apiUrl(`/api/boards/${boardId}`), {
+      const res = await fetch(`/api/boards/${boardId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(board)
@@ -179,7 +168,7 @@ const BoardEditor: React.FC<Props> = ({ boardId, onClose }) => {
 
   if (loading) {
     return (
-      <div className="fixed inset-0 z-[100] bg-base-300 flex flex-col items-center justify-center gap-4">
+      <div className="fixed inset-0 z-100 bg-base-300 flex flex-col items-center justify-center gap-4">
         <Loader2 className="w-12 h-12 text-primary animate-spin" />
         <p className="font-black uppercase tracking-widest text-xs opacity-50">Chargement du studio...</p>
       </div>
@@ -188,7 +177,7 @@ const BoardEditor: React.FC<Props> = ({ boardId, onClose }) => {
 
   if (error || !board) {
     return (
-      <div className="fixed inset-0 z-[100] bg-base-300 flex flex-col items-center justify-center gap-6">
+      <div className="fixed inset-0 z-100 bg-base-300 flex flex-col items-center justify-center gap-6">
         <div className="bg-error/20 p-6 rounded-full"><AlertCircle className="w-12 h-12 text-error" /></div>
         <div className="text-center">
           <h2 className="text-2xl font-black mb-2">Oups !</h2>
@@ -231,7 +220,7 @@ const BoardEditor: React.FC<Props> = ({ boardId, onClose }) => {
       </div>
 
       {/* 2. Side Panel */}
-      <div className="w-full md:w-80 h-full bg-base-100 border-r border-white/5 flex flex-col z-[45] pt-20">
+      <div className="w-full md:w-80 h-full bg-base-100 border-r border-white/5 flex flex-col z-45 pt-20">
         <div className="tabs tabs-boxed bg-base-200 m-6 rounded-2xl p-1.5 shadow-inner">
           <button 
             className={`tab flex-1 rounded-xl transition-all font-bold ${!showLibrary ? 'tab-active bg-primary text-white shadow-lg' : 'opacity-50'}`}
@@ -362,8 +351,8 @@ const BoardEditor: React.FC<Props> = ({ boardId, onClose }) => {
              >
                 <img 
                   src={asset.src} 
-                  draggable={false}
-                  className="max-w-[400px] h-auto shadow-2xl block"
+                  draggable={false} 
+                  className="max-w-100 h-auto shadow-2xl block"
                   alt="" 
                   onError={(e) => {
                     const target = e.target as HTMLImageElement;

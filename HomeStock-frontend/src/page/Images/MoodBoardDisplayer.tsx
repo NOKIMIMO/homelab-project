@@ -1,11 +1,11 @@
 import { useState, type FormEvent} from "react";
-import { apiUrl } from "../../lib/api";
 import BoardEditor from "../../components/images/boards/BoardEditor";
 import BoardList from "../../components/images/boards/BoardList";
 import CreateBoardModal from "../../components/images/modals/CreateBoardModal";
 import { useNavigate } from "react-router";
-import { Camera, Layout, Plus } from "lucide-react";
-import { ViewToggleButton, SortButton } from "../../components/ui/Controls";
+import { Camera, Layout } from "lucide-react";
+import { ViewToggleButton } from "../../components/ui/Controls";
+import ImageService from "@services/images/imageService";
 import styles from "../../lib/style";
 
 type SortOrder = 'asc' | 'desc';
@@ -26,24 +26,22 @@ const MoodBoardDisplayer = () => {
         const boardId = crypto.randomUUID();
 
         try {
-        const res = await fetch(apiUrl(`/api/boards/${boardId}`), {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-            name: newBoardName,
-            width: 1920,
-            height: 1080
-            })
-        });
-        if (res.ok) {
-            setShowCreateModal(false);
-            setNewBoardName('');
-            setEditingBoardId(boardId);
-            // setView('boards');
-            // navigate to the board editor for the new board
-        }
+            const res = await fetch(`/api/boards/${boardId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name: newBoardName,
+                    width: 1920,
+                    height: 1080,
+                }),
+            });
+            if (res.ok) {
+                setShowCreateModal(false);
+                setNewBoardName('');
+                setEditingBoardId(boardId);
+            }
         } catch (err) {
-        console.error(err);
+            console.error(err);
         }
     };
 

@@ -29,7 +29,7 @@ export const SortButton = ({ active, label, onClick }: SortButtonProps) => (
 );
 
 export const EmptyGalleryState = () => (
-  <div className="flex flex-col items-center justify-center min-h-[500px] bg-base-100/20 rounded-[64px] border-4 border-dashed border-white/5 scale-100 transition-transform">
+  <div className="flex flex-col items-center justify-center min-h-125 bg-base-100/20 rounded-[64px] border-4 border-dashed border-white/5 scale-100 transition-transform">
     <div className="bg-base-100 p-12 rounded-full shadow-2xl mb-8 ring-8 ring-white/5">
       <ImageIcon size={72} className="opacity-10 text-primary animate-pulse" />
     </div>
