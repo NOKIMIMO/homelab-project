@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Layout } from 'lucide-react';
-import AppButton from '../../ui/AppButton';
-import BoardCard from './BoardCard';
+import AppButton from '@components/ui/AppButton';
+import BoardCard from '@components/images/boards/BoardCard';
+import { useNavigate } from 'react-router';
 
 
 interface BoardAsset {
@@ -24,13 +25,17 @@ interface Board {
 }
 
 interface Props {
-  onSelectBoard: (id: string) => void;
   onCreateBoard: () => void;
 }
 
-const BoardList: React.FC<Props> = ({ onSelectBoard, onCreateBoard }) => {
+const BoardList: React.FC<Props> = ({ onCreateBoard }) => {
   const [boards, setBoards] = useState<Board[]>([]);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
+
+  const onSelectBoard = (id: string) => {
+    navigate(`/boards/${id}`);
+  };
 
   const fetchBoards = async () => {
     try {

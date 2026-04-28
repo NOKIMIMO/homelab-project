@@ -19,7 +19,7 @@
     "paths": {
       "@spe_types/*": ["./src/types/*"],
       "@components/*": ["./src/components/*"],
-      "@pages/*": ["./src/pages/*"],
+      "@pages/*": ["./src/page/*"],
       "@lib/*": ["./src/lib/*"],
       "@config/*": ["./src/config/*"],
       "@services/*": ["./src/services/*"]

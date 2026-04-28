@@ -23,7 +23,7 @@
       alias: {
         "@spe_types": path.resolve(__dirname, './src/types'),
         "@components": path.resolve(__dirname, './src/components'),
-        "@pages": path.resolve(__dirname, './src/pages'),
+        "@pages": path.resolve(__dirname, './src/page'),
         "@lib": path.resolve(__dirname, './src/lib'),
         "@config": path.resolve(__dirname, './src/config'),
         "@services": path.resolve(__dirname, './src/services'),

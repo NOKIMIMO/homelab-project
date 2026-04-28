@@ -12,7 +12,6 @@ import ImageService from "@services/images/imageService";
 
 type SortOrder = 'asc' | 'desc';
 
-
 const ImagesDisplayer = () => {
 
     const navigate = useNavigate();
@@ -41,7 +40,6 @@ const ImagesDisplayer = () => {
         });
         return map;
     }, [sortedPhotos]);
-
 
     const requestDelete = (photoName: string) => {
         setDeletingId(photoName);

@@ -1,93 +1,46 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { 
-  Plus, Layout, Trash2, X, Move, RotateCw, Maximize, Save, 
+  Layout, Trash2, X, Move, RotateCw, Maximize, Save, 
   Image as ImageIcon, Layers, Zap, AlertCircle, Loader2, MousePointer2
 } from 'lucide-react';
-
-interface Photo {
-  name: string;
-  url: string;
-  date: number;
-}
-
-interface BoardAsset {
-  asset_name: string;
-  src: string;
-  scale: number;
-  rotation: number;
-  x_position: number;
-  y_position: number;
-}
-
-interface Board {
-  id: string;
-  name: string;
-  height: number;
-  width: number;
-  assets: BoardAsset[];
-}
+import { useNavigate } from 'react-router';
+import LibraryAssetSelector from './editor/libraryAssectSelector';
+import { Photo } from '@spe_types/photo';
+import { Board, BoardAsset } from '@spe_types/board';
+import BoardCanva from './boardCanva';
 
 interface Props {
-  boardId: string;
   onClose: () => void;
 }
 //TODO: trop gros, je commence meme pas a expliquer
 // split la zone canvas du reste
-const BoardEditor: React.FC<Props> = ({ boardId, onClose }) => {
+const BoardEditor: React.FC<Props> = ({ onClose }) => {
+  // path /boards/:id -> fetch board data
+  const [boardId] = useState(String(window.location.pathname.split("/").slice(-1)[0]));
   const [board, setBoard] = useState<Board | null>(null);
-  const [library, setLibrary] = useState<Photo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
   const [showLibrary, setShowLibrary] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const navigate = useNavigate();
   
-  // Viewport/Zoom state
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
-  
-  // Drag state
-  const [isDragging, setIsDragging] = useState(false);
-  const dragStart = useRef({ x: 0, y: 0, assetX: 0, assetY: 0 });
-
-  const fetchEverything = useCallback(async () => {
-        try {
-            const res = await fetch(`/api/boards/${boardId}`);
-            if (res.ok) {
-                const data = await res.json();
-                setBoard(data);
-            }
-        } catch (err) {
-            console.error("Failed to fetch board", err);
-        } finally {
-            setLoading(false);
+  const fetchBoards = useCallback(async () => {
+    try {
+        const res = await fetch(`/api/boards/${boardId}`);
+        if (res.ok) {
+            const data = await res.json();
+            setBoard(data);
         }
-    }, [boardId]);
+    } catch (err) {
+        console.error("Failed to fetch board", err);
+    } finally {
+        setLoading(false);
+    }
+  }, [boardId]);
 
-  useEffect(() => { fetchEverything(); }, [fetchEverything]);
 
-  // Handle Container Resizing
-  useEffect(() => {
-    if (!containerRef.current) return;
-    const observer = new ResizeObserver((entries) => {
-      for (const entry of entries) {
-        setContainerSize({
-          width: entry.contentRect.width,
-          height: entry.contentRect.height
-        });
-      }
-    });
-    observer.observe(containerRef.current);
-    return () => observer.disconnect();
-  }, []);
-
-  const zoom = useMemo(() => {
-    if (!board || !containerSize.width) return 1;
-    const padding = 60;
-    const availableW = containerSize.width - padding;
-    const availableH = containerSize.height - padding;
-    return Math.min(availableW / board.width, availableH / board.height, 1);
-  }, [board, containerSize]);
+  useEffect(() => { fetchBoards(); }, [fetchBoards]);
 
   const handleSave = async () => {
     if (!board) return;
@@ -134,38 +87,6 @@ const BoardEditor: React.FC<Props> = ({ boardId, onClose }) => {
     setSelectedIdx(null);
   };
 
-  // Drag Handlers
-  const onMouseDown = (e: React.MouseEvent, idx: number) => {
-    if (idx === null) return;
-    e.stopPropagation();
-    setSelectedIdx(idx);
-    setIsDragging(true);
-    
-    const asset = board!.assets[idx];
-    dragStart.current = {
-      x: e.clientX,
-      y: e.clientY,
-      assetX: asset.x_position,
-      assetY: asset.y_position
-    };
-  };
-
-  const onMouseMove = (e: React.MouseEvent) => {
-    if (!isDragging || selectedIdx === null || !board) return;
-    
-    const dx = (e.clientX - dragStart.current.x) / zoom;
-    const dy = (e.clientY - dragStart.current.y) / zoom;
-    
-    updateAsset(selectedIdx, {
-      x_position: dragStart.current.assetX + dx,
-      y_position: dragStart.current.assetY + dy
-    });
-  };
-
-  const onMouseUp = () => {
-    setIsDragging(false);
-  };
-
   if (loading) {
     return (
       <div className="fixed inset-0 z-100 bg-base-300 flex flex-col items-center justify-center gap-4">
@@ -193,11 +114,8 @@ const BoardEditor: React.FC<Props> = ({ boardId, onClose }) => {
   return (
     <div 
       className="fixed inset-0 z-50 bg-base-200 flex flex-col md:flex-row overflow-hidden animate-in fade-in zoom-in-95 duration-500"
-      onMouseMove={onMouseMove}
-      onMouseUp={onMouseUp}
-      onMouseLeave={onMouseUp}
     >
-      
+      test
       {/* 1. Header */}
       <div className="absolute top-0 left-0 right-0 h-20 bg-base-100/60 backdrop-blur-3xl border-b border-white/5 z-40 flex items-center justify-between px-8">
         <div className="flex items-center gap-6">
@@ -209,12 +127,18 @@ const BoardEditor: React.FC<Props> = ({ boardId, onClose }) => {
           </div>
         </div>
         <div className="flex items-center gap-4">
+          {/* toast later */}
           <button 
             className={`btn btn-primary rounded-full px-8 gap-3 font-black shadow-xl shadow-primary/20 ${isSaving ? 'loading' : ''}`}
             onClick={handleSave}
             disabled={isSaving}
           >
-            {!isSaving && <Save size={18} />} {isSaving ? 'Enregistrement...' : 'Enregistrer'}
+            {!isSaving && <Save size={18} />}  {isSaving ? 'Enregistrement...' : 'Enregistrer'}
+          </button>
+          {/* bouton retour */}
+          <button className='btn btn-warning rounded-full px-8 gap-3 font-black shadow-xl shadow-warning/20'
+          onClick={() => navigate("/boards")}>
+              <X size={18} /> Quitter
           </button>
         </div>
       </div>
@@ -239,6 +163,7 @@ const BoardEditor: React.FC<Props> = ({ boardId, onClose }) => {
         <div className="flex-1 overflow-y-auto px-6 pb-12">
           {/* doit devenir son propre truc */}
           {!showLibrary ? (
+            // img editor
             <div className="space-y-10 py-4">
               {selectedAsset ? (
                 <div className="space-y-10 animate-in slide-in-from-bottom-4 duration-500">
@@ -299,83 +224,20 @@ const BoardEditor: React.FC<Props> = ({ boardId, onClose }) => {
               )}
             </div>
           ) : (
-            <div className="grid grid-cols-2 gap-4 py-4 animate-in fade-in duration-500">
-              {library.length === 0 ? (
-                <div className="col-span-2 text-center py-10 opacity-30 text-xs font-bold">Aucune photo dans la galerie</div>
-              ) : library.map(photo => (
-                 <div 
-                   key={photo.name} 
-                   className="group relative aspect-square rounded-2xl overflow-hidden cursor-pointer hover:ring-4 ring-primary/50 transition-all bg-base-300 shadow-lg"
-                   onClick={() => addAsset(photo)}
-                 >
-                   <img src={photo.url} className="w-full h-full object-cover transition-transform group-hover:scale-110" alt="" />
-                   <div className="absolute inset-0 bg-primary/20 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                      <div className="bg-white p-2 rounded-full shadow-2xl text-primary"><Plus /></div>
-                   </div>
-                 </div>
-              ))}
-            </div>
+            // img modifier
+            <LibraryAssetSelector addAsset={addAsset} />
           )}
         </div>
       </div>
 
       {/* 3. The Canvas */}
-      {/* Doit devenir son propre truc */}
-      <div 
-        ref={containerRef}
-        className="flex-1 h-full bg-base-300 relative flex items-center justify-center p-20 pt-24 cursor-default overflow-hidden"
-        onClick={() => setSelectedIdx(null)}
-      >
-        <div 
-          className="bg-white shadow-[0_50px_100px_-20px_rgba(0,0,0,0.6)] relative transition-transform duration-300 ease-out preserve-3d"
-          style={{ 
-            width: `${board.width}px`, 
-            height: `${board.height}px`,
-            transform: `scale(${zoom})`,
-            backgroundImage: 'radial-gradient(#e5e7eb 2px, transparent 0)',
-            backgroundSize: '40px 40px'
-          }}
-        >
-          {board.assets?.map((asset, i) => (
-             <div 
-               key={`${asset.asset_name}-${i}`}
-               className={`absolute cursor-move select-none transition-shadow ${selectedIdx === i ? 'ring-8 ring-primary z-30 shadow-2xl scale-[1.02]' : 'hover:ring-4 ring-primary/30 z-10'}`}
-               onMouseDown={(e) => onMouseDown(e, i)}
-               style={{
-                 left: `${asset.x_position}px`,
-                 top: `${asset.y_position}px`,
-                 transform: `rotate(${asset.rotation}deg) scale(${asset.scale})`,
-                 transformOrigin: 'center center',
-                 width: 'fit-content'
-               }}
-             >
-                <img 
-                  src={asset.src} 
-                  draggable={false} 
-                  className="max-w-100 h-auto shadow-2xl block"
-                  alt="" 
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    target.src = 'https://placehold.co/400x400?text=Image+Introuvable';
-                  }}
-                />
-             </div>
-          ))}
-        </div>
-
-        {/* Visual Cues */}
-        <div className="absolute bottom-10 right-10 bg-base-100/40 backdrop-blur-2xl px-6 py-3 rounded-full border border-white/10 flex items-center gap-6 shadow-2xl z-50">
-           <div className="flex items-center gap-3">
-             <Layout size={14} className="text-primary" />
-             <span className="text-[10px] font-black tracking-[0.2em] opacity-60">ZOOM: {(zoom * 100).toFixed(0)}%</span>
-           </div>
-           <div className="h-4 w-px bg-white/10"></div>
-           <div className="flex items-center gap-3">
-             <Zap size={14} className="text-primary" />
-             <span className="text-[10px] font-black tracking-[0.2em] opacity-60">ASSETS: {board.assets?.length || 0}</span>
-           </div>
-        </div>
-      </div>
+        <BoardCanva
+          board={board}
+          selectedIdx={selectedIdx}
+          setSelectedIdx={setSelectedIdx}
+          updateAsset={updateAsset}
+          removeAsset={removeAsset}
+        />
 
     </div>
   );

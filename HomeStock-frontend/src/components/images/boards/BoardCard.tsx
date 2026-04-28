@@ -22,7 +22,7 @@ interface Props {
 const BoardCard: React.FC<Props> = ({ board, onSelect, onDelete }) => {
   return (
     <div
-      className="group relative bg-base-100 p-6 rounded-[32px] border border-white/5 shadow-xl hover:shadow-2xl hover:shadow-primary/5 transition-all duration-300 cursor-pointer overflow-hidden"
+      className="group relative bg-base-100 p-6 rounded-4xl border border-white/5 shadow-xl hover:shadow-2xl hover:shadow-primary/5 transition-all duration-300 cursor-pointer overflow-hidden"
       onClick={() => onSelect(board.id)}
     >
       <div className="flex justify-between items-start mb-6">
@@ -64,7 +64,7 @@ const BoardCard: React.FC<Props> = ({ board, onSelect, onDelete }) => {
             <ImageIcon size={32} />
           </div>
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-base-100/80 to-transparent flex items-end p-4">
+        <div className="absolute inset-0 bg-linear-to-t from-base-100/80 to-transparent flex items-end p-4">
           <span className="text-[10px] uppercase font-black tracking-widest text-primary flex items-center gap-2">
             EDITER <Edit3 size={10} />
           </span>
