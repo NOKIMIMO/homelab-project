@@ -1,4 +1,4 @@
-package com.snk.HomeStock.domain
+package com.snk.HomeStock.repository.model
 
 import com.fasterxml.jackson.databind.JsonNode
 import jakarta.persistence.Column

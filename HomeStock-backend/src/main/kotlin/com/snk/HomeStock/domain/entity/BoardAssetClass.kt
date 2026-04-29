@@ -1,0 +1,10 @@
+package com.snk.HomeStock.domain.entity
+
+class data class BoardAssetClass(
+    val assetName: String,
+    val src: String,
+    val scale: Float,
+    val rotation: Float,
+    val xPosition: Float,
+    val yPosition: Float
+)

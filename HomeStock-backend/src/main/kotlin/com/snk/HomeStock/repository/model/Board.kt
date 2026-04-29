@@ -1,5 +1,4 @@
-package com.snk.HomeStock.domain
-
+package com.snk.HomeStock.repository.model
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.Id

@@ -1,8 +1,5 @@
 package com.snk.HomeStock.service
 
-import com.snk.HomeStock.domain.Board
-import com.snk.HomeStock.domain.BoardAsset
-import com.snk.HomeStock.domain.BoardAssetKey
 
 import com.snk.HomeStock.api.dto.BoardAssetPayload
 import com.snk.HomeStock.api.dto.BoardPayload
@@ -17,14 +14,13 @@ import java.util.UUID
 @Service
 class BoardService(
     private val boardRepository: BoardRepository,
-    private val boardAssetRepository: BoardAssetRepository,
     private val syncService: SyncService
 ) {
 
     fun listBoards(): List<BoardDto> {
         val boards = boardRepository.findAll(Sort.by(Sort.Direction.DESC, "lastUpdate"))
         return boards.map { board ->
-            val assets = boardAssetRepository.findAllByIdBoardId(board.id).map { asset ->
+            val assets = boardRepository.findAllAssetOfBoardId(board.id).map { asset ->
                 BoardAssetPayload(
                     asset_name = asset.id.assetName,
                     src = asset.src,
@@ -40,7 +36,7 @@ class BoardService(
 
     fun getBoard(id: UUID): BoardDto? {
         val board = boardRepository.findById(id).orElse(null) ?: return null
-        val assets = boardAssetRepository.findAllByIdBoardId(id).map { asset ->
+        val assets = boardRepository.findAllAssetOfBoardId(id).map { asset ->
             BoardAssetPayload(
                 asset_name = asset.id.assetName,
                 src = asset.src,
@@ -71,10 +67,10 @@ class BoardService(
         boardRepository.save(board)
 
         if (payload.assets != null) {
-            boardAssetRepository.deleteAllByIdBoardId(id)
+            boardRepository.deleteAllAssetOfBoardId(id)
             if (payload.assets.isNotEmpty()) {
                 val entities = payload.assets.map { normalizeAsset(board, it) }
-                boardAssetRepository.saveAll(entities)
+                boardRepository.saveAllAssets(entities)
             }
         }
 
