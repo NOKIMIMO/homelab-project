@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
-  Layout, Trash2, X, Move, RotateCw, Maximize, Save, 
-  Image as ImageIcon, Layers, Zap, AlertCircle, Loader2, MousePointer2
+  Trash2, X, Move, RotateCw, Maximize, Save, 
+  Image as ImageIcon, Layers, AlertCircle, Loader2, MousePointer2
 } from 'lucide-react';
 import { useNavigate } from 'react-router';
 import LibraryAssetSelector from './editor/libraryAssectSelector';
