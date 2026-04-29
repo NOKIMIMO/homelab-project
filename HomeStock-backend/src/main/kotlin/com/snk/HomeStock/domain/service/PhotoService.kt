@@ -7,9 +7,9 @@ import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.snk.HomeStock.config.StorageProperties
 import com.snk.HomeStock.domain.Asset
-import com.snk.HomeStock.dto.PhotoDto
-import com.snk.HomeStock.dto.PhotoMetadataDto
 import com.snk.HomeStock.repository.AssetRepository
+import com.snk.HomeStock.api.dto.PhotoDto
+import com.snk.HomeStock.api.dto.PhotoMetadataDto
 import jakarta.annotation.PostConstruct
 import jakarta.transaction.Transactional
 import org.springframework.stereotype.Service

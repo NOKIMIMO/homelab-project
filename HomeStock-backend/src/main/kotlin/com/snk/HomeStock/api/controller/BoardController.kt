@@ -1,7 +1,7 @@
 package com.snk.HomeStock.controller
 
-import com.snk.HomeStock.dto.BoardPayload
 import com.snk.HomeStock.service.BoardService
+import com.snk.HomeStock.api.dto.BoardPayload
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.DeleteMapping

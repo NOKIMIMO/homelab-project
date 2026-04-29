@@ -3,11 +3,12 @@ package com.snk.HomeStock.service
 import com.snk.HomeStock.domain.Board
 import com.snk.HomeStock.domain.BoardAsset
 import com.snk.HomeStock.domain.BoardAssetKey
-import com.snk.HomeStock.dto.BoardAssetPayload
-import com.snk.HomeStock.dto.BoardDto
-import com.snk.HomeStock.dto.BoardPayload
-import com.snk.HomeStock.repository.BoardAssetRepository
+
+import com.snk.HomeStock.api.dto.BoardAssetPayload
+import com.snk.HomeStock.api.dto.BoardPayload
+import com.snk.HomeStock.api.dto.BoardDto
 import com.snk.HomeStock.repository.BoardRepository
+import com.snk.HomeStock.repository.BoardAssetRepository
 import jakarta.transaction.Transactional
 import org.springframework.data.domain.Sort
 import org.springframework.stereotype.Service
