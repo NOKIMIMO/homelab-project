@@ -1,5 +1,8 @@
 package com.snk.HomeStock.domain.entity
 
+import com.snk.HomeStock.api.dto.BoardAssetPayload
+import com.snk.HomeStock.api.dto.BoardDto
+import com.snk.HomeStock.repository.model.Board
 import java.time.OffsetDateTime
 import java.util.UUID
 
@@ -13,4 +16,6 @@ data class BoardClass(
     val lastUpdate: OffsetDateTime?,
     val createdAt: OffsetDateTime?,
     val assets: List<BoardAssetClass>
-) 
+) {
+
+}

@@ -1,33 +1,37 @@
 package com.snk.HomeStock.service
 
-
 import com.snk.HomeStock.api.dto.BoardAssetPayload
 import com.snk.HomeStock.api.dto.BoardPayload
 import com.snk.HomeStock.api.dto.BoardDto
 import com.snk.HomeStock.repository.BoardRepository
-import com.snk.HomeStock.repository.BoardAssetRepository
+import com.snk.HomeStock.repository.AssetRepository
+import com.snk.HomeStock.repository.model.Board
+import com.snk.HomeStock.repository.model.BoardAsset
+import com.snk.HomeStock.repository.model.BoardAssetKey
+import com.snk.HomeStock.repository.model.Asset
 import jakarta.transaction.Transactional
-import org.springframework.data.domain.Sort
 import org.springframework.stereotype.Service
+import java.time.OffsetDateTime
 import java.util.UUID
 
 @Service
 class BoardService(
     private val boardRepository: BoardRepository,
+    private val assetRepository: AssetRepository,
     private val syncService: SyncService
 ) {
 
     fun listBoards(): List<BoardDto> {
-        val boards = boardRepository.findAll(Sort.by(Sort.Direction.DESC, "lastUpdate"))
+        val boards = boardRepository.findAllWithAssets().sortedByDescending { it.lastUpdate }
         return boards.map { board ->
-            val assets = boardRepository.findAllAssetOfBoardId(board.id).map { asset ->
+            val assets = board.assets.map { asset ->
                 BoardAssetPayload(
-                    asset_name = asset.id.assetName,
+                    assetName = asset.id.assetName,
                     src = asset.src,
                     scale = asset.scale,
                     rotation = asset.rotation,
-                    x_position = asset.xPosition,
-                    y_position = asset.yPosition
+                    xPosition = asset.xPosition,
+                    yPosition = asset.yPosition
                 )
             }
             board.toDto(assets)
@@ -35,15 +39,15 @@ class BoardService(
     }
 
     fun getBoard(id: UUID): BoardDto? {
-        val board = boardRepository.findById(id).orElse(null) ?: return null
-        val assets = boardRepository.findAllAssetOfBoardId(id).map { asset ->
+        val board = boardRepository.findBoardWithAssetsById(id) ?: return null
+        val assets = board.assets.map { asset ->
             BoardAssetPayload(
-                asset_name = asset.id.assetName,
+                assetName = asset.id.assetName,
                 src = asset.src,
                 scale = asset.scale,
                 rotation = asset.rotation,
-                x_position = asset.xPosition,
-                y_position = asset.yPosition
+                xPosition = asset.xPosition,
+                yPosition = asset.yPosition
             )
         }
         return board.toDto(assets)
@@ -64,15 +68,15 @@ class BoardService(
             previewsrc = payload.previewsrc
         )
 
-        boardRepository.save(board)
-
         if (payload.assets != null) {
-            boardRepository.deleteAllAssetOfBoardId(id)
+            board.assets.clear()
             if (payload.assets.isNotEmpty()) {
                 val entities = payload.assets.map { normalizeAsset(board, it) }
-                boardRepository.saveAllAssets(entities)
+                board.assets.addAll(entities)
             }
         }
+
+        boardRepository.save(board)
 
         syncService.recordSyncCheckpoint()
         return id
@@ -88,15 +92,33 @@ class BoardService(
 
     private fun normalizeAsset(board: Board, payload: BoardAssetPayload): BoardAsset {
         val assetName = payload.src.substringAfterLast('/')
+        val associatedAsset: Asset = assetRepository.findByName(assetName) ?: Asset(
+            name = assetName,
+            metadata = null,
+            datePhoto = null,
+            dateUpload = OffsetDateTime.now(),
+            origin = "auto-created"
+        )
+
+        val clampedX = clampToBoard(payload.xPosition, board.width)
+        val clampedY = clampToBoard(payload.yPosition, board.height)
+
         return BoardAsset(
             id = BoardAssetKey(boardId = board.id, assetName = assetName),
             board = board,
+            asset = associatedAsset,
             src = payload.src,
             scale = payload.scale ?: 1.0f,
             rotation = payload.rotation ?: 0.0f,
-            xPosition = payload.x_position ?: 0.0f,
-            yPosition = payload.y_position ?: 0.0f
+            xPosition = clampedX,
+            yPosition = clampedY
         )
+    }
+
+    // Spec : Quand un "Board Asset" est placé en dehors du "Board"
+    // alors son emplacement est placé au limite du Board
+    private fun clampToBoard(value: Float?, max: Int): Float {
+        return (value ?: 0.0f).coerceIn(0.0f, max.toFloat())
     }
 
     private fun Board.toDto(assets: List<BoardAssetPayload>) = BoardDto(

@@ -1,6 +1,6 @@
 package com.snk.HomeStock.repository
 
-import com.snk.HomeStock.domain.Asset
+import com.snk.HomeStock.repository.model.Asset
 import org.springframework.data.jpa.repository.JpaRepository
 
 interface AssetRepository : JpaRepository<Asset, Long> {

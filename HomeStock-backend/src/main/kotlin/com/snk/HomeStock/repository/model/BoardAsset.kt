@@ -1,5 +1,6 @@
 package com.snk.HomeStock.repository.model
 
+import com.snk.HomeStock.repository.model.Asset
 import jakarta.persistence.Column
 import jakarta.persistence.EmbeddedId
 import jakarta.persistence.Entity
@@ -20,6 +21,11 @@ class BoardAsset(
     @MapsId("boardId")
     @JoinColumn(name = "board_id")
     var board: Board,
+
+    @ManyToOne(optional = false)
+    @MapsId("assetName")
+    @JoinColumn(name = "asset_name", referencedColumnName = "name")
+    var asset: Asset,
 
     @Column(nullable = false)
     var scale: Float = 1.0f,

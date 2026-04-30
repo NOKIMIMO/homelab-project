@@ -1,6 +1,7 @@
 package com.snk.HomeStock.repository.model
 
 import com.fasterxml.jackson.databind.JsonNode
+import com.snk.HomeStock.api.dto.PhotoDto
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.GeneratedValue

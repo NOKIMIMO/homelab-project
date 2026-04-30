@@ -1,6 +1,6 @@
 package com.snk.HomeStock.domain.entity
 
-class data class BoardAssetClass(
+data class BoardAssetClass(
     val assetName: String,
     val src: String,
     val scale: Float,
