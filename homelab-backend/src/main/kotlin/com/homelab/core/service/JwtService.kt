@@ -17,24 +17,25 @@ class JwtService {
         val expiryDate = Date(now.time + 86400000) // 24 hours
 
         return Jwts.builder()
-            .subject(username)
-            .issuedAt(now)
-            .expiration(expiryDate)
+            .setSubject(username)
+            .setIssuedAt(now)
+            .setExpiration(expiryDate)
             .signWith(key)
             .compact()
     }
 
     fun validateToken(token: String): String? {
         return try {
+            //TODO: check doc to not use deprecated stuff
             val claims = Jwts.parser()
-                .verifyWith(key)
+                .setSigningKey(key)
                 .build()
-                .parseSignedClaims(token)
-                .payload
-            
+                .parseClaimsJws(token)
+                .body
+
             if (claims.expiration.before(Date())) null
             else claims.subject
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             null
         }
     }

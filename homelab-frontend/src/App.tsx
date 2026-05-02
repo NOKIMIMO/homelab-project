@@ -1,10 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useLocation, useNavigate, Outlet } from 'react-router';
 import { BarChart, Camera, Box, Menu, Settings } from 'lucide-react';
-import Dashboard from './components/Dashboard';
-import ModuleView from './components/ModuleView';
-import Login from './components/Login';
-import KeyManager from './components/KeyManager';
 import { getApiUrl } from './api';
+import { useAuth } from './auth/AuthContext';
 import './index.css';
 
 export interface Module {
@@ -16,41 +14,31 @@ export interface Module {
   uptimeStart?: number;
 }
 
-function App() {
+export interface AppOutletContext {
+  modules: Module[];
+  onRefresh: () => void;
+  isModulesRefreshing: boolean;
+}
+
+function AppLayout() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { token, logout } = useAuth();
   const [modules, setModules] = useState<Module[]>([]);
-  const [activeModule, setActiveModule] = useState<string | null>(() => {
-    return localStorage.getItem('homelab_last_module') || null;
-  });
   const [isModulesRefreshing, setIsModulesRefreshing] = useState(false);
-  const [showKeyManager, setShowKeyManager] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(() => {
-    return !!localStorage.getItem('homelab_token');
-  });
 
-  const handleLoginSuccess = (token: string, keyName: string) => {
-    localStorage.setItem('homelab_token', token);
-    localStorage.setItem('homelab_user_name', keyName);
-    setIsAuthenticated(true);
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem('homelab_token');
-    localStorage.removeItem('homelab_user_name');
-    setIsAuthenticated(false);
-  };
+  const activeModuleId = useMemo(() => {
+    if (!location.pathname.startsWith('/plugins/')) return null;
+    return location.pathname.replace('/plugins/', '');
+  }, [location.pathname]);
 
   const fetchModules = async () => {
     setIsModulesRefreshing(true);
-    const token = localStorage.getItem('homelab_token');
     try {
       const response = await fetch(getApiUrl('/api/modules'), {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+        headers: token ? { 'Authorization': `Bearer ${token}` } : undefined
       });
-      // console.log("modules : ", response)
       const data = await response.json();
-      // console.log(data)
       setModules(data);
     } catch (error) {
       console.error('Error fetching modules:', error);
@@ -64,33 +52,12 @@ function App() {
   }, []);
 
   useEffect(() => {
-    if (activeModule) {
-      localStorage.setItem('homelab_last_module', activeModule);
+    if (activeModuleId) {
+      sessionStorage.setItem('homelab_last_module', activeModuleId);
     } else {
-      localStorage.removeItem('homelab_last_module');
+      sessionStorage.removeItem('homelab_last_module');
     }
-  }, [activeModule]);
-  if (!isAuthenticated) {
-    return (
-      <div className="relative">
-        {showKeyManager ? (
-          <div className="min-h-screen bg-base-300 flex flex-col pt-12">
-            <div className="max-w-4xl mx-auto w-full px-4 text-center mb-6">
-              <button className="btn btn-ghost btn-sm gap-2" onClick={() => setShowKeyManager(false)}>
-                ← Retour à la connexion
-              </button>
-            </div>
-            <KeyManager />
-          </div>
-        ) : (
-          <Login
-            onLoginSuccess={handleLoginSuccess}
-            onShowBootstrap={() => setShowKeyManager(true)}
-          />
-        )}
-      </div>
-    );
-  }
+  }, [activeModuleId]);
 
   return (
     <div className="drawer lg:drawer-open" data-theme="night">
@@ -103,22 +70,12 @@ function App() {
             </label>
           </div>
           <div className="flex-1">
-            <a className="btn btn-ghost normal-case text-xl font-bold">Homelab Core</a>
+            <span className="btn btn-ghost normal-case text-xl font-bold">Homelab Core</span>
           </div>
         </div>
 
         <main className="flex-1 w-full h-[100dvh] overflow-hidden">
-          {showKeyManager ? (
-            <KeyManager />
-          ) : activeModule === null ? (
-            <Dashboard
-              modules={modules}
-              onRefresh={fetchModules}
-              isModulesRefreshing={isModulesRefreshing}
-            />
-          ) : (
-            <ModuleView module={modules.find(m => m.id === activeModule)} />
-          )}
+          <Outlet context={{ modules, onRefresh: fetchModules, isModulesRefreshing }} />
         </main>
       </div>
 
@@ -132,8 +89,8 @@ function App() {
           <ul className="flex-1 space-y-2 mt-4 lg:mt-0">
             <li>
               <button
-                className={activeModule === null && !showKeyManager ? 'active font-medium' : 'font-medium'}
-                onClick={() => { setActiveModule(null); setShowKeyManager(false); }}
+                className={location.pathname === '/' ? 'active font-medium' : 'font-medium'}
+                onClick={() => navigate('/')}
               >
                 <BarChart size={20} className="mr-1 opacity-70" />
                 <span className="text-[15px]">Vue d'ensemble</span>
@@ -143,8 +100,8 @@ function App() {
             {modules.map(mod => (
               <li key={mod.id}>
                 <button
-                  className={activeModule === mod.id && !showKeyManager ? 'active flex justify-between' : 'flex justify-between'}
-                  onClick={() => { setActiveModule(mod.id); setShowKeyManager(false); }}
+                  className={activeModuleId === mod.id ? 'active flex justify-between' : 'flex justify-between'}
+                  onClick={() => navigate(`/plugins/${mod.id}`)}
                 >
                   <span className="flex items-center gap-3 font-medium">
                     {mod.icon === 'Image' ? <Camera size={18} className="opacity-70" /> : <Box size={18} className="opacity-70" />}
@@ -157,12 +114,18 @@ function App() {
           </ul>
           <div className="mt-auto px-2 space-y-2">
             <button
-              className={`btn btn-sm w-full gap-2 ${showKeyManager ? 'btn-primary' : 'btn-outline'}`}
-              onClick={() => setShowKeyManager(true)}
+              className={`btn btn-sm w-full gap-2 ${location.pathname === '/settings' ? 'btn-primary' : 'btn-outline'}`}
+              onClick={() => navigate('/settings')}
             >
               <Settings size={16} /> Options
             </button>
-            <button className="btn btn-ghost btn-sm w-full gap-2 text-error" onClick={handleLogout}>
+            <button
+              className="btn btn-ghost btn-sm w-full gap-2 text-error"
+              onClick={() => {
+                logout();
+                navigate('/login');
+              }}
+            >
               Quitter
             </button>
           </div>
@@ -172,4 +135,4 @@ function App() {
   );
 }
 
-export default App;
+export default AppLayout;

@@ -1,10 +1,10 @@
 package com.homelab.core.service
 
 import com.homelab.core.helper.Formater
-import com.homelab.core.model.DiskData
-import com.homelab.core.model.ModuleStatus
-import com.homelab.core.model.RamData
-import com.homelab.core.model.TelemetryData
+import com.homelab.core.model.telemetry.DiskData
+import com.homelab.core.model.module.ModuleStatus
+import com.homelab.core.model.telemetry.RamData
+import com.homelab.core.model.telemetry.TelemetryData
 import com.homelab.core.service.module.ModuleService
 import jakarta.annotation.PostConstruct
 import java.nio.file.Files

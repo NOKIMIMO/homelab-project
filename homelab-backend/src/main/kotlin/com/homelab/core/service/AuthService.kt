@@ -1,17 +1,19 @@
 package com.homelab.core.service
 
-import com.homelab.core.model.AuthorizedKey
-import com.homelab.core.model.AuthorizedKeyRepository
+import com.homelab.core.model.auth.User
+import com.homelab.core.model.auth.UserRepository
 import java.security.KeyFactory
 import java.security.Signature
 import java.security.spec.X509EncodedKeySpec
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import org.springframework.stereotype.Service
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 
 @Service
-class AuthService(private val repository: AuthorizedKeyRepository) {
+class AuthService(private val repository: UserRepository) {
     private val challenges = ConcurrentHashMap<String, String>()
+    private val passwordEncoder = BCryptPasswordEncoder()
 
     fun generateChallenge(): String {
         val challenge = UUID.randomUUID().toString()
@@ -29,8 +31,8 @@ class AuthService(private val repository: AuthorizedKeyRepository) {
             sig.initVerify(publicKey)
             sig.update(challenge.toByteArray())
             sig.verify(Base64.getDecoder().decode(signatureBase64))
-        } catch (e: Exception) {
-            println("Verification error: ${e.message}")
+        } catch (_: Exception) {
+            println("Verification error during signature verification")
             false
         }
     }
@@ -87,11 +89,31 @@ class AuthService(private val repository: AuthorizedKeyRepository) {
         throw IllegalArgumentException("Unsupported public key format")
     }
 
-    fun getAllKeys(): List<AuthorizedKey> = repository.findAll()
+    fun getAllUsers(): List<User> = repository.findAll()
 
-    fun registerKey(name: String, publicKeyPem: String): AuthorizedKey {
-        return repository.save(AuthorizedKey(name = name, publicKey = publicKeyPem))
+    fun registerUser(name: String?, email: String, publicKeyPem: String?, passwordPlain: String?): User {
+        if (publicKeyPem.isNullOrBlank() && passwordPlain.isNullOrBlank()) {
+            throw IllegalArgumentException("Either publicKey or password must be provided")
+        }
+
+        if (repository.findByEmail(email).isPresent) {
+            throw IllegalArgumentException("User with this email already exists")
+        }
+
+        val passwordHash = passwordPlain?.let { passwordEncoder.encode(it) }
+
+        val user = User(name = name, email = email, publicKey = publicKeyPem, passwordHash = passwordHash)
+        return repository.save(user)
     }
 
-    fun deleteKey(id: Long) = repository.deleteById(id)
+    fun deleteUser(id: Long) = repository.deleteById(id)
+
+    fun verifyPassword(storedHash: String?, passwordPlain: String?): Boolean {
+        if (storedHash == null || passwordPlain == null) return false
+        return try {
+            passwordEncoder.matches(passwordPlain, storedHash)
+        } catch (_: Exception) {
+            false
+        }
+    }
 }

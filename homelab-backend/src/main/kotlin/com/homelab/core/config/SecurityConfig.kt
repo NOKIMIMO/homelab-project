@@ -22,6 +22,7 @@ class SecurityConfig {
                 .csrf { it.disable() }
                 .cors { it.configurationSource(corsConfigurationSource()) }
                 .authorizeHttpRequests { auth ->
+                    auth.requestMatchers("/").permitAll()
                     auth.requestMatchers("/api/auth/**").permitAll()
                     auth.requestMatchers("/proxy/**").permitAll()
                     auth.requestMatchers("/api/proxy/**").permitAll()
@@ -40,7 +41,7 @@ class SecurityConfig {
                                 .java
                 )
                 .headers { it.frameOptions { fo -> fo.disable() } }
-                .httpBasic { it.disable() }
+//                .httpBasic { it.disable() } // comment to allow simple
                 .formLogin { it.disable() }
 
         return http.build()
