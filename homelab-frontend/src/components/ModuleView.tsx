@@ -1,8 +1,10 @@
 import { getApiUrl } from '../api';
 import { AlertCircle, Loader2 } from 'lucide-react';
 import type { Module } from '../App';
+import { useAuth } from '../auth/AuthContext';
 
 export default function ModuleView({ module }: { module?: Module }) {
+  const { token } = useAuth();
   if (!module) return <div className="p-10">Application non trouvée</div>;
 
   if (module.status !== 'ACTIVE') {
@@ -32,7 +34,7 @@ export default function ModuleView({ module }: { module?: Module }) {
   return (
     <div className="w-full h-full bg-base-100 flex flex-col">
       <iframe
-        src={getApiUrl(`/api/proxy/${module.id}/?token=${localStorage.getItem('homelab_token')}`)}
+        src={getApiUrl(`/api/proxy/${module.id}/?token=${token || ''}`)}
         title={`Module ${module.name}`}
         className="flex-1 w-full border-none shadow-inner"
         sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals"

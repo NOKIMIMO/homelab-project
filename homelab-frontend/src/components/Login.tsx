@@ -1,15 +1,21 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Key, Lock, KeyRound, Loader2, AlertCircle, Upload, Plus } from 'lucide-react';
 import { getApiUrl } from '../api';
-import { useEffect } from 'react';
+
 
 interface LoginProps {
   onLoginSuccess: (token: string, keyName: string) => void;
   onShowBootstrap: () => void;
 }
 
+//TODO: refactor this component, it's doing too much (login + bootstrap).
+// split functions from visual components
+
 export default function Login({ onLoginSuccess, onShowBootstrap }: LoginProps) {
+  const [authMode, setAuthMode] = useState<'key' | 'password'>('key');
   const [privateKey, setPrivateKey] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
@@ -109,6 +115,34 @@ export default function Login({ onLoginSuccess, onShowBootstrap }: LoginProps) {
     }
   };
 
+  const handlePasswordLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+    try {
+      const loginRes = await fetch(getApiUrl('/api/auth/login'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+      const result = await loginRes.json();
+      if (result?.token) {
+        onLoginSuccess(result.token, result.keyName || result.email || email);
+        return;
+      }
+      if (result?.success) {
+        onLoginSuccess(result.token, result.keyName || result.email || email);
+        return;
+      }
+      setError(result?.message || 'Echec de l\'authentification');
+    } catch (err) {
+      console.error(err);
+      setError('Erreur technique lors de la connexion par email.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-base-300 p-4">
       <div className="max-w-md w-full bg-base-100 rounded-3xl shadow-2xl p-8 border border-base-content/5">
@@ -127,54 +161,112 @@ export default function Login({ onLoginSuccess, onShowBootstrap }: LoginProps) {
           </div>
         )}
 
-        <form onSubmit={handleLogin} className="space-y-6">
-          <div className="form-control">
-            <label className="label">
-              <span className="label-text font-bold flex items-center gap-2"><Lock size={14} /> Clé Privée (PKCS#8 PEM)</span>
-            </label>
-            <div
-              className={`relative border-2 border-dashed rounded-2xl p-6 transition-all flex flex-col items-center justify-center gap-2 cursor-pointer mb-4 ${isDragging ? 'border-primary bg-primary/5' : 'border-base-content/10 bg-base-200 hover:border-primary/30'
-                }`}
-              onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
-              onDragLeave={() => setIsDragging(false)}
-              onDrop={(e) => {
-                e.preventDefault();
-                setIsDragging(false);
-                const file = e.dataTransfer.files[0];
-                if (file) handleFile(file);
-              }}
-              onClick={() => document.getElementById('privkey-file')?.click()}
-            >
-              <input
-                type="file"
-                id="privkey-file"
-                className="hidden"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
+        <div className="grid grid-cols-2 gap-2 mb-6">
+          <button
+            className={`btn btn-sm ${authMode === 'key' ? 'btn-primary' : 'btn-ghost'}`}
+            onClick={() => {
+              setAuthMode('key');
+              setError(null);
+            }}
+            type="button"
+          >
+            <KeyRound size={16} /> Cle
+          </button>
+          <button
+            className={`btn btn-sm ${authMode === 'password' ? 'btn-primary' : 'btn-ghost'}`}
+            onClick={() => {
+              setAuthMode('password');
+              setError(null);
+            }}
+            type="button"
+          >
+            <Lock size={16} /> Email
+          </button>
+        </div>
+
+        {authMode === 'key' ? (
+          <form onSubmit={handleLogin} className="space-y-6">
+            <div className="form-control">
+              <label className="label">
+                <span className="label-text font-bold flex items-center gap-2"><Lock size={14} /> Cle Privee (PKCS#8 PEM)</span>
+              </label>
+              <div
+                className={`relative border-2 border-dashed rounded-2xl p-6 transition-all flex flex-col items-center justify-center gap-2 cursor-pointer mb-4 ${isDragging ? 'border-primary bg-primary/5' : 'border-base-content/10 bg-base-200 hover:border-primary/30'
+                  }`}
+                onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+                onDragLeave={() => setIsDragging(false)}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  setIsDragging(false);
+                  const file = e.dataTransfer.files[0];
                   if (file) handleFile(file);
                 }}
-              />
-              <Upload size={24} className="text-primary opacity-50" />
-              <p className="text-xs font-medium opacity-70">Glissez votre fichier de clé privée ou cliquez ici</p>
+                onClick={() => document.getElementById('privkey-file')?.click()}
+              >
+                <input
+                  type="file"
+                  id="privkey-file"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handleFile(file);
+                  }}
+                />
+                <Upload size={24} className="text-primary opacity-50" />
+                <p className="text-xs font-medium opacity-70">Glissez votre fichier de cle privee ou cliquez ici</p>
+              </div>
+              <textarea
+                className="textarea textarea-bordered h-32 font-mono text-[10px] focus:textarea-primary transition-all bg-base-200"
+                placeholder="Ou collez le contenu ici : -----BEGIN PRIVATE KEY-----..."
+                value={privateKey}
+                onChange={(e) => setPrivateKey(e.target.value)}
+                required
+              ></textarea>
+              <label className="label">
+                <span className="label-text-alt opacity-50 italic">La cle ne quitte jamais votre navigateur.</span>
+                <span className="label-text-alt opacity-50 italic">Elle est utilisee uniquement pour signer le nonce.</span>
+              </label>
             </div>
-            <textarea
-              className="textarea textarea-bordered h-32 font-mono text-[10px] focus:textarea-primary transition-all bg-base-200"
-              placeholder="Ou collez le contenu ici : -----BEGIN PRIVATE KEY-----..."
-              value={privateKey}
-              onChange={(e) => setPrivateKey(e.target.value)}
-              required
-            ></textarea>
-            <label className="label">
-              <span className="label-text-alt opacity-50 italic">La clé ne quitte jamais votre navigateur.</span>
-              <span className="label-text-alt opacity-50 italic">Elle est utilisée uniquement pour signer le nonce.</span>
-            </label>
-          </div>
 
-          <button className="btn btn-primary w-full gap-2 shadow-lg shadow-primary/20 h-14 rounded-2xl" disabled={loading}>
-            {loading ? <Loader2 size={20} className="animate-spin" /> : <Key size={20} />}
-            Connexion au Homelab
-          </button>
-        </form>
+            <button className="btn btn-primary w-full gap-2 shadow-lg shadow-primary/20 h-14 rounded-2xl" disabled={loading}>
+              {loading ? <Loader2 size={20} className="animate-spin" /> : <Key size={20} />}
+              Connexion au Homelab
+            </button>
+          </form>
+        ) : (
+          <form onSubmit={handlePasswordLogin} className="space-y-6">
+            <div className="form-control">
+              <label className="label">
+                <span className="label-text font-bold">Email</span>
+              </label>
+              <input
+                type="email"
+                className="input input-bordered focus:input-primary bg-base-200"
+                placeholder="vous@exemple.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+            </div>
+            <div className="form-control">
+              <label className="label">
+                <span className="label-text font-bold">Mot de passe</span>
+              </label>
+              <input
+                type="password"
+                className="input input-bordered focus:input-primary bg-base-200"
+                placeholder="Votre mot de passe"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+            </div>
+            <button className="btn btn-primary w-full gap-2 shadow-lg shadow-primary/20 h-14 rounded-2xl" disabled={loading}>
+              {loading ? <Loader2 size={20} className="animate-spin" /> : <Key size={20} />}
+              Connexion au Homelab
+            </button>
+          </form>
+        )}
 
         {noKeys && (
           <div className="mt-8 pt-6 border-t border-base-content/10 text-center">

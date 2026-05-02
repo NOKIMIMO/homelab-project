@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import { Key as KeyIcon, Plus, Trash2, ShieldCheck, User, Calendar, Loader2, Upload } from 'lucide-react';
 import { getApiUrl } from '../api';
+import { useAuth } from '../auth/AuthContext';
 
 export default function KeyManager() {
+  const { token } = useAuth();
   const [keys, setKeys] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [newName, setNewName] = useState('');
@@ -25,10 +27,9 @@ export default function KeyManager() {
   };
 
   const fetchKeys = async () => {
-    const token = localStorage.getItem('homelab_token');
     try {
       const res = await fetch(getApiUrl('/api/auth/keys'), {
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: token ? { 'Authorization': `Bearer ${token}` } : undefined
       });
       setKeys(await res.json());
     } catch (err) {
@@ -41,14 +42,16 @@ export default function KeyManager() {
   const handleAddKey = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsAdding(true);
-    const token = localStorage.getItem('homelab_token');
     try {
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json'
+      };
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
       const res = await fetch(getApiUrl('/api/auth/keys'), {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
+        headers,
         body: JSON.stringify({ name: newName, publicKey: newPubKey })
       });
       if (res.ok) {
@@ -65,11 +68,10 @@ export default function KeyManager() {
 
   const handleDeleteKey = async (id: number) => {
     if (!confirm('Voulez-vous vraiment supprimer cette clé ?')) return;
-    const token = localStorage.getItem('homelab_token');
     try {
       await fetch(getApiUrl(`/api/auth/keys/${id}`), {
         method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: token ? { 'Authorization': `Bearer ${token}` } : undefined
       });
       fetchKeys();
     } catch (err) {
