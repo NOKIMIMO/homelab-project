@@ -1,0 +1,11 @@
+*node_modules*
+*target*
+*build*
+*.vscode*
+*.idea*
+*.env*
+*.DS_Store*
+
+# specific
+modules/photo-module/public/storage
+modules/photo-module/data

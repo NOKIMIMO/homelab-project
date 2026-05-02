@@ -1,0 +1,74 @@
+services:
+  homelab-backend-dev:
+    build:
+      context: ./homelab-backend
+      dockerfile: Dockerfile.dev
+    container_name: homelab-backend-dev
+    working_dir: /app
+    env_file:
+      - .env.dev
+    volumes:
+      - ./homelab-backend:/app
+      - //var/run/docker.sock:/var/run/docker.sock
+      - .:/app_root:ro
+      - gradle-cache:/home/gradle/.gradle
+    environment:
+      - HOMELAB_APP_ROOT=/app_root
+      - HOMELAB_HOST_PROJECT_ROOT=/run/desktop/mnt/host/e/homelab_test
+      - HOMELAB_MODULES_SCAN_PATH=/app_root/modules
+      - HOMELAB_ENABLE_DEV_MODE=true
+      - SPRING_DEVTOOLS_RESTART_ENABLED=true
+      - SPRING_DEVTOOLS_RESTART_ADDITIONAL_PATHS=/app/src/main/kotlin,/app/src/main/resources
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=update
+    ports:
+      - "8080:8080"
+    networks:
+      - homelab-network
+      - db-network
+    stop_grace_period: 30s
+    command: sh -c "chmod +x gradlew && ./gradlew bootRun --continuous --no-daemon"
+    depends_on:
+      - homelab-db
+
+  homelab-db:
+    image: postgres:16-alpine
+    container_name: homelab-db
+    env_file:
+      - .env.dev
+    environment:
+      - POSTGRES_DB=homelab
+    ports:
+      - "5432:5432"
+    networks:
+      - db-network
+    volumes:
+      - db-data:/var/lib/postgresql/data
+
+  homelab-frontend-dev:
+    image: node:20-alpine
+    container_name: homelab-frontend-dev
+    working_dir: /app
+    volumes:
+      - ./homelab-frontend:/app
+      - /app/node_modules
+    environment:
+      - VITE_API_URL=http://localhost:8080
+      - VITE_ENABLE_DEV_CONTROLS=true
+    ports:
+      - "80:80"
+    command: sh -c "npm install && npm run dev"
+    depends_on:
+      - homelab-backend-dev
+    networks:
+      - homelab-network
+
+networks:
+  homelab-network:
+    name: homelab-network
+  db-network:
+    name: db-network
+
+
+volumes:
+  gradle-cache:
+  db-data:
