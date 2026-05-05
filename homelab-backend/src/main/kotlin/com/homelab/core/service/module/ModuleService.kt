@@ -2,19 +2,18 @@ package com.homelab.core.service.module
 
 import com.homelab.core.config.HomelabConfig
 import com.homelab.core.model.module.Module
-import com.homelab.core.model.module.ModuleConfig
-import com.homelab.core.model.module.ModuleStatus
-import com.homelab.core.model.module.ModuleType
+import com.homelab.core.parser.ModuleDataObjectParser
 import jakarta.annotation.*
+import org.springframework.core.env.Environment
+import org.springframework.core.env.getProperty
 import java.io.File
-import java.net.*
 import java.util.concurrent.ConcurrentHashMap
 import org.springframework.stereotype.Service
 
 @Service
 class ModuleService(
     private val homelabConfig: HomelabConfig,
-//    private val moduleDatabaseService: ModuleDatabaseService, // will use later, used to give modules a database + acces to it
+    private val moduleDatabaseService: ModuleDatabaseService,
     private val moduleConfigService: ModuleConfigService,
 ) {
     private val modules = ConcurrentHashMap<String, Module>()
@@ -45,6 +44,12 @@ class ModuleService(
             if (modules[item.config.id] == null) {
                 modules[item.config.id] = moduleConfigService.createModuleFromConfig(item.config)
             }
+            // init DB for module if dataObject is not empty
+            ensureModuleDatabaseReady(item.config.id)
+
+            // init DB object from module config
+            setUpModuleDataObject(item.config.id, item.config.dataObjects!!)
+
         }
         println("Modules loaded: ${modules.size}")
         println(modules)
@@ -165,10 +170,33 @@ class ModuleService(
     }
 
     private fun ensureModuleDatabaseReady(moduleId: String): Boolean {
-//        return moduleDatabaseService.ensureModuleDatabaseReady(
-//                moduleId,
-//                loadModuleConfig(moduleId)?.databaseName
-//        )
+        return moduleDatabaseService.ensureModuleDatabaseReady(
+                moduleId,
+        )
+    }
+    private fun setUpModuleDataObject(moduleId: String, xmlFileName: List<String> ): Boolean {
+
+        try {
+            for (fileName in xmlFileName) {
+                val file = File(
+                    homelabConfig.modulesScanPath,
+                    "$moduleId/$fileName"
+                ).canonicalFile
+//                println("Scanning module ${file.absolutePath} for dataObject")
+                if (!file.exists()) {
+                    error("Data object XML not found: ${file.absolutePath}")
+                }
+                val xml = file.readText()
+
+                moduleDatabaseService.setUpModuleDataObject(
+                    moduleId,
+                    ModuleDataObjectParser.parseFromXml(xml)
+                )
+            }
+        }catch (e: Exception){
+            println("Failed to set up data objects for module $moduleId: ${e.message}")
+            return false
+        }
         return true
     }
 

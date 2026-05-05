@@ -11,6 +11,6 @@ data class ModuleConfig(
     val icon: String,
     val description: String? = null,
     val actions: List<ModuleAction>,
-    val data: List<String>,
+    val dataObjects: List<String>?,
     val permissions: List<String> = emptyList()
 )

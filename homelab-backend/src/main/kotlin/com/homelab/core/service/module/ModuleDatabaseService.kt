@@ -1,14 +1,12 @@
 package com.homelab.core.service.module
-import java.net.URI
-import java.sql.DriverManager
-import org.springframework.beans.factory.annotation.Value
+import com.homelab.core.model.data.ColumnDefinition
+import com.homelab.core.model.data.TableDefinition
 import org.springframework.stereotype.Service
+import javax.sql.DataSource
 
 @Service
 class ModuleDatabaseService(
-    @Value("\${spring.datasource.url}") private val datasourceUrl: String,
-    @Value("\${spring.datasource.username}") private val datasourceUsername: String,
-    @Value("\${spring.datasource.password}") private val datasourcePassword: String
+    private val dataSource: DataSource
 ) {
     data class DatabaseConnectionInfo(
             val host: String,
@@ -18,81 +16,104 @@ class ModuleDatabaseService(
             val password: String
     )
 
-    fun ensureModuleDatabaseReady(moduleId: String, databaseName: String?): Boolean {
-        val normalizedDbName = databaseName?.trim().orEmpty()
-        if (normalizedDbName.isBlank()) {
-            return true
-        }
-
-        val connectionInfo = getConnectionInfo()
-        if (connectionInfo == null) {
-            println("Unsupported datasource URL for module DB bootstrap: $datasourceUrl")
-            return false
-        }
-
-        val adminJdbcUrl =
-                "jdbc:postgresql://${connectionInfo.host}:${connectionInfo.port}/${connectionInfo.database}"
-        val escapedDbName = normalizedDbName.replace("\"", "\"\"")
+    fun ensureModuleDatabaseReady(moduleId: String): Boolean {
+        val schemaName = safeSqlName(moduleId)
 
         return try {
-            DriverManager.getConnection(
-                            adminJdbcUrl,
-                            connectionInfo.username,
-                            connectionInfo.password
-                    )
-                    .use { connection ->
-                        connection.autoCommit = true
-                        val exists =
-                                connection
-                                        .prepareStatement(
-                                                "SELECT 1 FROM pg_database WHERE datname = ?"
-                                        )
-                                        .use { stmt ->
-                                            stmt.setString(1, normalizedDbName)
-                                            stmt.executeQuery().use { rs -> rs.next() }
-                                        }
+            dataSource.connection.use { connection ->
+                connection.autoCommit = true
 
-                        if (!exists) {
-                            connection.createStatement().use { st ->
-                                st.execute("CREATE DATABASE \"$escapedDbName\"")
-                            }
-                            println("Created module database '$normalizedDbName' for $moduleId")
-                        } else {
-                            println(
-                                    "Module database '$normalizedDbName' already exists for $moduleId"
-                            )
-                        }
+                val exists = connection.prepareStatement(
+                    "SELECT 1 FROM information_schema.schemata WHERE schema_name = ?"
+                ).use { stmt ->
+                    stmt.setString(1, schemaName)
+                    stmt.executeQuery().use { rs -> rs.next() }
+                }
+
+                if (!exists) {
+                    connection.createStatement().use { st ->
+                        st.execute("""CREATE SCHEMA "$schemaName"""")
                     }
-            true
+                    println("Created module schema '$schemaName'")
+                }
+
+                true
+            }
         } catch (e: Exception) {
-            println("Failed ensuring module DB '$normalizedDbName' for $moduleId: ${e.message}")
+            println("Failed ensuring module schema '$schemaName': ${e.message}")
             false
         }
     }
 
-    fun getConnectionInfo(): DatabaseConnectionInfo? {
-        val jdbcBase = parseJdbcUrl(datasourceUrl) ?: return null
-        return DatabaseConnectionInfo(
-                host = jdbcBase.host,
-                port = jdbcBase.port,
-                database = jdbcBase.database,
-                username = datasourceUsername,
-                password = datasourcePassword
-        )
-    }
+    fun setUpModuleDataObject(moduleId: String, objectsDefinition: TableDefinition): Boolean {
+        val schemaName = safeSqlName(moduleId)
+        val tableName = safeSqlName(objectsDefinition.name)
 
-    private fun parseJdbcUrl(url: String): JdbcBase? {
-        if (!url.startsWith("jdbc:postgresql://")) return null
+        val sql = buildCreateTableSql(schemaName, tableName, objectsDefinition)
+
         return try {
-            val uri = URI(url.removePrefix("jdbc:"))
-            val host = uri.host ?: return null
-            val port = if (uri.port > 0) uri.port else 5432
-            val database = uri.path.removePrefix("/").ifBlank { "postgres" }
-            JdbcBase(host, port, database)
-        } catch (_: Exception) {
-            null
+            dataSource.connection.use { connection ->
+                connection.createStatement().use { statement ->
+                    // TODO: we should ideally check if the table exists and matches the definition,
+                    //  but i don't want to do reconciliation rn
+                    statement.execute(sql)
+                }
+            }
+
+            true
+        } catch (e: Exception) {
+            println("Failed setting up table \"$schemaName\".\"$tableName\": ${e.message}")
+            false
         }
     }
 
-    private data class JdbcBase(val host: String, val port: Int, val database: String)
+    private fun buildCreateTableSql(
+        schemaName: String,
+        tableName: String,
+        definition: TableDefinition
+    ): String {
+        val columns = listOf(
+            "id UUID PRIMARY KEY DEFAULT gen_random_uuid()",
+            "created_at TIMESTAMP NOT NULL DEFAULT now()",
+            "updated_at TIMESTAMP NOT NULL DEFAULT now()"
+        ) + definition.columns.map { buildColumnSql(it) }
+
+        return """
+            CREATE TABLE IF NOT EXISTS "$schemaName"."$tableName" (
+                ${columns.joinToString(",\n")}
+            )
+        """.trimIndent()
+    }
+
+    private fun buildColumnSql(column: ColumnDefinition): String {
+        val columnName = safeSqlName(column.name)
+
+        val sqlType = when (column.type.lowercase()) {
+            "string" -> "VARCHAR(1028)"
+            "int", "integer" -> "INTEGER"
+            "long" -> "BIGINT"
+            "boolean" -> "BOOLEAN"
+            "date" -> "DATE"
+            "datetime" -> "TIMESTAMP"
+            else -> error("Unsupported column type: ${column.type}")
+        }
+
+        val nullable = if (column.nullable) "" else " NOT NULL"
+        val unique = if (column.unique) " UNIQUE" else ""
+
+        return """"$columnName" $sqlType$nullable$unique"""
+    }
+
+    private fun safeSqlName(name: String): String {
+        val normalized = name.trim()
+            .replace(Regex("[^a-zA-Z0-9_]"), "_")
+            .lowercase()
+
+        require(normalized.matches(Regex("[a-z_][a-z0-9_]*"))) {
+            "Invalid SQL name: $name"
+        }
+
+        return normalized
+    }
+
 }
