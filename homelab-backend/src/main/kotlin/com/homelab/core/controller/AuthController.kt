@@ -94,11 +94,14 @@ class AuthController(
             return ResponseEntity.badRequest().body(mapOf("success" to false, "message" to "Email is required"))
         }
 
-        val signup = SignupRequest(name = request.name, email = request.email, publicKey = request.publicKey, passwordPlain = request.password)
+        val passwordHash = AuthService.encodePassword(request.password!!)
+
+        val signup = SignupRequest(name = request.name, email = request.email, publicKey = request.publicKey, passwordHash = passwordHash)
 
         if (repository.count() == 0L) {
             return try {
-                val user = authService.registerUser(request.name, request.email, request.publicKey, request.password)
+                val passwordHash = AuthService.encodePassword(request.password!!)
+                val user = authService.registerUser(request.name, request.email, request.publicKey, passwordHash)
                 signup.status = "APPROVED"
                 signup.processedAt = LocalDateTime.now()
                 signupRequestRepository.save(signup)
@@ -124,7 +127,7 @@ class AuthController(
             return ResponseEntity.badRequest().body(mapOf("success" to false, "message" to "Request already processed"))
         }
         return try {
-            val user = authService.registerUser(req.name, req.email, req.publicKey, req.passwordPlain)
+            val user = authService.registerUser(req.name, req.email, req.publicKey, req.passwordHash)
             req.status = "APPROVED"
             req.processedAt = LocalDateTime.now()
             signupRequestRepository.save(req)

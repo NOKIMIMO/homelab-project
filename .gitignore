@@ -3,7 +3,7 @@
 *build*
 *.vscode*
 *.idea*
-*.env*
+*.env
 *.DS_Store*
 
 # specific
