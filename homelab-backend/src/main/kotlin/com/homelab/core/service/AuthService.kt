@@ -20,6 +20,13 @@ class AuthService(private val repository: UserRepository) {
         challenges[challenge] = challenge
         return challenge
     }
+    companion object {
+        private val passwordEncoder = BCryptPasswordEncoder()
+
+        fun encodePassword(password: String): String {
+            return passwordEncoder.encode(password)
+        }
+    }
 
     fun verifySignature(publicKeyStr: String, signatureBase64: String, challenge: String): Boolean {
         if (!challenges.containsKey(challenge)) return false
@@ -91,16 +98,14 @@ class AuthService(private val repository: UserRepository) {
 
     fun getAllUsers(): List<User> = repository.findAll()
 
-    fun registerUser(name: String?, email: String, publicKeyPem: String?, passwordPlain: String?): User {
-        if (publicKeyPem.isNullOrBlank() && passwordPlain.isNullOrBlank()) {
+    fun registerUser(name: String?, email: String, publicKeyPem: String?, passwordHash: String?): User {
+        if (publicKeyPem.isNullOrBlank() && passwordHash.isNullOrBlank()) {
             throw IllegalArgumentException("Either publicKey or password must be provided")
         }
 
         if (repository.findByEmail(email).isPresent) {
             throw IllegalArgumentException("User with this email already exists")
         }
-
-        val passwordHash = passwordPlain?.let { passwordEncoder.encode(it) }
 
         val user = User(name = name, email = email, publicKey = publicKeyPem, passwordHash = passwordHash)
         return repository.save(user)

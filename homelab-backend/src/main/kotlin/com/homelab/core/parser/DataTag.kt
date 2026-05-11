@@ -10,5 +10,6 @@ enum class DataTag {
     TYPING,
     UNIQUE,
     NULLABLE,
-    REGEX
+    REGEX,
+    FILE
 }

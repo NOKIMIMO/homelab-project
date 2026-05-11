@@ -45,9 +45,11 @@ class ModuleService(
                 modules[item.config.id] = moduleConfigService.createModuleFromConfig(item.config)
             }
             // init DB for module if dataObject is not empty
+            println("Initializing module database for ${item.config.id}")
             ensureModuleDatabaseReady(item.config.id)
 
             // init DB object from module config
+            println("Initializing module data objects for ${item.config.id}")
             setUpModuleDataObject(item.config.id, item.config.dataObjects!!)
 
         }

@@ -20,7 +20,7 @@ class SignupRequest(
     var publicKey: String? = null,
 
     @Column(nullable = true, length = 2048)
-    var passwordPlain: String? = null,
+    var passwordHash: String? = null,
 
     @Column(nullable = false)
     var status: String = "PENDING",

@@ -23,10 +23,10 @@
                 "name":"getPhoto",
                 "description":"Récupérer une photo par son ID.",
                 "parameters":[
-                    {"name":"photoId","type":"string","description":"ID de la photo à récupérer."}
+                    {"name":"id","type":"string","description":"ID de la photo à récupérer."}
                 ],
                 "logic": [
-                    {"type": "GET_FILE", "parameters": {"determinant": "photoId"}}
+                    {"type": "GET_FILE", "parameters": {"determinant": "id"}}
                 ],
                 "actUponObject": "photos.xml"
             },
@@ -35,7 +35,18 @@
                 "description":"Lister toutes les photos stockées.",
                 "parameters":[],
                 "logic": [
-                    {"type": "GET_FILE"}
+                    {"type": "LIST"}
+                ],
+                "actUponObject": "photos.xml"
+            },
+            {
+                "name":"getPhotoData",
+                "description":"Récupérer les données d'une photo par son ID.",
+                "parameters":[
+                    {"name":"id","type":"string","description":"ID de la photo à récupérer."}
+                ],
+                "logic": [
+                    {"type": "READ", "parameters": {"determinant": "id"}}
                 ],
                 "actUponObject": "photos.xml"
             },
@@ -43,10 +54,10 @@
                 "name":"deletePhoto",
                 "description":"Supprimer une photo par son ID.",
                 "parameters":[
-                    {"name":"photoId","type":"string","description":"ID de la photo à supprimer."}
+                    {"name":"id","type":"string","description":"ID de la photo à supprimer."}
                 ],
                 "logic": [
-                    {"type": "DELETE_FILE", "parameters": {"determinant": "photoId"}}
+                    {"type": "DELETE", "parameters": {"determinant": "id"}}
                 ],
                 "actUponObject": "photos.xml"
             }

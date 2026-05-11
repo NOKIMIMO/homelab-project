@@ -6,53 +6,64 @@
   "description": "Gestion et stockage de photos.",
   "actions": [
     {
-        "visual":"photos.xml",
-        "functions":[
-            {
-                "name":"addPhoto",
-                "description":"Ajouter une photo.",
-                "parameters":[
-                    {"name":"filePath","type":"string","description":"Chemin du fichier photo."}
-                ],
-                "logic": [
-                    {"type": "UPLOAD_FILE", "parameters": {"filePath": "filePath"}}
-                ],
-                "actUponObject": "photos.xml"
-            },
-            {
-                "name":"getPhoto",
-                "description":"Récupérer une photo par son ID.",
-                "parameters":[
-                    {"name":"photoId","type":"string","description":"ID de la photo à récupérer."}
-                ],
-                "logic": [
-                    {"type": "GET_FILE", "parameters": {"determinant": "photoId"}}
-                ],
-                "actUponObject": "photos.xml"
-            },
-            {
-                "name":"listPhotos",
-                "description":"Lister toutes les photos stockées.",
-                "parameters":[],
-                "logic": [
-                    {"type": "GET_FILE"}
-                ],
-                "actUponObject": "photos.xml"
-            },
-            {
-                "name":"deletePhoto",
-                "description":"Supprimer une photo par son ID.",
-                "parameters":[
-                    {"name":"photoId","type":"string","description":"ID de la photo à supprimer."}
-                ],
-                "logic": [
-                    {"type": "DELETE_FILE", "parameters": {"determinant": "photoId"}}
-                ],
-                "actUponObject": "photos.xml"
-            }
-        ]
+      "visual":"photos.xml",
+      "functions":[
+        {
+          "name":"addPhoto",
+          "description":"Ajouter une photo.",
+          "parameters":[
+            {"name":"filePath","type":"string","description":"Chemin du fichier photo."}
+          ],
+          "logic": [
+            {"type": "UPLOAD_FILE", "parameters": {"filePath": "filePath"}}
+          ],
+          "actUponObject": "photos.xml"
+        },
+        {
+          "name":"getPhoto",
+          "description":"Récupérer une photo par son ID.",
+          "parameters":[
+            {"name":"photoId","type":"string","description":"ID de la photo à récupérer."}
+          ],
+          "logic": [
+            {"type": "GET_FILE", "parameters": {"determinant": "photoId"}}
+          ],
+          "actUponObject": "photos.xml"
+        },
+        {
+          "name":"listPhotos",
+          "description":"Lister toutes les photos stockées.",
+          "parameters":[],
+          "logic": [
+            {"type": "LIST"}
+          ],
+          "actUponObject": "photos.xml"
+        },
+        {
+          "name":"getPhotoData",
+          "description":"Récupérer les données d'une photo par son ID.",
+          "parameters":[
+            {"name":"photoId","type":"string","description":"ID de la photo à récupérer."}
+          ],
+          "logic": [
+            {"type": "READ", "parameters": {"determinant": "photoId"}}
+          ],
+          "actUponObject": "photos.xml"
+        },
+        {
+          "name":"deletePhoto",
+          "description":"Supprimer une photo par son ID.",
+          "parameters":[
+            {"name":"photoId","type":"string","description":"ID de la photo à supprimer."}
+          ],
+          "logic": [
+            {"type": "DELETE", "parameters": {"determinant": "photoId"}}
+          ],
+          "actUponObject": "photos.xml"
+        }
+      ]
     }
-],
+  ],
   "dataObjects": [
     "photos.xml"
   ],
