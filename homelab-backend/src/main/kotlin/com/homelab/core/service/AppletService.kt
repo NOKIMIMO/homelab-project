@@ -1,7 +1,7 @@
 package com.homelab.core.service
 
 import com.homelab.core.config.HomelabConfig
-import com.homelab.core.model.action.ActionsEnum
+import com.homelab.core.model.action.*
 import com.homelab.core.model.data.GenericTableLayer
 import com.homelab.core.model.module.action.ModuleActionDeclaration
 import com.homelab.core.parser.ModuleDataObjectParser
@@ -45,130 +45,28 @@ class AppletService(
         )
 
         val actionReturn = mutableMapOf<String, Any?>()
-        for (actions in resolvedLogic) {
-            val actionType = actions["type"] as String
-            val returnValue = when (actionType) {
-//                ActionsEnum.CREATE.name -> genericObject.create(actions["data"] as Map<String, Any>) //TODO: finish the simple create for simpler/generic data object
-                ActionsEnum.UPLOAD_FILE.name -> actionUploadFile(id, mergedParams, genericObject)
-                ActionsEnum.GET_FILE.name -> actionRetrieveFile(id, mergedParams, genericObject)
-                ActionsEnum.DELETE.name -> actionDelete(id, mergedParams, genericObject)
-                ActionsEnum.LIST.name -> genericObject.find(getFilters(null))
-                ActionsEnum.READ.name -> actionRead(id, mergedParams, genericObject)
-                else -> {}
-            }
-            actionReturn[actionType] = returnValue
+        for (actionDecl in resolvedLogic) {
+            val actionType = actionDecl["type"] as String
+            val actionParams = (actionDecl["parameters"] as? Map<String, Any>)
 
+            val action: Action? = when (actionType) {
+                ActionsEnum.UPLOAD_FILE.name -> UploadFileAction()
+                ActionsEnum.GET_FILE.name -> GetFileAction()
+                ActionsEnum.DELETE.name -> DeleteAction()
+                ActionsEnum.LIST.name -> ListAction()
+                ActionsEnum.READ.name -> ReadAction()
+                else -> null
+            }
+
+            val returnValue = try {
+                action?.execute(id, mergedParams, actionParams, genericObject)
+            } catch (e: Exception) {
+                println("Action $actionType threw: ${e.message}")
+                mapOf("error" to e.message)
+            }
+
+            actionReturn[actionType] = returnValue
         }
         return mapOf("success" to true, "data" to actionReturn)
-    }
-    private fun getFilters(filters : Map<String, Any>?): Map<String, Any> {
-        // return empty map if no filters
-        if (filters == null){
-            return mapOf()
-        }
-        return filters
-    }
-
-    private fun actionRetrieveFile(moduleId: String, mergedParams: Map<String, Any>, genericObject: GenericTableLayer): Map<String, Any?>?{
-        val filters = mutableMapOf<String, Any?>()
-        when {
-            //TODO: add support for ModuleConfig of the function call
-
-            //TODO: add suport for created_at + updated_at
-            mergedParams.containsKey("id") -> filters["id"] = mergedParams["id"]
-        }
-
-        val found = genericObject.find(filters)
-        if (found.isEmpty()) {
-            return null
-        }
-
-        val record = found.first()
-        val filePath = (record["file"] ?: record["file_path"])?.toString()
-        val fileName = (record["file_name"] ?: record["fileName"] ?: record["originalFilename"])?.toString()
-
-        if (filePath == null) return null
-
-        val p = Path.of(filePath)
-        if (!Files.exists(p)) {
-            println("Physical file not found at path: $filePath")
-            return null
-        }
-
-        val contentType = Files.probeContentType(p) ?: "application/octet-stream"
-
-        return mapOf("filePath" to filePath, "fileName" to (fileName ?: p.fileName.toString()), "contentType" to contentType)
-    }
-
-    private fun actionDelete(moduleId: String, mergedParams: Map<String, Any>, genericObject: GenericTableLayer): Map<String, Any?>? {
-        val filters = mutableMapOf<String, Any?>()
-        when {
-            mergedParams.containsKey("id") -> filters["id"] = mergedParams["id"]
-        }
-
-        val deleted = genericObject.deleteByFilters(filters)
-        return mapOf("deleted" to deleted)
-    }
-
-    private fun actionRead(moduleId: String, mergedParams: Map<String, Any>, genericObject: GenericTableLayer): Any? {
-        val filters = mutableMapOf<String, Any?>()
-        if (mergedParams.containsKey("id")) filters["id"] = mergedParams["id"]
-
-        for ((k, v) in mergedParams) {
-            if (!filters.containsKey(k) && v is String) {
-                filters[k] = v
-            }
-        }
-
-        val rows = genericObject.find(filters)
-        val sanitized = rows.map { row ->
-            val copy = row.toMutableMap()
-            copy.remove("file")
-            copy.remove("filePath")
-            copy.remove("file_path")
-            copy
-        }
-        return mapOf("rows" to sanitized)
-    }
-
-    private fun actionUploadFile(moduleId: String, mergedParams: Map<String, Any>, genericObject: GenericTableLayer){
-        val filePath = saveUploadedFile(moduleId, mergedParams["file"] as MultipartFile)
-        val fileName = (mergedParams["file"] as MultipartFile).originalFilename
-
-        val dataToCreate = mapOf(
-            "file" to mapOf(
-                "file" to filePath,
-                "file_name" to fileName
-            )
-        )
-
-        genericObject.create(dataToCreate)
-    }
-
-    private fun saveUploadedFile(
-        moduleId: String,
-        file: MultipartFile
-    ): String {
-        val uploadDir = Path.of("data", moduleId).toAbsolutePath().normalize()
-        Files.createDirectories(uploadDir)
-
-        val originalName = file.originalFilename ?: "upload.bin"
-        val safeOriginalName = originalName
-            .substringAfterLast("/")
-            .substringAfterLast("\\")
-            .replace(Regex("[^a-zA-Z0-9._-]"), "_")
-
-        val storedFileName = "${UUID.randomUUID()}_$safeOriginalName"
-        val targetPath = uploadDir.resolve(storedFileName).normalize()
-
-        require(targetPath.startsWith(uploadDir)) {
-            "Invalid file path"
-        }
-
-        file.inputStream.use { input ->
-            Files.copy(input, targetPath, StandardCopyOption.REPLACE_EXISTING)
-        }
-
-        return targetPath.toString()
     }
 }
