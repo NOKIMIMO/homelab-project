@@ -15,7 +15,7 @@
                     {"name":"filePath","type":"EQUAL","description":"Chemin du fichier photo."}
                 ],
                 "logic": [
-                    {"type": "UPLOAD_FILE", "parameters": {"filePath": "filePath"}}
+                    {"type": "UPLOAD_FILE"}
                 ],
                 "actUponObject": "photos.xml"
             },
@@ -26,7 +26,7 @@
                     {"name":"id","type":"EQUAL","description":"ID de la photo à récupérer."}
                 ],
                 "logic": [
-                    {"type": "GET_FILE", "parameters": {"determinant": "id"}}
+                    {"type": "GET_FILE"}
                 ],
                 "actUponObject": "photos.xml"
             },
@@ -48,7 +48,7 @@
                     {"name":"created_at","type":"GREATER","description":"Date de création de la photo à récupérer."}
                 ],
                 "logic": [
-                    {"type": "READ", "parameters": {"determinant": "id"}}
+                    {"type": "READ"}
                 ],
                 "actUponObject": "photos.xml"
             },
@@ -59,7 +59,7 @@
                     {"name":"id","type":"EQUAL","description":"ID de la photo à supprimer."}
                 ],
                 "logic": [
-                    {"type": "DELETE", "parameters": {"determinant": "id"}}
+                    {"type": "DELETE"}
                 ],
                 "actUponObject": "photos.xml"
             }
