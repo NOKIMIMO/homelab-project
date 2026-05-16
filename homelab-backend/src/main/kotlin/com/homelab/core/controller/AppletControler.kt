@@ -80,11 +80,7 @@ class AppletControler(
 			return ResponseEntity.status(HttpStatus.NOT_FOUND).body(mapOf("error" to "Function not found"))
 
 		val resolvedLogic = decl.logic.map { logic ->
-			val resolvedParams = logic.parameters?.mapValues { (_, v) ->
-				// If the parameter maps to a parameter name (e.g. "filePath" -> "filePath"), substitute from the request body when present
-				if (mergedParams.containsKey(v)) mergedParams[v]!! else v
-			}
-			mapOf("type" to logic.type, "parameters" to (resolvedParams ?: emptyMap<String, Any>()))
+			mapOf("type" to logic.type)
 		}
 
 		val serviceResult: Map<String, Any?>

@@ -6,14 +6,13 @@ class ListAction : Action {
     override fun execute(
         moduleId: String,
         mergedParams: Map<String, Any>,
-        actionParams: Map<String, Any>?,
-        genericObject: GenericTableLayer
-    ): Any? {
-        println("[ListAction] invoked module=$moduleId params=${actionParams ?: mapOf()}")
+        genericObject: GenericTableLayer,
+        declaration: com.homelab.core.model.module.action.ModuleActionDeclaration
+    ): Any {
+        println("[ListAction] invoked module=$moduleId")
+        println("[ListAction] mergedParams=$mergedParams")
 
-        // If actionParams provides filters, use them
-        val filters = mutableMapOf<String, Any?>()
-        actionParams?.forEach { (k, v) -> filters[k] = v }
+        val filters = getFilters(mergedParams,declaration)
 
         return genericObject.find(filters)
     }

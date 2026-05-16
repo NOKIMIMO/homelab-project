@@ -34,6 +34,10 @@ class Formater() {
             return formatDoubleToBestSizeUnit(bytes)
         }
 
+        fun camelToSnake(s: String): String {
+            return s.replace(Regex("([a-z0-9])([A-Z])"), "$1_$2").lowercase()
+        }
+
         fun bytesToGigabytes(bytes: Long): Double = bytes / BYTES_PER_GB
 
         fun bytesToGigabytes(bytes: Double): Double = bytes / BYTES_PER_GB

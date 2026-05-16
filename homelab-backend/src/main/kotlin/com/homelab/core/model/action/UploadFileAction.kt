@@ -11,13 +11,13 @@ class UploadFileAction : Action {
     override fun execute(
         moduleId: String,
         mergedParams: Map<String, Any>,
-        actionParams: Map<String, Any>?,
-        genericObject: GenericTableLayer
-    ): Any? {
-        println("[UploadFileAction] invoked for module=$moduleId, params=${actionParams ?: mapOf()} merged=${mergedParams.keys}")
+        genericObject: GenericTableLayer,
+        declaration: com.homelab.core.model.module.action.ModuleActionDeclaration
+    ): Any {
+        println("[UploadFileAction] invoked for module=$moduleId} merged=${mergedParams.keys}")
 
         val fileObj = when {
-            actionParams?.containsKey("file") == true -> actionParams["file"]
+//            actionParams?.containsKey("file") == true -> actionParams["file"]
             mergedParams.containsKey("file") -> mergedParams["file"]
             else -> null
         }

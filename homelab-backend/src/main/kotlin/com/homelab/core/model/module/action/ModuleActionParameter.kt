@@ -6,5 +6,6 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 data class ModuleActionParameter(
     val name: String,
     val description: String,
-    val type: String
+    val type: ModuleActionParameterType,
+    val optional: Boolean? = true
 )
