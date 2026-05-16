@@ -7,12 +7,7 @@ import com.homelab.core.model.module.action.ModuleActionDeclaration
 import com.homelab.core.parser.ModuleDataObjectParser
 import com.homelab.core.service.module.ModuleDatabaseService
 import org.springframework.stereotype.Service
-import org.springframework.web.multipart.MultipartFile
 import java.io.File
-import java.nio.file.Files
-import java.nio.file.Path
-import java.nio.file.StandardCopyOption
-import java.util.UUID
 
 @Service
 class AppletService(
@@ -47,7 +42,6 @@ class AppletService(
         val actionReturn = mutableMapOf<String, Any?>()
         for (actionDecl in resolvedLogic) {
             val actionType = actionDecl["type"] as String
-            val actionParams = (actionDecl["parameters"] as? Map<String, Any>)
 
             val action: Action? = when (actionType) {
                 ActionsEnum.UPLOAD_FILE.name -> UploadFileAction()
@@ -59,7 +53,7 @@ class AppletService(
             }
 
             val returnValue = try {
-                action?.execute(id, mergedParams, actionParams, genericObject)
+                action?.execute(id, mergedParams, genericObject, decl)
             } catch (e: Exception) {
                 println("Action $actionType threw: ${e.message}")
                 mapOf("error" to e.message)

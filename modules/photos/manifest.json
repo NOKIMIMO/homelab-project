@@ -12,7 +12,7 @@
                 "name":"addPhoto",
                 "description":"Ajouter une photo.",
                 "parameters":[
-                    {"name":"filePath","type":"string","description":"Chemin du fichier photo."}
+                    {"name":"filePath","type":"EQUAL","description":"Chemin du fichier photo."}
                 ],
                 "logic": [
                     {"type": "UPLOAD_FILE", "parameters": {"filePath": "filePath"}}
@@ -23,7 +23,7 @@
                 "name":"getPhoto",
                 "description":"Récupérer une photo par son ID.",
                 "parameters":[
-                    {"name":"id","type":"string","description":"ID de la photo à récupérer."}
+                    {"name":"id","type":"EQUAL","description":"ID de la photo à récupérer."}
                 ],
                 "logic": [
                     {"type": "GET_FILE", "parameters": {"determinant": "id"}}
@@ -43,7 +43,9 @@
                 "name":"getPhotoData",
                 "description":"Récupérer les données d'une photo par son ID.",
                 "parameters":[
-                    {"name":"id","type":"string","description":"ID de la photo à récupérer."}
+                    {"name":"id","type":"EQUAL","description":"ID de la photo à récupérer."},
+                    {"name":"file_name","type":"EQUAL","description":"Nom du fichier photo à récupérer."},
+                    {"name":"created_at","type":"GREATER","description":"Date de création de la photo à récupérer."}
                 ],
                 "logic": [
                     {"type": "READ", "parameters": {"determinant": "id"}}
@@ -54,7 +56,7 @@
                 "name":"deletePhoto",
                 "description":"Supprimer une photo par son ID.",
                 "parameters":[
-                    {"name":"id","type":"string","description":"ID de la photo à supprimer."}
+                    {"name":"id","type":"EQUAL","description":"ID de la photo à supprimer."}
                 ],
                 "logic": [
                     {"type": "DELETE", "parameters": {"determinant": "id"}}

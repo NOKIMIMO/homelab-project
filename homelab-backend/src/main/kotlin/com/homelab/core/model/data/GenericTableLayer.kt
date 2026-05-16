@@ -1,5 +1,6 @@
 package com.homelab.core.model.data
 
+import com.homelab.core.model.module.action.ModuleActionParameterType
 import com.homelab.core.service.module.ModuleDatabaseService
 import java.nio.file.Files
 import java.nio.file.Path
@@ -51,12 +52,8 @@ class GenericTableLayer(
         return true
     }
 
-    fun read(predicate: (Map<String, Any?>) -> Boolean): List<Map<String, Any?>> {
-        return dataStore.filter(predicate)
-    }
-
-
-    fun find(filters: Map<String, Any?>): List<Map<String, Any?>> {
+    fun find(filters: Map<String, Pair<Any?, ModuleActionParameterType>>): List<Map<String, Any?>> {
+        println("[Generic Layer] filter: $filters")
         if (moduleDatabaseService != null && moduleId != null) {
             return try {
                 moduleDatabaseService.queryRows(moduleId, tableDefinition.name, filters)
@@ -78,37 +75,13 @@ class GenericTableLayer(
         if (filters.isEmpty()) return dataStore.toList()
         return dataStore.filter { item ->
             filters.entries.all { (k, v) ->
-                item.containsKey(k) && (v == null || item[k] == v)
+                if (!item.containsKey(k)) return@all false
+                item[k] == v
             }
         }
     }
 
-    fun update(predicate: (Map<String, Any?>) -> Boolean, updateFunction: (Map<String, Any?>) -> Map<String, Any?>): Boolean {
-        val itemsToUpdate = dataStore.filter(predicate)
-        if (itemsToUpdate.isEmpty()) return false
-
-        itemsToUpdate.forEach { item ->
-            val updatedItem = updateFunction(item)
-            if (validateItem(updatedItem)) {
-                dataStore[dataStore.indexOf(item)] = updatedItem
-            } else {
-                println("Validation failed for updated item: $updatedItem")
-            }
-        }
-        println("Items updated: $itemsToUpdate")
-        return true
-    }
-
-    fun delete(predicate: (Map<String, Any?>) -> Boolean): Boolean {
-        val itemsToDelete = dataStore.filter(predicate)
-        if (itemsToDelete.isEmpty()) return false
-
-        dataStore.removeAll(itemsToDelete)
-        println("Items deleted: $itemsToDelete")
-        return true
-    }
-
-    fun deleteByFilters(filters: Map<String, Any?>): Int {
+    fun delete(filters: Map<String, Pair<Any?, ModuleActionParameterType>>): Int {
         val rows = find(filters)
         if (rows.isEmpty()) return 0
 
@@ -134,19 +107,34 @@ class GenericTableLayer(
 
         var deleted = 0
         if (moduleDatabaseService != null && moduleId != null) {
-            val ids = rows.mapNotNull { it["id"] }
-            deleted = if (ids.isNotEmpty()) {
-                moduleDatabaseService.deleteRowsByIds(moduleId, tableDefinition.name, "id", ids)
-            } else {
-                moduleDatabaseService.deleteRowsByFilters(moduleId, tableDefinition.name, filters)
-            }
+            deleted = moduleDatabaseService.deleteRowsByFilters(moduleId, tableDefinition.name, filters)
         }
 
         dataStore.removeIf { item ->
-            filters.entries.all { (k, v) -> item.containsKey(k) && (v == null || item[k] == v) }
+            filters.entries.all { (k, v) ->
+                if (!item.containsKey(k)) return@all false
+                item[k] == v
+            }
         }
 
         return deleted
+    }
+
+    //Placeholder, will modify later
+    fun update(predicate: (Map<String, Any?>) -> Boolean, updateFunction: (Map<String, Any?>) -> Map<String, Any?>): Boolean {
+        val itemsToUpdate = dataStore.filter(predicate)
+        if (itemsToUpdate.isEmpty()) return false
+
+        itemsToUpdate.forEach { item ->
+            val updatedItem = updateFunction(item)
+            if (validateItem(updatedItem)) {
+                dataStore[dataStore.indexOf(item)] = updatedItem
+            } else {
+                println("Validation failed for updated item: $updatedItem")
+            }
+        }
+        println("Items updated: $itemsToUpdate")
+        return true
     }
 
     private fun validateItem(item: Map<String, Any?>): Boolean {
@@ -166,9 +154,5 @@ class GenericTableLayer(
             }
         }
         return true
-    }
-
-    fun getTableDefinition(): TableDefinition {
-        return tableDefinition
     }
 }
