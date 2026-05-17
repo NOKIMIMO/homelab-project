@@ -2,13 +2,17 @@ package com.homelab.core.service.module
 
 import com.homelab.core.config.HomelabConfig
 import com.homelab.core.model.module.Module
+import com.homelab.core.model.module.ModuleStatus
 import com.homelab.core.parser.ModuleDataObjectParser
 import jakarta.annotation.*
-import org.springframework.core.env.Environment
-import org.springframework.core.env.getProperty
+import org.springframework.core.io.Resource
+import org.springframework.core.io.FileSystemResource
+import org.springframework.http.MediaType
+import org.springframework.http.ResponseEntity
 import java.io.File
 import java.util.concurrent.ConcurrentHashMap
 import org.springframework.stereotype.Service
+import java.nio.file.Files
 
 @Service
 class ModuleService(
@@ -32,6 +36,9 @@ class ModuleService(
         } catch (e: Exception) {
             println("Failed to run global cleanup: ${e.message}")
         }
+    }
+    fun isModuleRunning(moduleId: String): Boolean {
+        return modules[moduleId]?.status == ModuleStatus.ACTIVE
     }
 
     fun scanModules() {
@@ -58,87 +65,89 @@ class ModuleService(
     }
 
     fun getModules(): List<Module> {
-        modules.values.forEach { updateModuleStatus(it) }
         return modules.values.toList()
     }
 
-    private fun updateModuleStatus(module: Module) {
-//        moduleNativeService.updateModuleStatus(module)
-    }
 
     fun getModule(id: String): Module? {
         val module = modules[id] ?: return null
-        updateModuleStatus(module)
         return module
     }
+
+    fun getModuleUiDeclaration(id: String): Any? {
+        val discovered = moduleConfigService.scanModuleConfigs(homelabConfig.modulesScanPath)
+        val found = discovered.find { it.config.id == id } ?: return null
+        return mapOf(
+            "router" to found.config.router,
+            "pages" to (found.config.pages ?: emptyList())
+        )
+    }
+
+    fun getModuleRouter(id: String): Any? {
+        val discovered = moduleConfigService.scanModuleConfigs(homelabConfig.modulesScanPath)
+        val found = discovered.find { it.config.id == id } ?: return null
+        val routerName = found.config.router ?: return null
+        val file = File(found.directory, routerName)
+        if (!file.exists() || !file.isFile) return null
+        return try {
+            file.readText()
+        } catch (e: Exception) {
+            println("Failed to read router ${file.absolutePath}: ${e.message}")
+            null
+        }
+    }
+
+    fun getModulePage(id: String, page: String): String? {
+        val discovered = moduleConfigService.scanModuleConfigs(homelabConfig.modulesScanPath)
+        val found = discovered.find { it.config.id == id } ?: return null
+        val file = File(found.directory, page)
+        if (!file.exists() || !file.isFile) return null
+        return try {
+            file.readText()
+        } catch (e: Exception) {
+            println("Failed to read module page ${file.absolutePath}: ${e.message}")
+            null
+        }
+    }
+
+    fun getModuleIcon(id: String): ResponseEntity<Resource> {
+        val module = modules[id]
+            ?: return ResponseEntity.notFound().build()
+
+        val file = File(homelabConfig.modulesScanPath, "$id/${module.icon}")
+
+        if (!file.exists() || !file.isFile) {
+            return ResponseEntity.notFound().build()
+        }
+
+        val resource: Resource = FileSystemResource(file)
+
+        val contentType = Files.probeContentType(file.toPath())
+            ?: MediaType.APPLICATION_OCTET_STREAM_VALUE
+
+        return ResponseEntity.ok()
+            .contentType(MediaType.parseMediaType(contentType))
+            .body(resource)
+    }
+
 
 
     fun startModule(id: String): Boolean {
         val module = modules[id] ?: return false
         println("Starting module $id")
-
-        if (!ensureModuleDatabaseReady(id)) {
-            println("Module $id database is not ready. Aborting start.")
-            return false
-        }
-        // Flow :
-        // 1. check if module is already running
-        // 1.1 if yes, return true
-        // 2. Get Module config
-        // 2.1 if data model present, check that DB/Schema is available
-        // 2.1.1 if not, create it
-        // 2.2 check that dataObject as a table in DB/Schema and follows the model
-        // 3 Update module status to active
-        // 4 Allow routing to it's functions path in route
-
-
-//        if (module.type == ModuleType.DOCKER) {
-//            return moduleDockerService.startManagedModule(
-//                    module = module,
-//                    moduleDir = moduleConfigs[id],
-//                    appRoot = homelabConfig.appRoot,
-//                    moduleDbName = loadModuleConfig(id)?.databaseName
-//            )
-//        }
-//        println("Starting module $id as native application")
-//        val dir = moduleConfigs[id] ?: return false
-//        val config = loadModuleConfig(id) ?: return false
-//        println("Config: $config")
-//        val command = config.startCommand ?: return false
-//        println("Start Command: $command")
-//        println("Starting module $id as native application")
-//        val success = moduleNativeService.startModule(module, dir, command)
-//        if (success) {
-//            println("Module $id started successfully")
-//        }
-//        return success
-        return false
+        module.start()
+        return true
     }
 
     fun stopModule(id: String): Boolean {
         val module = modules[id] ?: return false
-
-//        if (module.type == ModuleType.DOCKER) {
-//            return try {
-//                module.status = ModuleStatus.STOPPING
-//                val moduleDir = moduleConfigs[id]
-//                val success = moduleDockerService.stopModule(id, moduleDir, homelabConfig.appRoot)
-//                if (success) {
-//                    module.status = ModuleStatus.INACTIVE
-//                    module.uptimeStart = null
-//                    true
-//                } else {
-//                    false
-//                }
-//            } catch (e: Exception) {
-//                false
-//            }
-//        }
-
-//        return moduleNativeService.stopModule(module)
-        return false
+        println("Stopping module $id")
+        module.stop()
+        return true
     }
 
+    //TODO:
+    // Think  about the way to go with this one
     fun installModule(id: String): Boolean {
 //        val module = modules[id] ?: return false
 //        if (module.type == ModuleType.DOCKER)
@@ -152,22 +161,11 @@ class ModuleService(
     }
 
     fun healthCheck(id: String): Boolean {
-//        val module = modules[id] ?: return false
-//        if (module.status != ModuleStatus.ACTIVE) return false
-//
-//        if (module.type == ModuleType.DOCKER) {
-//            return isContainerRunning(module.id)
-//        }
-//
-//        return try {
-//            val connection = URL(module.internalUrl).openConnection() as HttpURLConnection
-//            connection.connectTimeout = 2000
-//            connection.readTimeout = 2000
-//            connection.requestMethod = "GET"
-//            connection.responseCode in 200..399
-//        } catch (e: Exception) {
-//            false
-//        }
+        // return true if module is running + it's database is ready
+        val module = modules[id] ?: return false
+        if (module.status == ModuleStatus.ACTIVE) {
+            return ensureModuleDatabaseReady(id)
+        }
         return false
     }
 
