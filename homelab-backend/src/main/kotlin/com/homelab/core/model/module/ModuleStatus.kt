@@ -3,8 +3,8 @@ package com.homelab.core.model.module
 enum class ModuleStatus {
     ACTIVE,
     INACTIVE,
-    STARTING,
-    STOPPING,
+//    STARTING,
+//    STOPPING,
     INSTALLING,
     ERROR
 }

@@ -9,4 +9,11 @@ data class Module(
         val icon: String,
         val description: String? = null,
         var uptimeStart: Long? = null,
-)
+){
+        fun start() {
+                status = ModuleStatus.ACTIVE
+        }
+        fun stop() {
+                status = ModuleStatus.INACTIVE
+        }
+}

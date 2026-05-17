@@ -5,6 +5,9 @@ import com.homelab.core.model.module.ModuleConfig
 import com.homelab.core.model.module.action.ModuleActionDeclaration
 import com.homelab.core.service.AppletService
 import com.homelab.core.service.module.ModuleConfigService
+import com.homelab.core.service.module.ModuleService
+import org.springframework.core.io.FileSystemResource
+import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
@@ -19,13 +22,18 @@ class AppletControler(
 	private val moduleConfigService: ModuleConfigService,
 	private val homelabConfig: HomelabConfig,
 	private val appletService: AppletService,
+	private val moduleService: ModuleService
 ) {
 
 	@GetMapping("/{id}")
 	fun getModuleConfig(@PathVariable id: String): ResponseEntity<Any> {
 		val discovered = moduleConfigService.scanModuleConfigs(homelabConfig.modulesScanPath)
 		val found = discovered.find { it.config.id == id } ?: return ResponseEntity.status(HttpStatus.NOT_FOUND).body(mapOf("error" to "Module not found"))
-		return ResponseEntity.ok(found.config)
+		return ResponseEntity.ok(
+			mapOf(
+				"started" to moduleService.isModuleRunning(id),
+				"config" to found.config)
+		)
 	}
 
 	@GetMapping("/{id}/{functionName}")
@@ -76,6 +84,10 @@ class AppletControler(
 		val discovered = moduleConfigService.scanModuleConfigs(homelabConfig.modulesScanPath)
 		val found = discovered.find { it.config.id == id } ?:
 			return ResponseEntity.status(HttpStatus.NOT_FOUND).body(mapOf("error" to "Module not found"))
+		if (!moduleService.isModuleRunning(id)){
+			println("Module is not running, starting it")
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(mapOf("error" to "Module $id is not running, please start it first"))
+		}
 		val decl = findFunction(found.config, functionName) ?:
 			return ResponseEntity.status(HttpStatus.NOT_FOUND).body(mapOf("error" to "Function not found"))
 
@@ -97,18 +109,20 @@ class AppletControler(
 			))
 		}
 
+		// Check if the result is a file path
+		// if so return a download response
 		val fileInfo = findFileInfo(serviceResult)
 		val filePath = fileInfo?.get("filePath") as? String
 		if (filePath != null) {
 			val fileName = (fileInfo["fileName"] as? String) ?: Path.of(filePath).fileName.toString()
 			val contentType = (fileInfo["contentType"] as? String) ?: MediaType.APPLICATION_OCTET_STREAM_VALUE
-			val resource = org.springframework.core.io.FileSystemResource(filePath)
+			val resource = FileSystemResource(filePath)
 			if (!resource.exists()) {
 				return ResponseEntity.status(HttpStatus.NOT_FOUND).body(mapOf("error" to "File not found"))
 			}
 			return ResponseEntity.ok()
 				.contentType(MediaType.parseMediaType(contentType))
-				.header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"$fileName\"")
+				.header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"$fileName\"")
 				.body(resource)
 		}
 
