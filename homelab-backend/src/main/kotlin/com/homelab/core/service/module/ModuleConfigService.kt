@@ -6,11 +6,13 @@ import com.homelab.core.model.module.Module
 import com.homelab.core.model.module.ModuleConfig
 import com.homelab.core.model.module.ModuleStatus
 import com.homelab.core.model.module.ModuleType
+import com.homelab.core.plugin.PluginRegistry
+import com.homelab.core.model.action.ActionsEnum
 import java.io.File
 import org.springframework.stereotype.Service
 
 @Service
-class ModuleConfigService {
+class ModuleConfigService(private val pluginRegistry: PluginRegistry) {
     private val mapper =
             ObjectMapper()
                     .registerKotlinModule()
@@ -19,50 +21,65 @@ class ModuleConfigService {
     data class DiscoveredModule(val config: ModuleConfig, val directory: File)
 
     fun scanModuleConfigs(scanPath: String): List<DiscoveredModule> {
+        pluginRegistry.ensureLoaded()
         val root = File(scanPath).canonicalFile
         val files = root.listFiles() ?: return emptyList()
-        return files
-                .asSequence()
-                .filter { it.isDirectory }
-                .mapNotNull { dir ->
-                    val configFile = File(dir, "manifest.json")
-                    if (!configFile.exists()) {
-                        return@mapNotNull null
-                    }
+        val discovered = mutableListOf<DiscoveredModule>()
+        val seenModuleIds = mutableSetOf<String>()
 
-                    try {
-                        val rawConfig = mapper.readValue(configFile, ModuleConfig::class.java)
+        for (dir in files) {
+            if (!dir.isDirectory) continue
+            val configFile = File(dir, "manifest.json")
+            if (!configFile.exists()) continue
 
-                        // Filter duplicated function names across all actions: keep first occurrence, log duplicates
-                        // TODO
-                        // will deal with this later, when i have the brain for it
-                        val seenFunctions = mutableSetOf<String>()
-                        val filteredActions = rawConfig.actions.map { action ->
-                            val filteredFunctions = action.functions.filter { f ->
-                                val already = seenFunctions.contains(f.name)
-                                if (!already) {
-                                    seenFunctions.add(f.name)
-                                    true
-                                } else {
-                                    println("Duplicate function name '${f.name}' found in module '${rawConfig.id}' (directory=${dir.name}). Ignoring duplicate.")
-                                    false
-                                }
+            try {
+                val rawConfig = mapper.readValue(configFile, ModuleConfig::class.java)
+
+                if (seenModuleIds.contains(rawConfig.id)) {
+                    println("Duplicate module id '${rawConfig.id}' found in directory '${dir.name}'. Skipping this module.")
+                    continue
+                }
+
+                // check duplicate function names inside this module
+                val functionNames = rawConfig.actions.flatMap { it.functions.map { f -> f.name } }
+                if (functionNames.toSet().size != functionNames.size) {
+                    println("Module '${rawConfig.id}' has duplicate function names in manifest ${configFile.absolutePath}. Skipping module.")
+                    continue
+                }
+
+                // Validate logic types (must be in ActionsEnum or provided by plugin)
+                var unknownLogic: String? = null
+                outer@ for (action in rawConfig.actions) {
+                    for (f in action.functions) {
+                        for (logic in f.logic) {
+                            val t = logic.type
+                            val isBuiltin = try {
+                                ActionsEnum.valueOf(t)
+                                true
+                            } catch (_: Exception) {
+                                false
                             }
-                            action.copy(functions = filteredFunctions)
+                            if (!isBuiltin && !pluginRegistry.hasType(t)) {
+                                unknownLogic = t
+                                break@outer
+                            }
                         }
-
-                        val config = rawConfig.copy(actions = filteredActions)
-
-                        DiscoveredModule(
-                                config = config,
-                                directory = dir
-                        )
-                    } catch (e: Exception) {
-                        println("Failed to load module config in ${dir.name}: ${e.message}")
-                        null
                     }
                 }
-                .toList()
+                if (unknownLogic != null) {
+                    println("Module '${rawConfig.id}' references unknown logic type '$unknownLogic' in ${configFile.absolutePath}. Skipping module.")
+                    continue
+                }
+
+                seenModuleIds.add(rawConfig.id)
+                discovered.add(DiscoveredModule(config = rawConfig, directory = dir))
+
+            } catch (e: Exception) {
+                println("Failed to load module config in ${dir.name}: ${e.message}")
+            }
+        }
+
+        return discovered
     }
 
     fun createModuleFromConfig(config: ModuleConfig): Module {

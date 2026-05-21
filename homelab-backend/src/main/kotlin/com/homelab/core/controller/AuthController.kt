@@ -28,6 +28,7 @@ class AuthController(
         return ResponseEntity.ok(mapOf("challenge" to authService.generateChallenge()))
     }
 
+    //TODO: Move repository call into service
     @PostMapping("/login")
     fun login(
         @RequestBody request: LoginRequest,

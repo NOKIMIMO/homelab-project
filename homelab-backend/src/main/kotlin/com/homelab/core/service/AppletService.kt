@@ -4,6 +4,7 @@ import com.homelab.core.config.HomelabConfig
 import com.homelab.core.model.action.*
 import com.homelab.core.model.data.GenericTableLayer
 import com.homelab.core.model.module.action.ModuleActionDeclaration
+import com.homelab.core.action.ActionFactory
 import com.homelab.core.parser.ModuleDataObjectParser
 import com.homelab.core.service.module.ModuleDatabaseService
 import org.springframework.stereotype.Service
@@ -12,7 +13,8 @@ import java.io.File
 @Service
 class AppletService(
     private val moduleDatabaseService: ModuleDatabaseService,
-    private val homelabConfig: HomelabConfig
+    private val homelabConfig: HomelabConfig,
+    private val actionFactory: ActionFactory
 ) {
 
     fun invokeFunctionOfModule(
@@ -43,14 +45,7 @@ class AppletService(
         for (actionDecl in resolvedLogic) {
             val actionType = actionDecl["type"] as String
 
-            val action: Action? = when (actionType) {
-                ActionsEnum.UPLOAD_FILE.name -> UploadFileAction()
-                ActionsEnum.GET_FILE.name -> GetFileAction()
-                ActionsEnum.DELETE.name -> DeleteAction()
-                ActionsEnum.LIST.name -> ListAction()
-                ActionsEnum.READ.name -> ReadAction()
-                else -> null
-            }
+            val action: Action? = actionFactory.resolve(actionType)
 
             val returnValue = try {
                 action?.execute(id, mergedParams, genericObject, decl)
