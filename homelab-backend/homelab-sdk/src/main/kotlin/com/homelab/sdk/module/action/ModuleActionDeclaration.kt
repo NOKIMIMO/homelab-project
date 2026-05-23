@@ -1,4 +1,4 @@
-package com.homelab.core.model.module.action
+package com.homelab.sdk.module.action
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 
@@ -10,3 +10,7 @@ data class ModuleActionDeclaration(
     val logic: List<ModuleActionLogic>,
     val actUponObject: String
 )
+
+
+
+

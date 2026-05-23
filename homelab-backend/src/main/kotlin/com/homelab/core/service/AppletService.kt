@@ -2,11 +2,12 @@ package com.homelab.core.service
 
 import com.homelab.core.config.HomelabConfig
 import com.homelab.core.model.action.*
-import com.homelab.core.model.data.GenericTableLayer
-import com.homelab.core.model.module.action.ModuleActionDeclaration
+import com.homelab.sdk.module.action.ModuleActionDeclaration
 import com.homelab.core.action.ActionFactory
 import com.homelab.core.parser.ModuleDataObjectParser
 import com.homelab.core.service.module.ModuleDatabaseService
+import com.homelab.sdk.action.Action
+import com.homelab.sdk.data.GenericTableLayer
 import org.springframework.stereotype.Service
 import java.io.File
 

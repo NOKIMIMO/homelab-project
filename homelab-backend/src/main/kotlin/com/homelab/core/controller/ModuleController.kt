@@ -41,4 +41,7 @@ class ModuleController(private val moduleService: ModuleService) {
 
     @PostMapping("/scan")
     fun scanModules() = moduleService.scanModules()
+
+    @GetMapping("/actions")
+    fun getAvailableActions() = moduleService.getAvailableAction()
 }

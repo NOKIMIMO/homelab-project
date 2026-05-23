@@ -1,15 +1,15 @@
 package com.homelab.core.model.action
 
-import com.homelab.core.model.data.GenericTableLayer
-import com.homelab.core.model.module.action.ModuleActionParameterType
-import kotlin.collections.mutableMapOf
+import com.homelab.sdk.data.GenericTableLayer
+import com.homelab.sdk.action.Action
+import com.homelab.sdk.module.action.ModuleActionDeclaration
 
 class ReadAction : Action {
     override fun execute(
         moduleId: String,
         mergedParams: Map<String, Any>,
         genericObject: GenericTableLayer,
-        declaration: com.homelab.core.model.module.action.ModuleActionDeclaration
+        declaration: ModuleActionDeclaration
     ): Any {
         println("[ReadAction] invoked module=$moduleId")
         println("[ReadAction] mergedParams=$mergedParams")

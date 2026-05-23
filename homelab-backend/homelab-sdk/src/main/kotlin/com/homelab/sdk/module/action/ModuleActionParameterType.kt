@@ -1,4 +1,4 @@
-package com.homelab.core.model.module.action
+package com.homelab.sdk.module.action
 
 enum class ModuleActionParameterType {
     EQUAL,
@@ -8,3 +8,4 @@ enum class ModuleActionParameterType {
     LESS_EQUAL,
     NONE
 }
+
