@@ -2,7 +2,7 @@ package com.homelab.core.controller
 
 import com.homelab.core.config.HomelabConfig
 import com.homelab.core.model.module.ModuleConfig
-import com.homelab.core.model.module.action.ModuleActionDeclaration
+import com.homelab.sdk.module.action.ModuleActionDeclaration
 import com.homelab.core.service.AppletService
 import com.homelab.core.service.module.ModuleConfigService
 import com.homelab.core.service.module.ModuleService

@@ -1,6 +1,8 @@
 package com.homelab.core.model.action
 
-import com.homelab.core.model.data.GenericTableLayer
+import com.homelab.sdk.data.GenericTableLayer
+import com.homelab.sdk.action.Action
+import com.homelab.sdk.module.action.ModuleActionDeclaration
 import java.nio.file.Files
 import java.nio.file.Path
 
@@ -9,7 +11,7 @@ class GetFileAction : Action {
         moduleId: String,
         mergedParams: Map<String, Any>,
         genericObject: GenericTableLayer,
-        declaration: com.homelab.core.model.module.action.ModuleActionDeclaration
+        declaration: ModuleActionDeclaration
     ): Any {
         println("[GetFileAction] invoked module=$moduleId")
 

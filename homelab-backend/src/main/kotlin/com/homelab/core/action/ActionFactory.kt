@@ -2,6 +2,7 @@ package com.homelab.core.action
 
 import com.homelab.core.model.action.*
 import com.homelab.core.plugin.PluginRegistry
+import com.homelab.sdk.action.Action
 import org.springframework.stereotype.Service
 
 @Service
@@ -22,6 +23,14 @@ class ActionFactory(private val pluginRegistry: PluginRegistry) {
         val byBuiltin = builtins[typeName]
         if (byBuiltin != null) return byBuiltin
         return pluginRegistry.getAction(typeName)
+    }
+
+    /**
+     * Return available action type names (builtins + plugin-provided)
+     */
+    fun getAvailableActionTypes(): List<String> {
+        val pluginTypes = pluginRegistry.getRegisteredTypes()
+        return builtins.keys.toList() + pluginTypes
     }
 }
 

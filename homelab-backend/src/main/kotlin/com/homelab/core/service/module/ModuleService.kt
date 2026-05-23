@@ -1,5 +1,6 @@
 package com.homelab.core.service.module
 
+import com.homelab.core.action.ActionFactory
 import com.homelab.core.config.HomelabConfig
 import com.homelab.core.model.module.Module
 import com.homelab.core.model.module.ModuleStatus
@@ -19,6 +20,7 @@ class ModuleService(
     private val homelabConfig: HomelabConfig,
     private val moduleDatabaseService: ModuleDatabaseService,
     private val moduleConfigService: ModuleConfigService,
+    private val actionFactory: ActionFactory,
 ) {
     private val modules = ConcurrentHashMap<String, Module>()
     private val moduleConfigs = ConcurrentHashMap<String, File>()
@@ -37,6 +39,7 @@ class ModuleService(
             println("Failed to run global cleanup: ${e.message}")
         }
     }
+
     fun isModuleRunning(moduleId: String): Boolean {
         return modules[moduleId]?.status == ModuleStatus.ACTIVE
     }
@@ -64,10 +67,13 @@ class ModuleService(
         println(modules)
     }
 
+    fun getAvailableAction():List<String> {
+        return actionFactory.getAvailableActionTypes()
+    }
+
     fun getModules(): List<Module> {
         return modules.values.toList()
     }
-
 
     fun getModule(id: String): Module? {
         val module = modules[id] ?: return null
