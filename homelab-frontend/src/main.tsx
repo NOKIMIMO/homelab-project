@@ -8,12 +8,17 @@ import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
 import PluginPage from './pages/PluginPage';
 import KeyManagerPage from './pages/KeyManagerPage';
+import { ComponentsDemoPage } from './components/ComponentsDemoPage';
 import './index.css';
 
 const router = createBrowserRouter([
   {
     path: '/login',
     element: <LoginPage />
+  },
+  {
+    path: '/demo',
+    element: <ComponentsDemoPage />
   },
   {
     path: '/',
