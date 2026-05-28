@@ -12,6 +12,8 @@ import org.springframework.web.cors.CorsConfiguration
 import org.springframework.web.cors.CorsConfigurationSource
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource
 import org.slf4j.LoggerFactory
+import org.springframework.web.filter.ForwardedHeaderFilter
+import org.springframework.boot.web.servlet.FilterRegistrationBean
 
 @Configuration
 @EnableWebSecurity
@@ -29,6 +31,8 @@ class SecurityConfig {
                     auth.requestMatchers("/").permitAll()
                     auth.requestMatchers("/api/auth/**").permitAll()
                     auth.requestMatchers("/error").permitAll() // for 404 and other
+                    // Allow public access to module icons and UI assets
+                    auth.requestMatchers("/api/modules/*/UI/icon").permitAll()
                     auth.requestMatchers("/api/**").authenticated()
                     auth.anyRequest().authenticated()
                 }
@@ -79,6 +83,14 @@ class SecurityConfig {
             logger.warn("Access denied to: ${request.requestURI}")
             response.sendError(HttpServletResponse.SC_FORBIDDEN, "Forbidden")
         }
+    }
+
+    // Support X-Forwarded-* headers when behind a reverse proxy so generated absolute URLs use original host/scheme
+    @Bean
+    fun forwardedHeaderFilter(): FilterRegistrationBean<ForwardedHeaderFilter> {
+        val bean = FilterRegistrationBean(ForwardedHeaderFilter())
+        bean.order = 0
+        return bean
     }
     private val logger = LoggerFactory.getLogger(SecurityConfig::class.java)
 }

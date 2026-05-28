@@ -2,14 +2,36 @@ package com.homelab.core.controller
 
 import com.homelab.core.service.module.ModuleService
 import org.springframework.web.bind.annotation.*
+import jakarta.servlet.http.HttpServletRequest
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder
 
 @RestController
 @RequestMapping("/api/modules")
 @CrossOrigin(origins = ["*"])
 class ModuleController(private val moduleService: ModuleService) {
 
+    //TODO: move in it's service
     @GetMapping
-    fun getModules() = moduleService.getModules()
+    fun getModules(request: HttpServletRequest) =
+        moduleService.getModules().map { dto ->
+            println(dto)
+            val absoluteIcon = dto.icon?.let { rel ->
+                if (rel.startsWith("http")) return@let rel
+                try {
+                    ServletUriComponentsBuilder.fromRequest(request)
+                        .replacePath(rel)
+                        .build()
+                        .toUriString()
+                } catch (_: Exception) {
+                    val scheme = request.scheme
+                    val host = request.serverName
+                    val port = request.serverPort
+                    val portPart = if ((scheme == "http" && port == 80) || (scheme == "https" && port == 443)) "" else ":$port"
+                    "$scheme://$host$portPart$rel"
+                }
+            }
+            dto.copy(icon = absoluteIcon)
+        }
 
     @GetMapping("/{id}")
     fun getModule(@PathVariable id: String) = moduleService.getModule(id)

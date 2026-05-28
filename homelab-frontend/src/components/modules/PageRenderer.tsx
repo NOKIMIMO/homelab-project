@@ -40,7 +40,7 @@ export const PageRenderer: React.FC<PageRendererProps> = ({
   );
 
   const handleStateChange = useCallback((key: string, value: any) => {
-    setState((prev) => ({
+    setState((prev: any) => ({
       ...prev,
       [key]: value,
     }));

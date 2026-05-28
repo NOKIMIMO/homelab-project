@@ -39,6 +39,7 @@ function AppLayout() {
         headers: token ? { 'Authorization': `Bearer ${token}` } : undefined
       });
       const data = await response.json();
+      console.log('Fetched modules:', data);
       setModules(data);
     } catch (error) {
       console.error('Error fetching modules:', error);
@@ -104,7 +105,18 @@ function AppLayout() {
                   onClick={() => navigate(`/plugins/${mod.id}`)}
                 >
                   <span className="flex items-center gap-3 font-medium">
-                    {mod.icon === 'Image' ? <Camera size={18} className="opacity-70" /> : <Box size={18} className="opacity-70" />}
+                    {mod.icon ? (
+                      <img
+                        src={mod.icon}
+                        alt=""
+                        className="h-[18px] w-[18px] rounded-sm object-cover opacity-80"
+                        loading="lazy"
+                      />
+                    ) : mod.icon === 'Image' ? (
+                      <Camera size={18} className="opacity-70" />
+                    ) : (
+                      <Box size={18} className="opacity-70" />
+                    )}
                     <span className="text-[15px]">{mod.name}</span>
                   </span>
                   <div className={`badge badge-xs ${mod.status === 'ACTIVE' ? 'badge-success shadow-[0_0_8px_rgba(54,211,153,0.5)]' : 'badge-error'}`}></div>
