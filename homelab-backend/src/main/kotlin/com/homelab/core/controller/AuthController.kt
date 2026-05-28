@@ -36,7 +36,9 @@ class AuthController(
     ): ResponseEntity<Map<String, Any>> {
         // email + pwd
         if (!request.email.isNullOrBlank() && !request.password.isNullOrBlank()) {
+            println("Login attempt with email: ${request.email}")
             val userOpt = repository.findByEmail(request.email)
+            println("User found: ${userOpt.isPresent}")
             if (userOpt.isPresent) {
                 val user = userOpt.get()
                 if (authService.verifyPassword(user.passwordHash, request.password)) {

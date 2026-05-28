@@ -8,7 +8,7 @@ import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
 import PluginPage from './pages/PluginPage';
 import KeyManagerPage from './pages/KeyManagerPage';
-import { ComponentsDemoPage } from './components/ComponentsDemoPage';
+import { ComponentsDemoPage } from './components/modules/ComponentsDemoPage';
 import './index.css';
 
 const router = createBrowserRouter([
@@ -30,7 +30,8 @@ const router = createBrowserRouter([
     children: [
       { index: true, element: <DashboardPage /> },
       { path: 'plugins/:moduleId', element: <PluginPage /> },
-      { path: 'settings', element: <KeyManagerPage /> }
+      { path: 'settings', element: <KeyManagerPage /> },
+      { path: 'paseDemo', element: <ComponentsDemoPage /> },
     ]
   }
 ]);

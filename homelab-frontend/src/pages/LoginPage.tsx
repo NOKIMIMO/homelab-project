@@ -36,7 +36,7 @@ export default function LoginPage() {
   return (
     <Login
       onLoginSuccess={handleLoginSuccess}
-      onShowBootstrap={() => setShowBootstrap(true)}
+      onShowBootstrap={() => setShowBootstrap(false)}
     />
   );
 }

@@ -1,5 +1,5 @@
 import React from 'react';
-import { ComponentsDemoPage } from './components/ComponentsDemoPage';
+import { ComponentsDemoPage } from './ComponentsDemoPage';
 import './components/components.css';
 
 /**

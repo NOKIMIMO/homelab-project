@@ -2,10 +2,58 @@ import { getApiUrl } from '../api';
 import { AlertCircle, Loader2 } from 'lucide-react';
 import type { Module } from '../App';
 import { useAuth } from '../auth/AuthContext';
+import { useEffect } from 'react';
 
 export default function ModuleView({ module }: { module?: Module }) {
   const { token } = useAuth();
   if (!module) return <div className="p-10">Application non trouvée</div>;
+
+  useEffect(() => {
+    if (module.status === 'ACTIVE') {
+      const url = getApiUrl(`/api/modules/${module.id}/UI`);
+      const routerUrl = getApiUrl(`/api/modules/${module.id}/UI/router`);
+      const IconUrl = getApiUrl(`/api/modules/${module.id}/UI/icon`);
+      // call api
+      fetch(url, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }).then((res) => {
+          if (res.ok) {
+            // console.log('Module UI response:', res);
+            // res.body is a ReadableStream, we need to read it to get the actual content
+            res.body?.getReader().read().then(({ value, done }) => {
+              if (!done && value) {
+                const uiConfig = JSON.parse(new TextDecoder().decode(value));
+                // {"router":"photos_router.xml","pages":["photos_ui.json"]} 
+                // console.log('Module UI config:', uiConfig);
+                // call first page to get the UI
+                fetch(url + '/' + uiConfig.pages[0], {
+                  headers: {
+                    Authorization: `Bearer ${token}`,
+                  },
+                }).then((res) => {
+                  if (res.ok) {
+                    res.body?.getReader().read().then(({ value, done }) => {
+                      if (!done && value) {
+                        const pageConfig = JSON.parse(new TextDecoder().decode(value));
+                        // console.log('Module UI page config:', pageConfig);
+                      }
+                    });
+                  } else {
+                    console.error('Error fetching module UI page:', res.statusText);
+                  }
+                });
+              }
+            });
+          }        
+        })        
+      .catch((err) => {
+          console.error('Error fetching module UI:', err);
+      });
+
+    }
+  }, [module]);
 
   if (module.status !== 'ACTIVE') {
     return (
@@ -33,12 +81,7 @@ export default function ModuleView({ module }: { module?: Module }) {
 
   return (
     <div className="w-full h-full bg-base-100 flex flex-col">
-      <iframe
-        src={getApiUrl(`/api/proxy/${module.id}/?token=${token || ''}`)}
-        title={`Module ${module.name}`}
-        className="flex-1 w-full border-none shadow-inner"
-        sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals"
-      />
+      
     </div>
   );
 }

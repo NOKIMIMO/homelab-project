@@ -13,6 +13,7 @@ interface LoginProps {
 
 export default function Login({ onLoginSuccess, onShowBootstrap }: LoginProps) {
   const [authMode, setAuthMode] = useState<'key' | 'password'>('key');
+  const [passwordFlow, setPasswordFlow] = useState<'login' | 'signup'>('login');
   const [privateKey, setPrivateKey] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -110,6 +111,30 @@ export default function Login({ onLoginSuccess, onShowBootstrap }: LoginProps) {
     } catch (err: any) {
       console.error(err);
       setError("Erreur technique : Vérifiez que votre clé est au format PKCS#8 RSA PEM. (Les clés OpenSSH doivent être converties en PKCS#8)");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+    try {
+      const loginRes = await fetch(getApiUrl('/api/auth/signup-requests'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+      const result = await loginRes.json();
+      if (result?.success) {
+        onLoginSuccess(result.token, result.keyName || result.email || email);
+        await handlePasswordLogin(e);
+      }
+      setError(result?.message || 'Echec de l\'authentification');
+    } catch (err) {
+      console.error(err);
+      setError('Erreur technique lors de la connexion par email.');
     } finally {
       setLoading(false);
     }
@@ -234,7 +259,29 @@ export default function Login({ onLoginSuccess, onShowBootstrap }: LoginProps) {
             </button>
           </form>
         ) : (
-          <form onSubmit={handlePasswordLogin} className="space-y-6">
+          <form onSubmit={passwordFlow === 'signup' ? handleRegister : handlePasswordLogin} className="space-y-6">
+            <div className="flex items-center justify-between rounded-2xl bg-base-200 p-2">
+              <button
+                type="button"
+                className={`btn btn-sm flex-1 ${passwordFlow === 'login' ? 'btn-primary' : 'btn-ghost'}`}
+                onClick={() => {
+                  setPasswordFlow('login');
+                  setError(null);
+                }}
+              >
+                Connexion
+              </button>
+              <button
+                type="button"
+                className={`btn btn-sm flex-1 ${passwordFlow === 'signup' ? 'btn-primary' : 'btn-ghost'}`}
+                onClick={() => {
+                  setPasswordFlow('signup');
+                  setError(null);
+                }}
+              >
+                Inscription
+              </button>
+            </div>
             <div className="form-control">
               <label className="label">
                 <span className="label-text font-bold">Email</span>
@@ -263,7 +310,7 @@ export default function Login({ onLoginSuccess, onShowBootstrap }: LoginProps) {
             </div>
             <button className="btn btn-primary w-full gap-2 shadow-lg shadow-primary/20 h-14 rounded-2xl" disabled={loading}>
               {loading ? <Loader2 size={20} className="animate-spin" /> : <Key size={20} />}
-              Connexion au Homelab
+              {passwordFlow === 'signup' ? 'Demande d\'inscription' : 'Connexion au Homelab'}
             </button>
           </form>
         )}

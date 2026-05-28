@@ -1,6 +1,7 @@
 package com.homelab.core.service.module
 
 import com.homelab.core.action.ActionFactory
+import com.homelab.core.api.dto.ModuleDto
 import com.homelab.core.config.HomelabConfig
 import com.homelab.core.model.module.Module
 import com.homelab.core.model.module.ModuleStatus
@@ -8,6 +9,7 @@ import com.homelab.core.parser.ModuleDataObjectParser
 import jakarta.annotation.*
 import org.springframework.core.io.Resource
 import org.springframework.core.io.FileSystemResource
+import org.springframework.core.io.ByteArrayResource
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import java.io.File
@@ -54,6 +56,16 @@ class ModuleService(
             if (modules[item.config.id] == null) {
                 modules[item.config.id] = moduleConfigService.createModuleFromConfig(item.config)
             }
+            // Validate icon file existence inside module directory; warn if missing
+            try {
+                val iconName = item.config.icon
+                val iconFile = File(item.directory, iconName)
+                if (!iconFile.exists() || !iconFile.isFile) {
+                    println("Warning: icon '${iconName}' declared in module '${item.config.id}' not found at ${iconFile.absolutePath}")
+                }
+            } catch (_: Exception) {
+                // ignore validation errors
+            }
             // init DB for module if dataObject is not empty
             println("Initializing module database for ${item.config.id}")
             ensureModuleDatabaseReady(item.config.id)
@@ -71,8 +83,22 @@ class ModuleService(
         return actionFactory.getAvailableActionTypes()
     }
 
-    fun getModules(): List<Module> {
-        return modules.values.toList()
+    // Expose icon as a URL instead of embedding the ResponseEntity resource in the DTO.
+    // The controller exposes the icon at GET /api/modules/{id}/UI/icon so we return that path.
+    fun getModules(): List<ModuleDto> {
+        return modules.values.map { m ->
+            val iconUrl = "/api/modules/${m.id}/UI/icon"
+            ModuleDto(
+                id = m.id,
+                name = m.name,
+                version = m.version,
+                internalUrl = m.internalUrl,
+                status = m.status,
+                description = m.description,
+                uptimeStart = m.uptimeStart,
+                icon = iconUrl
+            )
+        }
     }
 
     fun getModule(id: String): Module? {
@@ -119,21 +145,39 @@ class ModuleService(
     fun getModuleIcon(id: String): ResponseEntity<Resource> {
         val module = modules[id]
             ?: return ResponseEntity.notFound().build()
+        // If the icon is an absolute URL, redirect the client to it
+        println("Serving module icon for $id")
+        try {
+            if (module.icon.startsWith("http://") || module.icon.startsWith("https://")) {
+                return ResponseEntity.status(org.springframework.http.HttpStatus.FOUND)
+                    .location(java.net.URI.create(module.icon))
+                    .build()
+            }
 
-        val file = File(homelabConfig.modulesScanPath, "$id/${module.icon}")
+            val file = File(homelabConfig.modulesScanPath, "$id/${module.icon}")
 
-        if (!file.exists() || !file.isFile) {
+            println("Info: icon file path: ${file.absolutePath}")
+            println("Info: icon file exists: ${file.exists()}")
+            if (file.exists() && file.isFile) {
+                println("Info: serving icon for module '$id' (declared icon='${module.icon}')")
+                val resource: Resource = FileSystemResource(file)
+                val contentType = Files.probeContentType(file.toPath())
+                    ?: MediaType.APPLICATION_OCTET_STREAM_VALUE
+                println("Info: detected content type for icon: $contentType, path: ${file.absolutePath}")
+                return ResponseEntity.ok()
+                    .header("Cache-Control", "max-age=3600, public")
+                    .header("Content-Disposition", "inline; filename=\"${file.name}\"")
+                    .contentLength(file.length())
+                    .contentType(MediaType.parseMediaType(contentType))
+                    .body(resource)
+            }
+
             return ResponseEntity.notFound().build()
+
+        } catch (e: Exception) {
+            println("Failed to serve module icon for $id: ${e.message}")
+            return ResponseEntity.status(org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR).build()
         }
-
-        val resource: Resource = FileSystemResource(file)
-
-        val contentType = Files.probeContentType(file.toPath())
-            ?: MediaType.APPLICATION_OCTET_STREAM_VALUE
-
-        return ResponseEntity.ok()
-            .contentType(MediaType.parseMediaType(contentType))
-            .body(resource)
     }
 
 

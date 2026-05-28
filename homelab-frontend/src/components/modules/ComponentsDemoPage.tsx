@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { ComponentsDemo } from './ComponentsDemo';
 import './components.css';
-import { useAuth } from '../auth/AuthContext';
+import { useAuth } from '../../auth/AuthContext';
 
 /**
  * Page de test des composants
