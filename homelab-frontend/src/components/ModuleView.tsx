@@ -2,58 +2,76 @@ import { getApiUrl } from '../api';
 import { AlertCircle, Loader2 } from 'lucide-react';
 import type { Module } from '../App';
 import { useAuth } from '../auth/AuthContext';
-import { useEffect } from 'react';
+import { useEffect, useState, useCallback } from 'react';
+import { PageRenderer } from './modules/PageRenderer';
 
 export default function ModuleView({ module }: { module?: Module }) {
   const { token } = useAuth();
-  if (!module) return <div className="p-10">Application non trouvée</div>;
+  const [pageConfig, setPageConfig] = useState<any>(null);
+
+  const handleBindingCall = useCallback(async (binding: string, params?: any) => {
+    if (!module) return null;
+    
+    const url = getApiUrl(`/api/${module.id}/${binding}`);
+    const isFormData = params instanceof FormData;
+    const fetchOptions: RequestInit = {
+      method: params ? 'POST' : 'GET',
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    };
+    
+    // For standard fetch calls, don't set Content-Type for FormData, the browser will set it with boundaries automatically
+    if (params) {
+      if (isFormData) {
+        fetchOptions.body = params;
+      } else {
+        (fetchOptions.headers as Record<string, string>)['Content-Type'] = 'application/json';
+        fetchOptions.body = JSON.stringify(params);
+      }
+    }
+    
+    try {
+      const res = await fetch(url, fetchOptions);
+      if (!res.ok) throw new Error(`Binding call failed: ${res.statusText}`);
+      // return empty if standard 204 or empty response
+      const text = await res.text();
+      return text ? JSON.parse(text) : null;
+    } catch (err) {
+      console.error(`Error executing binding ${binding}:`, err);
+      throw err;
+    }
+  }, [module, token]);
 
   useEffect(() => {
-    if (module.status === 'ACTIVE') {
-      const url = getApiUrl(`/api/modules/${module.id}/UI`);
-      const routerUrl = getApiUrl(`/api/modules/${module.id}/UI/router`);
-      const IconUrl = getApiUrl(`/api/modules/${module.id}/UI/icon`);
-      // call api
-      fetch(url, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }).then((res) => {
-          if (res.ok) {
-            // console.log('Module UI response:', res);
-            // res.body is a ReadableStream, we need to read it to get the actual content
-            res.body?.getReader().read().then(({ value, done }) => {
-              if (!done && value) {
-                const uiConfig = JSON.parse(new TextDecoder().decode(value));
-                // {"router":"photos_router.xml","pages":["photos_ui.json"]} 
-                // console.log('Module UI config:', uiConfig);
-                // call first page to get the UI
-                fetch(url + '/' + uiConfig.pages[0], {
-                  headers: {
-                    Authorization: `Bearer ${token}`,
-                  },
-                }).then((res) => {
-                  if (res.ok) {
-                    res.body?.getReader().read().then(({ value, done }) => {
-                      if (!done && value) {
-                        const pageConfig = JSON.parse(new TextDecoder().decode(value));
-                        // console.log('Module UI page config:', pageConfig);
-                      }
-                    });
-                  } else {
-                    console.error('Error fetching module UI page:', res.statusText);
-                  }
-                });
-              }
-            });
-          }        
-        })        
-      .catch((err) => {
-          console.error('Error fetching module UI:', err);
-      });
+    if (!module || module.status !== 'ACTIVE') return;
 
-    }
-  }, [module]);
+    const pageUrl = getApiUrl(`/api/modules/${module.id}/UI/page`);
+
+    const fetchModuleUi = async () => {
+      try {
+        const res = await fetch(pageUrl, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        console.log('Module UI response:', res);
+
+        if (!res.ok) return;
+
+        const data = await res.json();
+        console.log('Module UI page config:', data);
+        setPageConfig(data.page || data);
+      } catch (err) {
+        console.error('Error fetching module UI:', err);
+      }
+    };
+
+    fetchModuleUi();
+  }, [module, token]);
+
+  if (!module) return <div className="p-10">Application non trouvée</div>;
 
   if (module.status !== 'ACTIVE') {
     return (
@@ -80,8 +98,17 @@ export default function ModuleView({ module }: { module?: Module }) {
   }
 
   return (
-    <div className="w-full h-full bg-base-100 flex flex-col">
-      
+    <div className="w-full h-full bg-base-100 flex flex-col p-4 overflow-y-auto">
+      {pageConfig ? (
+           // TODO: BUG d'affichage
+        <PageRenderer pageConfig={pageConfig} onBindingCall={handleBindingCall} />
+      ) : (
+     
+        <div className="flex flex-col items-center justify-center h-full">
+          <Loader2 size={48} className="text-primary animate-spin mb-4" />
+          <p>Initialisation de l'interface du module...</p>
+        </div>
+      )}
     </div>
   );
 }

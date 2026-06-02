@@ -2,7 +2,7 @@
   "id": "photos",
   "name": "Stockage Photo",
   "version": "1.0.0",
-  "icon": "img.png",
+  "icon": "img.jpg",
   "description": "Gestion et stockage de photos.",
   "actions": [
     {
@@ -62,14 +62,20 @@
             {"type": "DELETE"}
           ],
           "actUponObject": "photos.xml"
+        },
+        {
+          "name":"test",
+          "description":"test le truc de move",
+          "parameters":[],
+          "logic": [
+            {"type": "FILE_MOVE"}
+          ],
+          "actUponObject": "photos.xml"
         }
       ]
     }
   ],
-  "router": "photos_router.xml",
-  "pages": [
-    "photos_ui.xml"
-  ],
+  "page": "photos_ui.json",
   "dataObjects": [
     "photos.xml"
   ],

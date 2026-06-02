@@ -12,8 +12,8 @@ data class ModuleConfig(
     val description: String? = null,
     val actions: List<ModuleAction>,
     val dataObjects: List<String>?,
-    val router: String?, //if not present and page is len(1) then the first entry is the entrypoint
-    val pages: List<String>?, // optional, a module can be API only,
+//    val router: String?, //if not present and page is len(1) then the first entry is the entrypoint
+    val page: String?, // optional, a module can be API only,
     //TODO: Add permissions
     val permissions: List<String> = emptyList()
 )
