@@ -6,7 +6,7 @@ interface ActionBarProps {
 
 export const ActionBar: React.FC<ActionBarProps> = ({ children }) => {
   return (
-    <div className="action-bar">
+    <div className="flex flex-wrap gap-3 mb-6 bg-base-200 p-4 rounded-xl border border-base-content/10">
       {children}
     </div>
   );

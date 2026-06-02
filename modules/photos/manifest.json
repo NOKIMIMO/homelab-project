@@ -68,17 +68,14 @@
                     "description":"test le truc de move",
                     "parameters":[],
                     "logic": [
-                        {"type": "DELETE"}
+                        {"type": "FILE_MOVE"}
                     ],
                     "actUponObject": "photos.xml"
                 }
             ]
         }
     ],
-    "router": "photos_router.xml",
-    "pages": [
-        "photos_ui.json"
-    ],
+    "page": "photos_ui.json",
     "dataObjects": [
         "photos.xml"
     ],

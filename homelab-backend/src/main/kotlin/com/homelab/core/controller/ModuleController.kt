@@ -42,8 +42,11 @@ class ModuleController(private val moduleService: ModuleService) {
     @GetMapping("/{id}/UI/{page}")
     fun getModulePage(@PathVariable id: String, @PathVariable page: String) = moduleService.getModulePage(id, page)
 
-    @GetMapping("/{id}/UI/router")
-    fun getModuleRouter(@PathVariable id: String) = moduleService.getModuleRouter(id)
+    @GetMapping("/{id}/UI/page")
+    fun getModulePage(@PathVariable id: String) = moduleService.getModulePage(id)
+
+//    @GetMapping("/{id}/UI/router")
+//    fun getModuleRouter(@PathVariable id: String) = moduleService.getModuleRouter(id)
 
     @GetMapping("/{id}/UI/icon")
     fun getModuleIcon(@PathVariable id: String) = moduleService.getModuleIcon(id)

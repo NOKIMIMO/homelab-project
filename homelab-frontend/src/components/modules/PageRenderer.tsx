@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { ComponentRenderer } from './ComponentRenderer';
 
 interface PageRendererProps {
@@ -21,10 +21,11 @@ export const PageRenderer: React.FC<PageRendererProps> = ({
     async (action: string, params?: any) => {
       try {
         setLoading(true);
+        // resolve binding name if it's mapped in the 'bindings' block
         const bindingName = bindings[action] || action;
         const result = await onBindingCall?.(bindingName, params);
         
-        if (result) {
+        if (result !== undefined) {
           setData((prev) => ({
             ...prev,
             [bindingName]: result,
@@ -46,6 +47,31 @@ export const PageRenderer: React.FC<PageRendererProps> = ({
     }));
   }, []);
 
+  // Pre-load components that define a "source" without parameters (e.g. lists)
+  useEffect(() => {
+    const autoFetchSources = new Set<string>();
+    
+    const scanForSources = (config: any) => {
+      if (!config) return;
+      if (Array.isArray(config)) {
+        config.forEach(scanForSources);
+        return;
+      }
+      // If it has a source and no mandatory params, we can try to autoload it
+      if (config.source && !config.params) {
+        autoFetchSources.add(config.source);
+      }
+      if (config.components) scanForSources(config.components);
+      if (config.content) scanForSources(config.content);
+    };
+
+    scanForSources(pageConfig.components);
+
+    autoFetchSources.forEach((sourceAction) => {
+      handleAction(sourceAction);
+    });
+  }, [pageConfig, handleAction]);
+
   const context = {
     ...state,
     ...data,
@@ -53,7 +79,7 @@ export const PageRenderer: React.FC<PageRendererProps> = ({
   };
 
   return (
-    <div className={`page page-${pageConfig.id}`}>
+    <div className={`w-full max-w-7xl mx-auto page page-${pageConfig.id}`}>
       <ComponentRenderer
         config={{
           type: 'div',

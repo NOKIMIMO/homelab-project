@@ -1,4 +1,5 @@
 import React from 'react';
+import { Upload, RefreshCw, X, Check, Save, Image as ImageIcon } from 'lucide-react';
 
 interface ButtonProps {
   label: string;
@@ -7,6 +8,18 @@ interface ButtonProps {
   type?: 'button' | 'submit' | 'reset';
   disabled?: boolean;
 }
+
+const getIcon = (iconName?: string) => {
+  switch (iconName?.toLowerCase()) {
+    case 'upload': return <Upload size={18} />;
+    case 'refresh': return <RefreshCw size={18} />;
+    case 'close': return <X size={18} />;
+    case 'check': return <Check size={18} />;
+    case 'save': return <Save size={18} />;
+    case 'image': return <ImageIcon size={18} />;
+    default: return null;
+  }
+};
 
 export const Button: React.FC<ButtonProps> = ({ 
   label, 
@@ -20,9 +33,9 @@ export const Button: React.FC<ButtonProps> = ({
       type={type}
       onClick={onClick}
       disabled={disabled}
-      className="button"
+      className={`btn ${icon ? 'btn-primary' : 'btn-neutral'}`}
     >
-      {icon && <span className="icon">{icon}</span>}
+      {icon && getIcon(icon)}
       {label}
     </button>
   );

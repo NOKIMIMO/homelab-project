@@ -9,7 +9,6 @@ import com.homelab.core.parser.ModuleDataObjectParser
 import jakarta.annotation.*
 import org.springframework.core.io.Resource
 import org.springframework.core.io.FileSystemResource
-import org.springframework.core.io.ByteArrayResource
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import java.io.File
@@ -110,29 +109,35 @@ class ModuleService(
         val discovered = moduleConfigService.scanModuleConfigs(homelabConfig.modulesScanPath)
         val found = discovered.find { it.config.id == id } ?: return null
         return mapOf(
-            "router" to found.config.router,
-            "pages" to (found.config.pages ?: emptyList())
+            "pages" to found.config.page
         )
-    }
-
-    fun getModuleRouter(id: String): Any? {
-        val discovered = moduleConfigService.scanModuleConfigs(homelabConfig.modulesScanPath)
-        val found = discovered.find { it.config.id == id } ?: return null
-        val routerName = found.config.router ?: return null
-        val file = File(found.directory, routerName)
-        if (!file.exists() || !file.isFile) return null
-        return try {
-            file.readText()
-        } catch (e: Exception) {
-            println("Failed to read router ${file.absolutePath}: ${e.message}")
-            null
-        }
     }
 
     fun getModulePage(id: String, page: String): String? {
         val discovered = moduleConfigService.scanModuleConfigs(homelabConfig.modulesScanPath)
         val found = discovered.find { it.config.id == id } ?: return null
         val file = File(found.directory, page)
+        if (!file.exists() || !file.isFile) return null
+        return try {
+            file.readText()
+        } catch (e: Exception) {
+            println("Failed to read module page ${file.absolutePath}: ${e.message}")
+            null
+        }
+    }
+
+    fun getModulePage(id: String): String? {
+        val discovered = moduleConfigService.scanModuleConfigs(homelabConfig.modulesScanPath)
+        val found = discovered.find { it.config.id == id } ?: return null
+
+        if (found.config.page == null){
+            println("Module ${id} has no pages declared")
+            return null // API only
+        }
+
+        val file = File(found.directory, found.config.page)
+        println("Info: module page file path: ${file.absolutePath}")
+        println("Info: module page file exists: ${file.exists()}")
         if (!file.exists() || !file.isFile) return null
         return try {
             file.readText()

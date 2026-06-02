@@ -1,4 +1,5 @@
 import React from 'react';
+import { Maximize2, Trash2, Edit, Expand } from 'lucide-react';
 
 interface IconButtonProps {
   icon: string;
@@ -7,6 +8,17 @@ interface IconButtonProps {
   disabled?: boolean;
 }
 
+const getIcon = (iconName: string) => {
+  switch (iconName.toLowerCase()) {
+    case 'maximize':
+    case 'expand': return <Maximize2 size={18} />;
+    case 'trash':
+    case 'delete': return <Trash2 size={18} />;
+    case 'edit': return <Edit size={18} />;
+    default: return <Expand size={18} />; // Fallback
+  }
+};
+
 export const IconButton: React.FC<IconButtonProps> = ({ 
   icon, 
   tooltip, 
@@ -14,14 +26,15 @@ export const IconButton: React.FC<IconButtonProps> = ({
   disabled = false 
 }) => {
   return (
-    <button 
-      className="icon-button"
-      onClick={onClick}
-      title={tooltip}
-      disabled={disabled}
-      aria-label={tooltip}
-    >
-      <span className="icon">{icon}</span>
-    </button>
+    <div className={tooltip ? "tooltip tooltip-left" : ""} data-tip={tooltip}>
+      <button 
+        className="btn btn-circle btn-ghost btn-sm"
+        onClick={onClick}
+        disabled={disabled}
+        aria-label={tooltip}
+      >
+        {getIcon(icon)}
+      </button>
+    </div>
   );
 };
