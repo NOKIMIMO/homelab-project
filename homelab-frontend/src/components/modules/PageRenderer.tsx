@@ -1,18 +1,17 @@
 import React, { useEffect, useMemo } from 'react';
 import { ComponentRenderer } from './ComponentRenderer';
-import {
-  ModuleRendererProvider,
-  useModuleRendererContext,
-} from './ModuleRendererContext';
+import { ModuleRendererProvider } from './ModuleRendererProvider';
+import { useModuleRendererContext } from './f_useModuleRendererContext';
 import type {
   BindingSource,
   BindingRequest,
   ModulePageConfig,
   RendererComponent,
 } from './types';
-import { getBindingKey} from './types';
+import { getBindingKey } from './types';
 
 interface PageRendererProps {
+  moduleId?: string;
   pageConfig: ModulePageConfig;
   onBindingCall?: (request: BindingRequest) => Promise<unknown>;
 }
@@ -51,6 +50,10 @@ const collectSources = (config: RendererComponent | RendererComponent[] | undefi
   if ('content' in config) {
     collectSources(config.content, sources);
   }
+
+  if ('preview' in config) {
+    collectSources(config.preview, sources);
+  }
 };
 
 const PageRendererContent: React.FC<PageRendererContentProps> = ({
@@ -68,7 +71,7 @@ const PageRendererContent: React.FC<PageRendererContentProps> = ({
   }, [preloadSource, sources]);
 
   return (
-    <div className={`relative w-full max-w-12xl mx-auto min-h-full page-${pageConfig.id}`}>
+    <div className={`relative w-full max-w-12xl mx-auto min-h-full space-y-6 page-${pageConfig.id}`}>
       {pageConfig.components.map((component, index) => (
         <ComponentRenderer
           key={`${component.type}-${index}`}
@@ -83,6 +86,7 @@ const PageRendererContent: React.FC<PageRendererContentProps> = ({
 };
 
 export const PageRenderer: React.FC<PageRendererProps> = ({
+  moduleId,
   pageConfig,
   onBindingCall,
 }) => {
@@ -96,6 +100,7 @@ export const PageRenderer: React.FC<PageRendererProps> = ({
     <ModuleRendererProvider
       key={pageConfig.id}
       initialState={pageConfig.state || {}}
+      moduleId={moduleId}
       bindings={pageConfig.bindings}
       onBindingCall={onBindingCall}
     >

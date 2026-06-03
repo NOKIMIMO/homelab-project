@@ -1,3 +1,4 @@
+//TODO: move renderer and binding in their own files
 export type RendererContext = Record<string, unknown>;
 
 export type HttpMethod = 'GET' | 'POST';
@@ -47,6 +48,7 @@ export interface BindingAction {
 export type ComponentAction = SetStateAction | BindingAction;
 export type ActionConfig = ComponentAction | ComponentAction[];
 
+//TODO: move to it's own file 
 export interface HeaderComponent {
   type: 'Header';
   props: {
@@ -109,6 +111,16 @@ export interface ListComponent {
   item: ListItemComponent;
 }
 
+export interface ElementListComponent {
+  type: 'ElementList';
+  props?: {
+    emptyMessage?: string;
+  };
+  source: BindingSource;
+  preview?: ImageViewerComponent;
+  item: ListItemComponent;
+}
+
 export interface ImageViewerComponent {
   type: 'ImageViewer';
   source?: BindingSource;
@@ -126,6 +138,7 @@ export interface ModalComponent {
   content?: RendererComponent;
   actions?: RendererComponent[];
 }
+//
 
 export type RendererComponent =
   | HeaderComponent
@@ -134,6 +147,7 @@ export type RendererComponent =
   | IconButtonComponent
   | FileUploadZoneComponent
   | ListComponent
+  | ElementListComponent
   | ListItemComponent
   | ModalComponent
   | ImageViewerComponent;
@@ -151,6 +165,35 @@ export interface ModulePageConfig {
 export interface ModulePagePayload {
   page: ModulePageConfig;
 }
+
+const normalizeBindingKeyValue = (value: unknown): unknown => {
+  if (Array.isArray(value)) {
+    return value.map((entry) => normalizeBindingKeyValue(entry));
+  }
+
+  if (value && typeof value === 'object') {
+    return Object.entries(value as Record<string, unknown>)
+      .sort(([left], [right]) => left.localeCompare(right))
+      .reduce<Record<string, unknown>>((acc, [key, entry]) => {
+        acc[key] = normalizeBindingKeyValue(entry);
+        return acc;
+      }, {});
+  }
+
+  return value;
+};
+
+const serializeBindingKeyParams = (params?: BindingRequestPayload | Record<string, unknown>): string => {
+  if (!params) {
+    return '';
+  }
+
+  if (params instanceof FormData) {
+    return '__formdata__';
+  }
+
+  return JSON.stringify(normalizeBindingKeyValue(params));
+};
 
 export const isModulePageConfig = (value: unknown): value is ModulePageConfig => {
   if (!value || typeof value !== 'object') {
@@ -178,4 +221,14 @@ export const extractModulePageConfig = (value: unknown): ModulePageConfig | null
   return null;
 };
 
-export const getBindingKey = (source: BindingSource): string => source.binding;
+export const getBindingKey = (
+  source: Pick<BindingRequest, 'binding' | 'params'> | BindingSource,
+  moduleId?: string,
+): string => {
+  const serializedParams = serializeBindingKeyParams(source.params);
+  const prefix = moduleId ? `${moduleId}:` : '';
+
+  return serializedParams
+    ? `${prefix}${source.binding}::${serializedParams}`
+    : `${prefix}${source.binding}`;
+};

@@ -7,5 +7,9 @@ export default function PluginPage() {
   const { modules } = useOutletContext<AppOutletContext>();
   const module = modules.find((item) => item.id === moduleId);
 
-  return <ModuleView module={module} />;
+  return (
+    <div className="flex h-full min-h-0 overflow-hidden">
+      <ModuleView module={module} />
+    </div>
+  );
 }

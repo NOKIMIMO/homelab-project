@@ -1,4 +1,4 @@
-import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import type {
   BindingRequest,
   BindingSource,
@@ -6,26 +6,23 @@ import type {
   RendererResource,
   RendererResourceMap,
 } from './types';
-
-interface ModuleRendererContextValue {
-  baseContext: RendererContext;
-  resources: RendererResourceMap;
-  runBinding: (request: BindingRequest) => Promise<unknown>;
-  preloadSource: (source: BindingSource) => Promise<unknown>;
-  setStateValue: (key: string, value: unknown) => void;
-}
+import { getBindingKey } from './types';
+import {
+  ModuleRendererContext,
+  type ModuleRendererContextValue,
+} from './ModuleRendererContext.ts';
 
 interface ModuleRendererProviderProps {
   initialState: RendererContext;
+  moduleId?: string;
   bindings?: Record<string, string>;
   onBindingCall?: (request: BindingRequest) => Promise<unknown>;
   children: React.ReactNode;
 }
 
-const ModuleRendererContext = createContext<ModuleRendererContextValue | null>(null);
-
 export function ModuleRendererProvider({
   initialState,
+  moduleId,
   bindings,
   onBindingCall,
   children,
@@ -43,6 +40,7 @@ export function ModuleRendererProvider({
 
   const runBinding = useCallback(
     async (request: BindingRequest) => {
+      const resourceKey = getBindingKey(request, moduleId);
       const bindingName = bindings?.[request.binding] || request.binding;
       const resolvedRequest: BindingRequest = {
         ...request,
@@ -52,14 +50,14 @@ export function ModuleRendererProvider({
       setResources((prev) => {
         const nextResource: RendererResource = {
           status: 'loading',
-          data: prev[request.binding]?.data,
+          data: prev[resourceKey]?.data,
           request: resolvedRequest,
           updatedAt: Date.now(),
         };
 
         return {
           ...prev,
-          [request.binding]: nextResource,
+          [resourceKey]: nextResource,
         };
       });
       setPendingRequests((prev) => prev + 1);
@@ -69,7 +67,7 @@ export function ModuleRendererProvider({
 
         setResources((prev) => ({
           ...prev,
-          [request.binding]: {
+          [resourceKey]: {
             status: 'ready',
             data: result,
             request: resolvedRequest,
@@ -81,7 +79,7 @@ export function ModuleRendererProvider({
       } catch (error) {
         setResources((prev) => ({
           ...prev,
-          [request.binding]: {
+          [resourceKey]: {
             status: 'error',
             error,
             request: resolvedRequest,
@@ -93,12 +91,13 @@ export function ModuleRendererProvider({
         setPendingRequests((prev) => Math.max(0, prev - 1));
       }
     },
-    [bindings, onBindingCall]
+    [bindings, moduleId, onBindingCall]
   );
 
   const preloadSource = useCallback(
     async (source: BindingSource) => {
-      const resource = resources[source.binding];
+      const resourceKey = getBindingKey(source, moduleId);
+      const resource = resources[resourceKey];
       if (resource && resource.status !== 'idle') {
         return resource.data;
       }
@@ -109,7 +108,7 @@ export function ModuleRendererProvider({
         params: source.params,
       });
     },
-    [resources, runBinding]
+    [moduleId, resources, runBinding]
   );
 
   const resourceValues = useMemo(
@@ -136,22 +135,14 @@ export function ModuleRendererProvider({
   const value = useMemo<ModuleRendererContextValue>(
     () => ({
       baseContext,
+      moduleId,
       resources,
       runBinding,
       preloadSource,
       setStateValue,
     }),
-    [baseContext, preloadSource, resources, runBinding, setStateValue]
+    [baseContext, moduleId, preloadSource, resources, runBinding, setStateValue]
   );
 
   return <ModuleRendererContext.Provider value={value}>{children}</ModuleRendererContext.Provider>;
-}
-
-export function useModuleRendererContext() {
-  const context = useContext(ModuleRendererContext);
-  if (!context) {
-    throw new Error('useModuleRendererContext must be used within ModuleRendererProvider');
-  }
-
-  return context;
 }
