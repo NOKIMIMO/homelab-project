@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect } from 'react';
 
 interface ModalProps {
   visible: boolean;
@@ -17,33 +17,40 @@ export const Modal: React.FC<ModalProps> = ({
   content,
   title 
 }) => {
-  const dialogRef = useRef<HTMLDialogElement>(null);
-
   useEffect(() => {
-    if (visible) {
-      document.body.style.overflow = 'hidden';
-      dialogRef.current?.showModal();
-    } else {
-      document.body.style.overflow = 'auto';
-      dialogRef.current?.close();
+    if (!visible) {
+      return undefined;
     }
-    
-    return () => {
-      document.body.style.overflow = 'auto';
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onClose?.();
+      }
     };
-  }, [visible]);
+
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [onClose, visible]);
+
+  if (!visible) {
+    return null;
+  }
 
   return (
-    <dialog ref={dialogRef} className="modal modal-bottom sm:modal-middle" onClose={onClose}>
-      <div className="modal-box p-0 max-w-4xl bg-base-100/95 backdrop-blur">
+    <div className="absolute inset-0 z-20 flex items-center justify-center bg-base-content/30 p-4">
+      <div className="absolute inset-0" onClick={onClose} />
+      <div className="relative z-10 w-full max-w-7xl max-h-full overflow-hidden rounded-2xl border border-base-content/10 bg-base-100/95 shadow-2xl backdrop-blur">
         {title && (
           <div className="flex justify-between items-center p-4 border-b border-base-200">
             <h3 className="font-bold text-lg">{title}</h3>
-            <button className="btn btn-sm btn-circle btn-ghost" onClick={onClose}>✕</button>
+            <button type="button" className="btn btn-sm btn-circle btn-ghost" onClick={onClose}>✕</button>
           </div>
         )}
         
-        <div className="p-4">
+        <div className="max-h-[calc(100vh-10rem)] overflow-auto p-4">
           {content || children}
         </div>
         
@@ -53,9 +60,6 @@ export const Modal: React.FC<ModalProps> = ({
           </div>
         )}
       </div>
-      <form method="dialog" className="modal-backdrop">
-        <button onClick={onClose}>Fermer</button>
-      </form>
-    </dialog>
+    </div>
   );
 };

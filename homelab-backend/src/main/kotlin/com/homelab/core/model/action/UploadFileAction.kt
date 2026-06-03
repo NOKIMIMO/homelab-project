@@ -23,6 +23,7 @@ class UploadFileAction : Action {
             mergedParams.containsKey("file") -> mergedParams["file"]
             else -> null
         }
+        println("[UploadFileAction] fileObj type: ${fileObj?.javaClass?.name}")
 
         if (fileObj !is MultipartFile) {
             println("[UploadFileAction] no MultipartFile provided")

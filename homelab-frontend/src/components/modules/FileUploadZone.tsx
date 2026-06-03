@@ -1,19 +1,55 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { UploadCloud } from 'lucide-react';
 
 interface FileUploadZoneProps {
+  id?: string;
   accept?: string;
   multiple?: boolean;
-  onFilesSelected?: (files: File[]) => void;
+  onFilesSelected?: (formData: FormData, files: File[]) => void;
 }
 
 export const FileUploadZone: React.FC<FileUploadZoneProps> = ({ 
+  id,
   accept = '*', 
   multiple = true,
   onFilesSelected 
 }) => {
   const inputRef = useRef<HTMLInputElement>(null);
   const [isDragOver, setIsDragOver] = useState(false);
+
+  useEffect(() => {
+    const handleOpenRequest = (event: Event) => {
+      const customEvent = event as CustomEvent<{ targetId?: string }>;
+      if (!id || customEvent.detail?.targetId !== id) {
+        return;
+      }
+
+      // console.log('[FileUploadZone] open request received', { id, accept, multiple });
+      inputRef.current?.click();
+    };
+
+    window.addEventListener('module:file-upload-open', handleOpenRequest as EventListener);
+
+    return () => {
+      window.removeEventListener('module:file-upload-open', handleOpenRequest as EventListener);
+    };
+  }, [accept, id, multiple]);
+
+  const buildUploadPayload = (files: File[]) => {
+    const formData = new FormData();
+    files.forEach((file) => formData.append('file', file));
+    // console.log('[FileUploadZone] FormData payload', Array.from(formData.entries()).map(([key, value]) => [
+    //   key,
+    //   value instanceof File
+    //     ? {
+    //         name: value.name,
+    //         size: value.size,
+    //         type: value.type,
+    //       }
+    //     : value,
+    // ]));
+    return formData;
+  };
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -30,15 +66,21 @@ export const FileUploadZone: React.FC<FileUploadZoneProps> = ({
     setIsDragOver(false);
     
     const files = Array.from(e.dataTransfer.files);
-    onFilesSelected?.(files);
+    // logFiles('drop', files);
+    const formData = buildUploadPayload(files);
+    onFilesSelected?.(formData, files);
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
-    onFilesSelected?.(files);
+    // logFiles('input', files);
+    const formData = buildUploadPayload(files);
+    onFilesSelected?.(formData, files);
+    e.target.value = '';
   };
 
   const handleClick = () => {
+    // console.log('[FileUploadZone] opening native picker', { id, accept, multiple });
     inputRef.current?.click();
   };
 
@@ -70,3 +112,4 @@ export const FileUploadZone: React.FC<FileUploadZoneProps> = ({
     </div>
   );
 };
+

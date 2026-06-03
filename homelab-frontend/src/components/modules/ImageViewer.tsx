@@ -3,8 +3,8 @@ import React from 'react';
 interface ImageViewerProps {
   src?: string;
   source?: string;
-  sourceData?: any;
-  params?: any;
+  sourceData?: string | { url?: string | null } | null;
+  params?: Record<string, unknown>;
   alt?: string;
   loading?: boolean;
   error?: string;
@@ -12,9 +12,7 @@ interface ImageViewerProps {
 
 export const ImageViewer: React.FC<ImageViewerProps> = ({ 
   src, 
-  source,
   sourceData,
-  params,
   alt = 'Image',
   loading = false,
   error 

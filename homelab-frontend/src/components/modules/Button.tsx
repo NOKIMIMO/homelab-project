@@ -4,6 +4,7 @@ import { Upload, RefreshCw, X, Check, Save, Image as ImageIcon } from 'lucide-re
 interface ButtonProps {
   label: string;
   icon?: string;
+  uploadTarget?: string;
   onClick?: () => void;
   type?: 'button' | 'submit' | 'reset';
   disabled?: boolean;
@@ -24,14 +25,29 @@ const getIcon = (iconName?: string) => {
 export const Button: React.FC<ButtonProps> = ({ 
   label, 
   icon, 
+  uploadTarget,
   onClick, 
   type = 'button',
   disabled = false 
 }) => {
+  const handleClick = () => {
+    if (uploadTarget) {
+      // console.log('[Button] opening upload target', { label, uploadTarget });
+      window.dispatchEvent(
+        new CustomEvent('module:file-upload-open', {
+          detail: { targetId: uploadTarget },
+        })
+      );
+      return;
+    }
+
+    onClick?.();
+  };
+
   return (
     <button 
       type={type}
-      onClick={onClick}
+      onClick={handleClick}
       disabled={disabled}
       className={`btn ${icon ? 'btn-primary' : 'btn-neutral'}`}
     >

@@ -29,9 +29,9 @@
             "type": "Button",
             "props": {
               "label": "Upload photo",
-              "icon": "upload"
-            },
-            "action": "addPhoto"
+              "icon": "upload",
+              "uploadTarget": "photos-upload"
+            }
           },
 
           {
@@ -40,7 +40,10 @@
               "label": "Refresh",
               "icon": "refresh"
             },
-            "action": "listPhotos"
+            "action": {
+              "action": "listPhotos",
+              "method": "POST"
+            }
           }
         ]
       },
@@ -48,33 +51,50 @@
       {
         "type": "FileUploadZone",
         "props": {
+          "id": "photos-upload",
           "accept": "image/*",
           "multiple": false
         },
-        "action": "addPhoto"
+        "action": [
+          {
+            "action": "addPhoto",
+            "method": "POST"
+          },
+          {
+            "action": "listPhotos",
+            "method": "POST"
+          }
+        ]
       },
 
       {
         "type": "List",
-        "source": "listPhotos",
+        "props": {
+          "emptyMessage": "Aucune photo disponible."
+        },
+        "source": {
+          "binding": "listPhotos",
+          "method": "POST"
+        },
 
         "item": {
           "type": "ListItem",
 
           "props": {
             "title": "{{file_name}}",
-            "subtitle": "ID: {{id}}",
-            "clickable": true
+            "subtitle": "ID: {{id}}"
           },
 
-          "onClick": {
+          "defaultClick": {
             "action": "getPhoto",
+            "method": "POST",
             "params": {
               "id": "{{id}}"
             },
             "then": {
               "setState": {
-                "selectedPhoto": "{{result}}"
+                "selectedPhoto": "{{result}}",
+                "fullscreenPhotoId": "{{id}}"
               }
             }
           },
@@ -87,9 +107,17 @@
                 "tooltip": "Agrandir"
               },
               "action": {
-                "type": "setState",
-                "target": "fullscreenPhotoId",
-                "value": "{{id}}"
+                "action": "getPhoto",
+                "method": "POST",
+                "params": {
+                  "id": "{{id}}"
+                },
+                "then": {
+                  "setState": {
+                    "selectedPhoto": "{{result}}",
+                    "fullscreenPhotoId": "{{id}}"
+                  }
+                }
               }
             },
 
@@ -99,7 +127,19 @@
                 "icon": "trash",
                 "tooltip": "Supprimer"
               },
-              "action": "deletePhoto"
+              "action": [
+                {
+                  "action": "deletePhoto",
+                  "method": "POST",
+                  "params": {
+                    "id": "{{id}}"
+                  }
+                },
+                {
+                  "action": "listPhotos",
+                  "method": "POST"
+                }
+              ]
             }
           ]
         }
@@ -111,7 +151,10 @@
 
         "content": {
           "type": "ImageViewer",
-          "source": "getPhoto",
+          "source": {
+            "binding": "getPhoto",
+            "method": "POST"
+          },
 
           "params": {
             "id": "{{fullscreenPhotoId}}"
