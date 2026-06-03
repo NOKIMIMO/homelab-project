@@ -12,6 +12,7 @@ const getIcon = (iconName: string) => {
   switch (iconName.toLowerCase()) {
     case 'maximize':
     case 'expand': return <Maximize2 size={18} />;
+    case 'fullscreen': return <Maximize2 size={18} />;
     case 'trash':
     case 'delete': return <Trash2 size={18} />;
     case 'edit': return <Edit size={18} />;
@@ -25,11 +26,21 @@ export const IconButton: React.FC<IconButtonProps> = ({
   onClick,
   disabled = false 
 }) => {
+  const stopEvent = (event: React.SyntheticEvent) => {
+    event.stopPropagation();
+  };
+
   return (
     <div className={tooltip ? "tooltip tooltip-left" : ""} data-tip={tooltip}>
       <button 
+        type="button"
         className="btn btn-circle btn-ghost btn-sm"
-        onClick={onClick}
+        onMouseDown={stopEvent}
+        onPointerDown={stopEvent}
+        onClick={(event) => {
+          stopEvent(event);
+          onClick?.();
+        }}
         disabled={disabled}
         aria-label={tooltip}
       >

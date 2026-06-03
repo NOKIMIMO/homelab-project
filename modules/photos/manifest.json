@@ -62,15 +62,6 @@
                         {"type": "DELETE"}
                     ],
                     "actUponObject": "photos.xml"
-                },
-                {
-                    "name":"test",
-                    "description":"test le truc de move",
-                    "parameters":[],
-                    "logic": [
-                        {"type": "FILE_MOVE"}
-                    ],
-                    "actUponObject": "photos.xml"
                 }
             ]
         }

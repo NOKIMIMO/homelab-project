@@ -1,94 +1,105 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { ComponentRenderer } from './ComponentRenderer';
+import {
+  ModuleRendererProvider,
+  useModuleRendererContext,
+} from './ModuleRendererContext';
+import type {
+  BindingSource,
+  BindingRequest,
+  ModulePageConfig,
+  RendererComponent,
+} from './types';
+import { getBindingKey} from './types';
 
 interface PageRendererProps {
-  pageConfig: any;
-  onBindingCall?: (binding: string, params?: any) => Promise<any>;
+  pageConfig: ModulePageConfig;
+  onBindingCall?: (request: BindingRequest) => Promise<unknown>;
 }
+
+interface PageRendererContentProps {
+  pageConfig: ModulePageConfig;
+  sources: BindingSource[];
+}
+
+const collectSources = (config: RendererComponent | RendererComponent[] | undefined, sources: Map<string, BindingSource>) => {
+  if (!config) {
+    return;
+  }
+
+  if (Array.isArray(config)) {
+    config.forEach((component) => collectSources(component, sources));
+    return;
+  }
+
+  if ('source' in config && typeof config.source === 'object' && config.source !== null) {
+    sources.set(getBindingKey(config.source), config.source);
+  }
+
+  if ('item' in config) {
+    collectSources(config.item, sources);
+  }
+
+  if ('actions' in config) {
+    collectSources(config.actions, sources);
+  }
+
+  if ('components' in config) {
+    collectSources(config.components, sources);
+  }
+
+  if ('content' in config) {
+    collectSources(config.content, sources);
+  }
+};
+
+const PageRendererContent: React.FC<PageRendererContentProps> = ({
+  pageConfig,
+  sources,
+}) => {
+  const { baseContext, preloadSource, runBinding, setStateValue } = useModuleRendererContext();
+
+  useEffect(() => {
+    sources.forEach((source) => {
+      if (!source.params) {
+        void preloadSource(source).catch(() => undefined);
+      }
+    });
+  }, [preloadSource, sources]);
+
+  return (
+    <div className={`relative w-full max-w-12xl mx-auto min-h-full page-${pageConfig.id}`}>
+      {pageConfig.components.map((component, index) => (
+        <ComponentRenderer
+          key={`${component.type}-${index}`}
+          config={component}
+          context={baseContext}
+          onAction={runBinding}
+          onStateChange={setStateValue}
+        />
+      ))}
+    </div>
+  );
+};
 
 export const PageRenderer: React.FC<PageRendererProps> = ({
   pageConfig,
   onBindingCall,
 }) => {
-  const [state, setState] = useState(pageConfig.state || {});
-  const [bindings, setBindings] = useState<Record<string, any>>(
-    pageConfig.bindings || {}
-  );
-  const [data, setData] = useState<Record<string, any>>({});
-  const [loading, setLoading] = useState(false);
-
-  const handleAction = useCallback(
-    async (action: string, params?: any) => {
-      try {
-        setLoading(true);
-        // resolve binding name if it's mapped in the 'bindings' block
-        const bindingName = bindings[action] || action;
-        const result = await onBindingCall?.(bindingName, params);
-        
-        if (result !== undefined) {
-          setData((prev) => ({
-            ...prev,
-            [bindingName]: result,
-          }));
-        }
-      } catch (error) {
-        console.error(`Error calling binding "${action}":`, error);
-      } finally {
-        setLoading(false);
-      }
-    },
-    [bindings, onBindingCall]
-  );
-
-  const handleStateChange = useCallback((key: string, value: any) => {
-    setState((prev: any) => ({
-      ...prev,
-      [key]: value,
-    }));
-  }, []);
-
-  // Pre-load components that define a "source" without parameters (e.g. lists)
-  useEffect(() => {
-    const autoFetchSources = new Set<string>();
-    
-    const scanForSources = (config: any) => {
-      if (!config) return;
-      if (Array.isArray(config)) {
-        config.forEach(scanForSources);
-        return;
-      }
-      // If it has a source and no mandatory params, we can try to autoload it
-      if (config.source && !config.params) {
-        autoFetchSources.add(config.source);
-      }
-      if (config.components) scanForSources(config.components);
-      if (config.content) scanForSources(config.content);
-    };
-
-    scanForSources(pageConfig.components);
-
-    autoFetchSources.forEach((sourceAction) => {
-      handleAction(sourceAction);
-    });
-  }, [pageConfig, handleAction]);
-
-  const context = {
-    ...state,
-    ...data,
-    loading,
-  };
+  const sources = useMemo(() => {
+    const sourceMap = new Map<string, BindingSource>();
+    collectSources(pageConfig.components, sourceMap);
+    return Array.from(sourceMap.values());
+  }, [pageConfig.components]);
 
   return (
-    <div className={`w-full max-w-7xl mx-auto page page-${pageConfig.id}`}>
-      <ComponentRenderer
-        config={{
-          type: 'div',
-          components: pageConfig.components,
-        }}
-        context={context}
-        onAction={handleAction}
-        onStateChange={handleStateChange}
-      />
-    </div>
+    <ModuleRendererProvider
+      key={pageConfig.id}
+      initialState={pageConfig.state || {}}
+      bindings={pageConfig.bindings}
+      onBindingCall={onBindingCall}
+    >
+      <PageRendererContent pageConfig={pageConfig} sources={sources} />
+    </ModuleRendererProvider>
   );
 };

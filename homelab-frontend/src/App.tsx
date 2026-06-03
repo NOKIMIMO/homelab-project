@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate, Outlet } from 'react-router';
 import { BarChart, Camera, Box, Menu, Settings } from 'lucide-react';
 import { getApiUrl } from './api';
@@ -32,7 +32,7 @@ function AppLayout() {
     return location.pathname.replace('/plugins/', '');
   }, [location.pathname]);
 
-  const fetchModules = async () => {
+  const fetchModules = useCallback(async () => {
     setIsModulesRefreshing(true);
     try {
       const response = await fetch(getApiUrl('/api/modules'), {
@@ -46,11 +46,11 @@ function AppLayout() {
     } finally {
       setIsModulesRefreshing(false);
     }
-  };
+  }, [token]);
 
   useEffect(() => {
     fetchModules();
-  }, []);
+  }, [fetchModules]);
 
   useEffect(() => {
     if (activeModuleId) {

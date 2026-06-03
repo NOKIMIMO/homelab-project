@@ -51,6 +51,7 @@ class AppletControler(
 		@RequestBody(required = false) body: Map<String, Any>?,
 		@RequestParam(required = false) formParams: Map<String, String>?
 	): ResponseEntity<Any> {
+		println("[AppletControler] Simple JSON call")
 		val mergedParams = mutableMapOf<String, Any>()
 		body?.let { mergedParams.putAll(it) }
 		formParams?.let { mergedParams.putAll(it) }
@@ -65,9 +66,11 @@ class AppletControler(
 		@RequestParam(required = false) formParams: Map<String, String>?,
 		@RequestPart(required = false, name = "file") file: MultipartFile?
 	): ResponseEntity<Any> {
+		println("[AppletControler] MultiPart File call")
 		val mergedParams = mutableMapOf<String, Any>()
 		params?.let { mergedParams.putAll(it) }
 		formParams?.let { mergedParams.putAll(it) }
+		println("[AppletControler] mergeParams initial: ${mergedParams.keys}")
 		file?.let {
 			mergedParams["file"] = it
 			mergedParams["file_meta"] = mapOf(
@@ -85,7 +88,7 @@ class AppletControler(
 		val found = discovered.find { it.config.id == id } ?:
 			return ResponseEntity.status(HttpStatus.NOT_FOUND).body(mapOf("error" to "Module not found"))
 		if (!moduleService.isModuleRunning(id)){
-			println("Module is not running, starting it")
+			println("Module is not running")
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(mapOf("error" to "Module $id is not running, please start it first"))
 		}
 		val decl = findFunction(found.config, functionName) ?:

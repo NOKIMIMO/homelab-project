@@ -17,10 +17,14 @@ export const ListItem: React.FC<ListItemProps> = ({
   actions,
   children
 }) => {
+  const stopEvent = (event: React.SyntheticEvent) => {
+    event.stopPropagation();
+  };
+
   return (
     <li>
       <div 
-        className={`flex justify-between items-center w-full p-4 hover:bg-base-300 transition-colors ${clickable ? 'cursor-pointer active:scale-[0.98]' : ''}`}
+        className={`flex justify-between items-center w-full p-4 transition-colors ${clickable ? 'cursor-pointer hover:bg-base-300' : ''}`}
         onClick={clickable ? onClick : undefined}
       >
         <div className="flex flex-col gap-1">
@@ -28,12 +32,12 @@ export const ListItem: React.FC<ListItemProps> = ({
           {subtitle && <div className="text-sm opacity-60">{subtitle}</div>}
         </div>
         {actions && (
-          <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+          <div className="flex gap-2" onMouseDown={stopEvent} onPointerDown={stopEvent} onClick={stopEvent}>
             {actions}
           </div>
         )}
         {children && (
-          <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+          <div className="flex gap-2" onMouseDown={stopEvent} onPointerDown={stopEvent} onClick={stopEvent}>
             {children}
           </div>
         )}
