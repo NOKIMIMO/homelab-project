@@ -146,6 +146,92 @@
       },
 
       {
+        "type": "ElementList",
+        "props": {
+          "emptyMessage": "Aucune photo disponible."
+        },
+        "source": {
+          "binding": "listPhotos",
+          "method": "POST"
+        },
+        "preview": {
+          "type": "ImageViewer",
+          "source": {
+            "binding": "getPhoto",
+            "method": "POST"
+          },
+          "params": {
+            "id": "{{id}}"
+          },
+          "props": {
+            "alt": "{{file_name}}"
+          }
+        },
+        "item": {
+          "type": "ListItem",
+          "props": {
+            "title": "{{file_name}}",
+            "subtitle": "ID: {{id}}"
+          },
+          "defaultClick": {
+            "action": "getPhoto",
+            "method": "POST",
+            "params": {
+              "id": "{{id}}"
+            },
+            "then": {
+              "setState": {
+                "selectedPhoto": "{{result}}",
+                "fullscreenPhotoId": "{{id}}"
+              }
+            }
+          },
+          "actions": [
+            {
+              "type": "IconButton",
+              "props": {
+                "icon": "fullscreen",
+                "tooltip": "Agrandir"
+              },
+              "action": {
+                "action": "getPhoto",
+                "method": "POST",
+                "params": {
+                  "id": "{{id}}"
+                },
+                "then": {
+                  "setState": {
+                    "selectedPhoto": "{{result}}",
+                    "fullscreenPhotoId": "{{id}}"
+                  }
+                }
+              }
+            },
+            {
+              "type": "IconButton",
+              "props": {
+                "icon": "trash",
+                "tooltip": "Supprimer"
+              },
+              "action": [
+                {
+                  "action": "deletePhoto",
+                  "method": "POST",
+                  "params": {
+                    "id": "{{id}}"
+                  }
+                },
+                {
+                  "action": "listPhotos",
+                  "method": "POST"
+                }
+              ]
+            }
+          ]
+        }
+      },
+
+      {
         "type": "Modal",
         "visible": "{{fullscreenPhotoId != null}}",
 

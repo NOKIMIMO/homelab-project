@@ -138,9 +138,9 @@ export default function ModuleView({ module }: { module?: Module }) {
   }
 
   return (
-    <div className="w-full h-full bg-base-100 flex flex-col p-4 overflow-y-auto">
+    <div className="flex-1 w-full h-full min-h-0 bg-base-100 flex flex-col p-4 overflow-y-auto">
       {pageConfig ? (
-        <PageRenderer pageConfig={pageConfig} onBindingCall={handleBindingCall} />
+        <PageRenderer moduleId={module.id} pageConfig={pageConfig} onBindingCall={handleBindingCall} />
       ) : (
         <div className="flex flex-col items-center justify-center h-full">
           <Loader2 size={48} className="text-primary animate-spin mb-4" />

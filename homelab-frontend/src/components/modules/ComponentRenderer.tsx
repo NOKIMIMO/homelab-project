@@ -1,5 +1,5 @@
 import React from 'react';
-import { useModuleRendererContext } from './ModuleRendererContext';
+import { useModuleRendererContext } from './f_useModuleRendererContext';
 import {
   Header,
   ActionBar,
@@ -7,6 +7,7 @@ import {
   IconButton,
   FileUploadZone,
   List,
+  ElementList,
   ListItem,
   Modal,
   ImageViewer,
@@ -23,7 +24,7 @@ import type {
   SetStateAction,
   BindingSource,
 } from './types';
-import { getBindingKey} from './types';
+import { getBindingKey } from './types';
 
 interface ComponentRendererProps {
   config: RendererComponent
@@ -39,11 +40,13 @@ const componentMap = {
   IconButton,
   FileUploadZone,
   List,
+  ElementList,
   ListItem,
   Modal,
   ImageViewer,
 } satisfies Record<RendererComponentType, React.ElementType>;
-
+//TODO: BIG REFONTE, TROP GROS DE LOIN
+// j'ai trop entassé, mybad
 const isRendererRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null;
 
@@ -70,6 +73,24 @@ const hasAction = (config: RendererComponent): config is Extract<RendererCompone
 
 const hasDefaultClick = (config: RendererComponent): config is Extract<RendererComponent, { defaultClick?: ActionConfig }> =>
   'defaultClick' in config;
+
+const resolveModalStateKey = (visible: unknown): string | null => {
+  if (typeof visible !== 'string') {
+    return null;
+  }
+
+  const exactStateMatch = visible.match(/^\s*\{\{\s*([a-zA-Z_$][\w$]*)\s*\}\}\s*$/);
+  if (exactStateMatch && exactStateMatch[1]) {
+    return exactStateMatch[1];
+  }
+
+  const notNullMatch = visible.match(/^\s*\{\{\s*([a-zA-Z_$][\w$]*)\s*(?:!==?|==?)\s*null\s*\}\}\s*$/);
+  if (notNullMatch && notNullMatch[1]) {
+    return notNullMatch[1];
+  }
+
+  return null;
+};
 
 const extractBindingPayload = (value: unknown): unknown => {
   if (!isRendererRecord(value)) {
@@ -104,26 +125,17 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
   onAction,
   onStateChange,
 }) => {
-  const { baseContext, resources, runBinding, setStateValue } = useModuleRendererContext();
-
-  if (!config) return null;
+  const { baseContext, moduleId, resources, runBinding, setStateValue } = useModuleRendererContext();
 
   const { type } = config;
-  const renderContext: RendererContext = {
+  const renderContext = React.useMemo<RendererContext>(() => ({
     ...baseContext,
     ...context,
-  };
+  }), [baseContext, context]);
   const actionRunner = onAction || runBinding;
   const stateWriter = onStateChange || setStateValue;
 
-  const Component = componentMap[type];
-
-  if (!Component) {
-    console.warn(`Component type "${type}" not found`);
-    return null;
-  }
-
-  const resolveExpression = (expression: string, scope: RendererContext): unknown => {
+  const resolveExpression = React.useCallback((expression: string, scope: RendererContext): unknown => {
     const identifierMatch = expression.match(/^[a-zA-Z_$][\w$]*$/);
     if (identifierMatch) {
       return scope[expression];
@@ -137,9 +149,9 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
     }
 
     return undefined;
-  };
+  }, []);
 
-  const resolveValue = (value: unknown, scope: RendererContext = renderContext): unknown => {
+  const resolveValue = React.useCallback((value: unknown, scope: RendererContext = renderContext): unknown => {
     if (typeof value === 'string' && value.includes('{{')) {
       const exactMatch = value.match(/^\{\{([^}]+)\}\}$/);
       if (exactMatch && exactMatch[1]) {
@@ -153,13 +165,13 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
       });
     }
     return value;
-  };
+  }, [renderContext, resolveExpression]);
 
-  const resolveRecord = (value: Record<string, unknown>) =>
+  const resolveRecord = React.useCallback((value: Record<string, unknown>) =>
     Object.entries(value).reduce<Record<string, unknown>>((acc, [key, entry]) => ({
       ...acc,
       [key]: resolveValue(entry),
-    }), {});
+    }), {}), [resolveValue]);
 
   const resolvedProps = 'props' in config && config.props ? resolveRecord(config.props) : {};
 
@@ -175,6 +187,7 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
       key === 'defaultClick' ||
       key === 'onClick' ||
       key === 'source' ||
+      key === 'preview' ||
       key === 'params'
     ) {
       return acc;
@@ -220,10 +233,87 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
     }
   };
 
-  if (type === 'List' && config.source && config.item) {
-    const resourceKey = getBindingKey(config.source);
-    const listData = resources[resourceKey]?.data ?? renderContext[resourceKey];
+  const sourceRequest = React.useMemo(
+    () => (hasSource(config)
+      ? {
+          binding: config.source.binding,
+          method: config.source.method,
+          params:
+            'params' in config &&
+            config.params &&
+            typeof config.params === 'object' &&
+            !Array.isArray(config.params)
+              ? resolveRecord(config.params as Record<string, unknown>)
+              : config.source.params
+                ? resolveRecord(config.source.params)
+                : undefined,
+        }
+      : null),
+    [config, resolveRecord]
+  );
+  const sourceKey = sourceRequest ? getBindingKey(sourceRequest, moduleId) : null;
+  const sourceResource = sourceKey ? resources[sourceKey] : undefined;
+  const sourceData = sourceKey
+    ? extractBindingPayload(sourceResource?.data ?? renderContext[sourceKey])
+    : undefined;
+
+  React.useEffect(() => {
+    if (!sourceRequest?.params || !sourceKey || sourceResource) {
+      return;
+    }
+
+    void runBinding({
+      binding: sourceRequest.binding,
+      method: sourceRequest.method,
+      params: sourceRequest.params,
+    }).catch(() => undefined);
+  }, [runBinding, sourceKey, sourceRequest, sourceResource]);
+
+  const Component = componentMap[type];
+
+  if ((type === 'List' || type === 'ElementList') && config.source && config.item) {
+    const listData = sourceData;
     const listItems = extractListItems(listData);
+
+    if (type === 'ElementList') {
+      return (
+        <ElementList
+          {...resolvedProps}
+          items={listItems}
+          keyExtractor={(item, idx) =>
+            isRendererRecord(item) && typeof item.id === 'string' ? item.id : String(idx)
+          }
+          renderItem={(item) => {
+            const itemContext: RendererContext = isRendererRecord(item)
+              ? { ...renderContext, ...item }
+              : { ...renderContext, item };
+
+            return (
+              <>
+                {config.preview && (
+                  <div className="mb-3 rounded-xl border border-base-content/10 bg-base-100 p-2">
+                    <ComponentRenderer
+                      config={config.preview}
+                      context={itemContext}
+                      onAction={actionRunner}
+                      onStateChange={stateWriter}
+                    />
+                  </div>
+                )}
+                <ul className="menu p-0 m-0 bg-transparent">
+                  <ComponentRenderer
+                    config={config.item}
+                    context={itemContext}
+                    onAction={actionRunner}
+                    onStateChange={stateWriter}
+                  />
+                </ul>
+              </>
+            );
+          }}
+        />
+      );
+    }
 
     return (
       <List
@@ -248,6 +338,11 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
         }}
       />
     );
+  }
+
+  if (!Component) {
+    console.warn(`Component type "${type}" not found`);
+    return null;
   }
 
   const childrenToRender =
@@ -288,12 +383,6 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
         )
       : undefined;
 
-  const sourceKey = hasSource(config) ? getBindingKey(config.source) : null;
-  const sourceResource = sourceKey ? resources[sourceKey] : undefined;
-  const sourceData = sourceKey
-    ? extractBindingPayload(sourceResource?.data ?? renderContext[sourceKey])
-    : undefined;
-
   const componentEvents: Record<string, unknown> = {};
   if (type === 'ListItem') {
     const defaultClickAction = hasDefaultClick(config) ? config.defaultClick : undefined;
@@ -318,10 +407,19 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
     }
   }
 
+  const modalStateKey = type === 'Modal' ? resolveModalStateKey((config as { visible?: unknown }).visible) : null;
+
   return React.createElement(Component as React.ComponentType<Record<string, unknown>>, {
     ...resolvedProps,
     ...resolvedRest,
     ...(type === 'ListItem' ? { clickable: hasDefaultClick(config) && Boolean(config.defaultClick) } : {}),
+    ...(type === 'Modal' && modalStateKey
+      ? {
+          onClose: () => {
+            stateWriter(modalStateKey, null);
+          },
+        }
+      : {}),
     ...componentEvents,
     ...(sourceKey ? { sourceData } : {}),
     ...(sourceResource?.status === 'loading' ? { loading: true } : {}),

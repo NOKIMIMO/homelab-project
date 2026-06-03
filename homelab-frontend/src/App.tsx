@@ -61,9 +61,9 @@ function AppLayout() {
   }, [activeModuleId]);
 
   return (
-    <div className="drawer lg:drawer-open" data-theme="night">
+    <div className="drawer lg:drawer-open h-dvh overflow-hidden" data-theme="night">
       <input id="my-drawer-2" type="checkbox" className="drawer-toggle" />
-      <div className="drawer-content flex flex-col bg-base-200">
+      <div className="drawer-content flex min-h-0 flex-col bg-base-200">
         <div className="navbar bg-base-300 lg:hidden shadow-sm">
           <div className="flex-none">
             <label htmlFor="my-drawer-2" aria-label="open sidebar" className="btn btn-square btn-ghost">
@@ -75,7 +75,7 @@ function AppLayout() {
           </div>
         </div>
 
-        <main className="flex-1 w-full h-[100dvh] overflow-hidden">
+        <main className="flex-1 w-full min-h-0 overflow-hidden">
           <Outlet context={{ modules, onRefresh: fetchModules, isModulesRefreshing }} />
         </main>
       </div>
@@ -84,7 +84,7 @@ function AppLayout() {
         <label htmlFor="my-drawer-2" aria-label="close sidebar" className="drawer-overlay"></label>
         <div className="menu p-4 w-72 min-h-full bg-base-300 text-base-content border-r border-base-100 flex flex-col">
           <div className="mb-6 px-4 hidden lg:block">
-            <h2 className="text-2xl font-black bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">Homelab</h2>
+            <h2 className="text-2xl font-black bg-linear-to-r from-primary to-accent bg-clip-text text-transparent">Homelab</h2>
           </div>
 
           <ul className="flex-1 space-y-2 mt-4 lg:mt-0">
@@ -109,7 +109,7 @@ function AppLayout() {
                       <img
                         src={mod.icon}
                         alt=""
-                        className="h-[18px] w-[18px] rounded-sm object-cover opacity-80"
+                        className="h-4.5 w-4.5 rounded-sm object-cover opacity-80"
                         loading="lazy"
                       />
                     ) : mod.icon === 'Image' ? (
