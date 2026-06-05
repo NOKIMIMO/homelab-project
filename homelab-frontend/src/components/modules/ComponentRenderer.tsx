@@ -1,5 +1,5 @@
 import React from 'react';
-import { useModuleRendererContext } from './f_useModuleRendererContext';
+import { useModuleRendererContext } from './useModuleRendererContext';
 import {
   Header,
   ActionBar,

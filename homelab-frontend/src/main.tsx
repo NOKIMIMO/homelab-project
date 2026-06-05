@@ -1,14 +1,14 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { createBrowserRouter, RouterProvider } from 'react-router';
-import App from './App.tsx';
-import RequireAuth from './auth/RequireAuth';
-import { AuthProvider } from './auth/AuthContext';
-import LoginPage from './pages/LoginPage';
-import DashboardPage from './pages/DashboardPage';
-import PluginPage from './pages/PluginPage';
-import KeyManagerPage from './pages/KeyManagerPage';
-import './index.css';
+import { AuthProvider } from '@auth/AuthProvider';
+import RequireAuth from '@auth/RequireAuth';
+import DashboardPage from '@pages/DashboardPage';
+import KeyManagerPage from '@pages/KeyManagerPage';
+import LoginPage from '@pages/LoginPage';
+import ModulePage from '@pages/ModulePage';
+import '@app/index.css';
+import App from '@app/App';
 
 const router = createBrowserRouter([
   {
@@ -24,7 +24,7 @@ const router = createBrowserRouter([
     ),
     children: [
       { index: true, element: <DashboardPage /> },
-      { path: 'plugins/:moduleId', element: <PluginPage /> },
+      { path: 'plugins/:moduleId', element: <ModulePage /> },
       { path: 'settings', element: <KeyManagerPage /> },
     ]
   }

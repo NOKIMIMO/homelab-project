@@ -1,24 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate, Outlet } from 'react-router';
 import { BarChart, Camera, Box, Menu, Settings } from 'lucide-react';
-import { getApiUrl } from './api';
-import { useAuth } from './auth/AuthContext';
+import { useAuth } from '@auth/AuthContext';
+import { getApiUrl } from '@lib/api';
+import type { AppOutletContext, Module } from '@app/types';
 import './index.css';
 
-export interface Module {
-  id: string;
-  name: string;
-  status: string;
-  icon: string;
-  description?: string;
-  uptimeStart?: number;
-}
-
-export interface AppOutletContext {
-  modules: Module[];
-  onRefresh: () => void;
-  isModulesRefreshing: boolean;
-}
+export type { AppOutletContext, Module };
 
 function AppLayout() {
   const navigate = useNavigate();
@@ -126,7 +114,7 @@ function AppLayout() {
           </ul>
           <div className="mt-auto px-2 space-y-2">
             <button
-              className={`btn btn-sm w-full gap-2 ${location.pathname === '/settings' ? 'btn-primary' : 'btn-outline'}`}
+              className={`btn bg-base-100 btn-sm w-full gap-2 ${location.pathname === '/settings' ? 'btn-primary' : 'btn-outline'}`}
               onClick={() => navigate('/settings')}
             >
               <Settings size={16} /> Options

@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo } from 'react';
 import { ComponentRenderer } from './ComponentRenderer';
 import { ModuleRendererProvider } from './ModuleRendererProvider';
-import { useModuleRendererContext } from './f_useModuleRendererContext';
+import { useModuleRendererContext } from './useModuleRendererContext';
 import type {
   BindingSource,
   BindingRequest,
