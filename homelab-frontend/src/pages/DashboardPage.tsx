@@ -1,6 +1,6 @@
 import { useOutletContext } from 'react-router';
-import Dashboard from '../components/Dashboard';
-import type { AppOutletContext } from '../App';
+import type { AppOutletContext } from '@app/types';
+import Dashboard from '@features/dashboard/Dashboard';
 
 export default function DashboardPage() {
   const { modules, onRefresh, isModulesRefreshing } = useOutletContext<AppOutletContext>();

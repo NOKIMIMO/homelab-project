@@ -10,7 +10,7 @@ import { getBindingKey } from './types';
 import {
   ModuleRendererContext,
   type ModuleRendererContextValue,
-} from './ModuleRendererContext.ts';
+} from './ModuleRendererContext';
 
 interface ModuleRendererProviderProps {
   initialState: RendererContext;

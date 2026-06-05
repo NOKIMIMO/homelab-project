@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router';
-import KeyManager from '../components/KeyManager';
-import Login from '../components/Login';
-import { useAuth } from '../auth/AuthContext';
+import { useAuth } from '@auth/AuthContext';
+import KeyManager from '@features/keys/KeyManager';
+import LoginForm from '@features/auth/LoginForm';
 
 export default function LoginPage() {
   const auth = useAuth();
@@ -34,7 +34,7 @@ export default function LoginPage() {
   }
 
   return (
-    <Login
+    <LoginForm
       onLoginSuccess={handleLoginSuccess}
       onShowBootstrap={() => setShowBootstrap(false)}
     />

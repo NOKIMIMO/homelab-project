@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { Key as KeyIcon, Plus, Trash2, ShieldCheck, User, Calendar, Loader2, Upload } from 'lucide-react';
-import { getApiUrl } from '../api';
-import { useAuth } from '../auth/AuthContext';
+import { useAuth } from '@auth/AuthContext';
+import { getApiUrl } from '@lib/api';
 
 export default function KeyManager() {
   const { token } = useAuth();
+  //TODO: Typing
   const [keys, setKeys] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [newName, setNewName] = useState('');
@@ -79,7 +80,7 @@ export default function KeyManager() {
     }
   };
 
-  useEffect(() => { fetchKeys(); }, []);
+  useEffect(() => { fetchKeys(); }, [fetchKeys]);
 
   return (
     <div className="p-6 max-w-4xl mx-auto h-full overflow-y-auto">
