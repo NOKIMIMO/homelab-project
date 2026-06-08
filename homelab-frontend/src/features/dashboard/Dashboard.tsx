@@ -79,7 +79,6 @@ export default function Dashboard({ modules, onRefresh, isModulesRefreshing }: D
     </div>
   );
 
-  //TODO: clean and refactor + split components
   return (
     // header part
       <div className='p-6 mx-auto h-full overflow-y-auto'>

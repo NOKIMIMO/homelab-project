@@ -3,6 +3,7 @@ package com.homelab.core.service.module
 import com.homelab.core.action.ActionFactory
 import com.homelab.core.api.dto.ModuleDto
 import com.homelab.core.config.HomelabConfig
+import com.homelab.core.config.ModuleConfigMemory
 import com.homelab.core.model.module.Module
 import com.homelab.core.model.module.ModuleStatus
 import com.homelab.core.parser.ModuleDataObjectParser
@@ -22,6 +23,7 @@ class ModuleService(
     private val moduleDatabaseService: ModuleDatabaseService,
     private val moduleConfigService: ModuleConfigService,
     private val actionFactory: ActionFactory,
+    private val moduleConfigMemory: ModuleConfigMemory
 ) {
     private val modules = ConcurrentHashMap<String, Module>()
     private val moduleConfigs = ConcurrentHashMap<String, File>()
@@ -51,6 +53,11 @@ class ModuleService(
 
         val discovered = moduleConfigService.scanModuleConfigs(homelabConfig.modulesScanPath)
         discovered.forEach { item ->
+            moduleConfigMemory.put(
+                item.config.id,
+                item.config,
+                item.directory
+            )
             moduleConfigs[item.config.id] = item.directory
             if (modules[item.config.id] == null) {
                 modules[item.config.id] = moduleConfigService.createModuleFromConfig(item.config)
@@ -66,16 +73,14 @@ class ModuleService(
                 // ignore validation errors
             }
             // init DB for module if dataObject is not empty
-            println("Initializing module database for ${item.config.id}")
+            println("[ModuleService] Initializing module database for ${item.config.id}")
             ensureModuleDatabaseReady(item.config.id)
 
             // init DB object from module config
-            println("Initializing module data objects for ${item.config.id}")
+            println("[ModuleService] Initializing module data objects for ${item.config.id}")
             setUpModuleDataObject(item.config.id, item.config.dataObjects!!)
 
         }
-        println("Modules loaded: ${modules.size}")
-        println(modules)
     }
 
     fun getAvailableAction():List<String> {
@@ -232,6 +237,7 @@ class ModuleService(
     private fun setUpModuleDataObject(moduleId: String, xmlFileName: List<String> ): Boolean {
 
         try {
+            // Data object creation
             for (fileName in xmlFileName) {
                 val file = File(
                     homelabConfig.modulesScanPath,
@@ -243,11 +249,31 @@ class ModuleService(
                 }
                 val xml = file.readText()
 
+                val objectDefinition = ModuleDataObjectParser.parseFromXml(xml)
+
                 moduleDatabaseService.setUpModuleDataObject(
+                    moduleId,
+                    objectDefinition
+                )
+            }
+            // Data object relation (separated to let full spung up of original table before relation)
+            for (fileName in xmlFileName) {
+                val file = File(
+                    homelabConfig.modulesScanPath,
+                    "$moduleId/$fileName"
+                ).canonicalFile
+                if (!file.exists()) {
+                    error("Data object XML not found: ${file.absolutePath}")
+                }
+                val xml = file.readText()
+
+                moduleDatabaseService.setUpModuleDataObjectRelations(
                     moduleId,
                     ModuleDataObjectParser.parseFromXml(xml)
                 )
             }
+
+
         }catch (e: Exception){
             println("Failed to set up data objects for module $moduleId: ${e.message}")
             return false
