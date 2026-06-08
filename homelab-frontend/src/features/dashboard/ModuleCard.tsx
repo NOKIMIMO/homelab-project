@@ -90,7 +90,6 @@ export function ModuleCard({ modules, handleModuleAction, actionLoading }: Modul
                     </div>
                   </div>
                 </div>
-              ))
           </div>
     )
 }

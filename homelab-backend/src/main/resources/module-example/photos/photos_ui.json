@@ -1,0 +1,137 @@
+{
+  "page": {
+    "id": "photos_page",
+    "layout": "vertical",
+
+    "bindings": {
+      "list": "listPhotos",
+      "selectedPhoto": "getPhoto",
+      "upload": "addPhoto"
+    },
+
+    "state": {
+      "fullscreenPhotoId": null,
+      "uploading": false
+    },
+
+    "components": [
+      {
+        "type": "Header",
+        "props": {
+          "title": "Stockage Photo"
+        }
+      },
+
+      {
+        "type": "ActionBar",
+        "components": [
+          {
+            "type": "Button",
+            "props": {
+              "label": "Upload photo",
+              "icon": "upload"
+            },
+            "action": "addPhoto"
+          },
+
+          {
+            "type": "Button",
+            "props": {
+              "label": "Refresh",
+              "icon": "refresh"
+            },
+            "action": "listPhotos"
+          }
+        ]
+      },
+
+      {
+        "type": "FileUploadZone",
+        "props": {
+          "accept": "image/*",
+          "multiple": false
+        },
+        "action": "addPhoto"
+      },
+
+      {
+        "type": "List",
+        "source": "listPhotos",
+
+        "item": {
+          "type": "ListItem",
+
+          "props": {
+            "title": "{{file_name}}",
+            "subtitle": "ID: {{id}}",
+            "clickable": true
+          },
+
+          "onClick": {
+            "action": "getPhoto",
+            "params": {
+              "id": "{{id}}"
+            },
+            "then": {
+              "setState": {
+                "selectedPhoto": "{{result}}"
+              }
+            }
+          },
+
+          "actions": [
+            {
+              "type": "IconButton",
+              "props": {
+                "icon": "fullscreen",
+                "tooltip": "Agrandir"
+              },
+              "action": {
+                "type": "setState",
+                "target": "fullscreenPhotoId",
+                "value": "{{id}}"
+              }
+            },
+
+            {
+              "type": "IconButton",
+              "props": {
+                "icon": "trash",
+                "tooltip": "Supprimer"
+              },
+              "action": "deletePhoto"
+            }
+          ]
+        }
+      },
+
+      {
+        "type": "Modal",
+        "visible": "{{fullscreenPhotoId != null}}",
+
+        "content": {
+          "type": "ImageViewer",
+          "source": "getPhoto",
+
+          "params": {
+            "id": "{{fullscreenPhotoId}}"
+          }
+        },
+
+        "actions": [
+          {
+            "type": "Button",
+            "props": {
+              "label": "Fermer"
+            },
+            "action": {
+              "type": "setState",
+              "target": "fullscreenPhotoId",
+              "value": null
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

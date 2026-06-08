@@ -22,6 +22,8 @@ kotlin {
 repositories { mavenCentral() }
 
 dependencies {
+    // version checker
+    implementation("com.vdurmont:semver4j:3.1.0")
     implementation("org.springframework.boot:spring-boot-starter")
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-websocket")

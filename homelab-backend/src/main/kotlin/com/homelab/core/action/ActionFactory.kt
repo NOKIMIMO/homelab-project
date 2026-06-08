@@ -3,6 +3,7 @@ package com.homelab.core.action
 import com.homelab.core.model.action.*
 import com.homelab.core.plugin.PluginRegistry
 import com.homelab.sdk.action.Action
+import org.postgresql.util.LruCache
 import org.springframework.stereotype.Service
 
 @Service
@@ -14,6 +15,7 @@ class ActionFactory(private val pluginRegistry: PluginRegistry) {
             ActionsEnum.UPLOAD_FILE.name to UploadFileAction(),
             ActionsEnum.GET_FILE.name to GetFileAction(),
             ActionsEnum.DELETE.name to DeleteAction(),
+            ActionsEnum.CREATE.name to SimpleCreateAction(),
             ActionsEnum.LIST.name to ListAction(),
             ActionsEnum.READ.name to ReadAction()
         )

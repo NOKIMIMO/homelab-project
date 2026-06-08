@@ -5,11 +5,11 @@ import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import com.homelab.core.model.module.Module
 import com.homelab.core.model.module.ModuleConfig
 import com.homelab.core.model.module.ModuleStatus
-import com.homelab.core.model.module.ModuleType
 import com.homelab.core.plugin.PluginRegistry
 import com.homelab.core.model.action.ActionsEnum
 import java.io.File
 import org.springframework.stereotype.Service
+import com.vdurmont.semver4j.Semver
 
 @Service
 class ModuleConfigService(private val pluginRegistry: PluginRegistry) {
@@ -35,44 +35,60 @@ class ModuleConfigService(private val pluginRegistry: PluginRegistry) {
             try {
                 val rawConfig = mapper.readValue(configFile, ModuleConfig::class.java)
 
+                //duplicate ids
                 if (seenModuleIds.contains(rawConfig.id)) {
                     println("Duplicate module id '${rawConfig.id}' found in directory '${dir.name}'. Skipping this module.")
                     continue
                 }
 
                 // check duplicate function names inside this module
-                val functionNames = rawConfig.actions.flatMap { it.functions.map { f -> f.name } }
-                if (functionNames.toSet().size != functionNames.size) {
-                    println("Module '${rawConfig.id}' has duplicate function names in manifest ${configFile.absolutePath}. Skipping module.")
+                val functionNames = rawConfig.actions
+                    .flatMap { it.functions }
+                    .map { it.name }
+
+                if (functionNames.size != functionNames.toSet().size) {
+                    println("Module '${rawConfig.id}' has duplicate function names in ${configFile.absolutePath}. Skipping module.")
                     continue
                 }
 
                 // Validate logic types (must be in ActionsEnum or provided by plugin)
-                var unknownLogic: String? = null
-                outer@ for (action in rawConfig.actions) {
-                    for (f in action.functions) {
-                        for (logic in f.logic) {
-                            val t = logic.type
-                            val isBuiltin = try {
-                                ActionsEnum.valueOf(t)
-                                true
-                            } catch (_: Exception) {
-                                false
-                            }
-                            if (!isBuiltin && !pluginRegistry.hasType(t)) {
-                                unknownLogic = t
-                                break@outer
-                            }
-                        }
+                val unknownLogic = rawConfig.actions
+                    .asSequence()
+                    .flatMap { it.functions.asSequence() }
+                    .flatMap { it.logic.asSequence() }
+                    .map { it.type }
+                    .firstOrNull { type ->
+                        val isBuiltin = runCatching {
+                            ActionsEnum.valueOf(type)
+                        }.isSuccess
+
+                        !isBuiltin && !pluginRegistry.hasType(type)
                     }
-                }
+
                 if (unknownLogic != null) {
                     println("Module '${rawConfig.id}' references unknown logic type '$unknownLogic' in ${configFile.absolutePath}. Skipping module.")
                     continue
                 }
 
-                seenModuleIds.add(rawConfig.id)
-                discovered.add(DiscoveredModule(config = rawConfig, directory = dir))
+                val incompatibleDep = rawConfig.dependencies
+                    ?.firstOrNull { dep ->
+                        !isCompatible(rawConfig.version, dep.version)
+                    }
+
+                if (incompatibleDep != null) {
+                    println(
+                        "Module '${rawConfig.id}' depends on module '${incompatibleDep.moduleId}' " +
+                                "with version '${incompatibleDep.version}', but current version is '${rawConfig.version}'. Skipping module."
+                    )
+                    continue
+                }
+
+                discovered.add(
+                    DiscoveredModule(
+                        config = rawConfig,
+                        directory = dir
+                    )
+                )
 
             } catch (e: Exception) {
                 println("Failed to load module config in ${dir.name}: ${e.message}")
@@ -92,5 +108,10 @@ class ModuleConfigService(private val pluginRegistry: PluginRegistry) {
                 icon = config.icon,
                 description = config.description,
         )
+    }
+
+    private fun isCompatible(current: String, requirement: String): Boolean {
+        val version = Semver(current, Semver.SemverType.NPM)
+        return version.satisfies(requirement)
     }
 }

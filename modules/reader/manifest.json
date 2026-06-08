@@ -1,0 +1,142 @@
+{
+    "id": "reader",
+    "name": "Liseuse Photo",
+    "version": "1.0.0",
+    "icon": "gallery.png",
+    "description": "Visualiseur de galerie photo avec organisation par chapitres/groupes. Module de lecture uniquement - utilise le module photos pour le stockage et la récupération d'images.",
+    "status": "ACTIVE",
+    "type": "VISUALIZATION",
+    "dependencies": [
+        {
+            "moduleId": "photos",
+            "version": "^1.0.*"
+        }
+    ],
+    "actions": [
+        {
+            "visual": "groups.xml",
+            "functions": [
+                {
+                    "name": "createGroup",
+                    "description": "Créer un nouveau groupe/chapitre pour regrouper des photos.",
+                    "parameters": [
+                        {
+                            "name": "title",
+                            "description": "Titre du chapitre",
+                            "optional": false
+                        }
+                    ],
+                    "logic": [
+                        {
+                            "type": "CREATE"
+                        }
+                    ],
+                    "actUponObject": "groups.xml"
+                },
+                {
+                    "name": "listGroups",
+                    "description": "Lister tous les chapitres/groupes créés.",
+                    "parameters": [],
+                    "logic": [
+                        {
+                            "type": "LIST"
+                        }
+                    ],
+                    "actUponObject": "groups.xml"
+                },
+                {
+                    "name": "getGroup",
+                    "description": "Récupérer les données d'un groupe/chapitre par son ID.",
+                    "parameters": [
+                        {
+                            "name": "id",
+                            "type": "EQUAL",
+                            "description": "ID du groupe à récupérer"
+                        }
+                    ],
+                    "logic": [
+                        {
+                            "type": "READ"
+                        }
+                    ],
+                    "actUponObject": "groups.xml"
+                },
+                {
+                    "name": "addPhotoToGroup",
+                    "description": "Ajouter une photo à un groupe (ajoute l'ID photo à la liste photoIds du groupe).",
+                    "parameters": [
+                        {
+                            "name": "groupId",
+                            "type": "EQUAL",
+                            "description": "ID du groupe destination"
+                        },
+                        {
+                            "name": "photoId",
+                            "type": "EQUAL",
+                            "description": "ID de la photo à ajouter"
+                        }
+                    ],
+                    "logic": [
+                        {
+                            "type": "UPDATE",
+                            "description": "Ajoute photoId à la liste CSV photoIds du groupe"
+                        }
+                    ],
+                    "actUponObject": "groups.xml"
+                },
+                {
+                    "name": "removePhotoFromGroup",
+                    "description": "Retirer une photo d'un groupe (supprime l'ID photo de la liste photoIds).",
+                    "parameters": [
+                        {
+                            "name": "groupId",
+                            "type": "EQUAL",
+                            "description": "ID du groupe source"
+                        },
+                        {
+                            "name": "photoId",
+                            "type": "EQUAL",
+                            "description": "ID de la photo à retirer"
+                        }
+                    ],
+                    "logic": [
+                        {
+                            "type": "UPDATE",
+                            "description": "Retire photoId de la liste CSV photoIds du groupe"
+                        }
+                    ],
+                    "actUponObject": "groups.xml"
+                },
+                {
+                    "name": "deleteGroup",
+                    "description": "Supprimer un chapitre/groupe (ne supprime pas les photos du module photos).",
+                    "parameters": [
+                        {
+                            "name": "id",
+                            "type": "EQUAL",
+                            "description": "ID du groupe à supprimer"
+                        }
+                    ],
+                    "logic": [
+                        {
+                            "type": "DELETE"
+                        }
+                    ],
+                    "actUponObject": "groups.xml"
+                }
+            ]
+        }
+    ],
+    "page": "reader_ui.json",
+    "dataObjects": [
+        "groups.xml"
+    ],
+    "permissions": [
+        "read:reader",
+        "write:reader",
+        "delete:reader",
+        "read:photos",
+        "write:photos"
+    ]
+}
+

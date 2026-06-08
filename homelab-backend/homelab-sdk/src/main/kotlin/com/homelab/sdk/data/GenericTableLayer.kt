@@ -126,21 +126,130 @@ class GenericTableLayer(
         return deleted
     }
 
-    //Placeholder, will modify later
+    /**
+     * Update rows matching a predicate, applying the updateFunction to each.
+     * Persists changes to the database if ModuleDatabaseService is available.
+     *
+     * @param predicate Function to select rows to update
+     * @param updateFunction Function to transform selected rows
+     * @return true if at least one row was updated successfully
+     */
     fun update(predicate: (Map<String, Any?>) -> Boolean, updateFunction: (Map<String, Any?>) -> Map<String, Any?>): Boolean {
         val itemsToUpdate = dataStore.filter(predicate)
-        if (itemsToUpdate.isEmpty()) return false
+        if (itemsToUpdate.isEmpty()) {
+            println("No items matching predicate for update")
+            return false
+        }
 
-        itemsToUpdate.forEach { item ->
+        var successCount = 0
+        val mdb = moduleDatabaseService
+
+        for (item in itemsToUpdate) {
             val updatedItem = updateFunction(item)
-            if (validateItem(updatedItem)) {
-                dataStore[dataStore.indexOf(item)] = updatedItem
-            } else {
+
+            if (!validateItem(updatedItem)) {
                 println("Validation failed for updated item: $updatedItem")
+                continue
+            }
+
+            // Persist to database if available
+            if (mdb != null && moduleId != null) {
+                try {
+                    // Build filters to identify this specific row (target by all non-null ID-like fields)
+                    val filters = mutableMapOf<String, Any?>()
+
+                    // Try to find a unique key (id, uuid, etc.)
+                    listOf("id", "uuid", "pk").forEach { keyName ->
+                        if (item.containsKey(keyName) && item[keyName] != null) {
+                            filters[keyName] = item[keyName]!!
+                            return@forEach
+                        }
+                    }
+
+                    if (filters.isEmpty()) {
+                        println("Cannot identify row for update: no ID field found")
+                        continue
+                    }
+
+                    // Extract only the fields that changed
+                    val updateMap = mutableMapOf<String, Any?>()
+                    tableDefinition.columns.forEach { col ->
+                        if (updatedItem.containsKey(col.name)) {
+                            val oldVal = item[col.name]
+                            val newVal = updatedItem[col.name]
+                            if (oldVal != newVal) {
+                                updateMap[col.name] = newVal
+                            }
+                        }
+                    }
+
+                    if (updateMap.isEmpty()) {
+                        println("No fields changed for update")
+                        continue
+                    }
+
+                    val rowsAffected = mdb.updateRows(moduleId, tableDefinition.name, filters, updateMap)
+                    if (rowsAffected > 0) {
+                        // Update in-memory store
+                        val idx = dataStore.indexOf(item)
+                        if (idx >= 0) {
+                            dataStore[idx] = updatedItem
+                            successCount++
+                        }
+                    } else {
+                        println("No rows updated in database for filters: $filters")
+                    }
+                } catch (e: Exception) {
+                    println("Database update failed: ${e.message}")
+                    e.printStackTrace()
+                }
+            } else {
+                // No database, just update in-memory
+                val idx = dataStore.indexOf(item)
+                if (idx >= 0) {
+                    dataStore[idx] = updatedItem
+                    successCount++
+                }
             }
         }
-        println("Items updated: $itemsToUpdate")
-        return true
+
+        println("Items updated: $successCount of ${itemsToUpdate.size}")
+        return successCount > 0
+    }
+
+    /**
+     * Update rows matching filters with specific field changes.
+     * Simpler interface: directly specify which fields to update.
+     *
+     * @param filters WHERE clause (ex: {id: "uuid-123"})
+     * @param updateMap Fields to modify (ex: {status: "active", count: 5})
+     * @return Number of rows affected
+     */
+    fun updateByFilters(filters: Map<String, Any?>, updateMap: Map<String, Any?>): Int {
+        if (filters.isEmpty()) {
+            println("updateByFilters: no filters provided, skipping for safety")
+            return 0
+        }
+
+        val mdb = moduleDatabaseService
+        if (mdb != null && moduleId != null) {
+            val rowsAffected = try {
+                mdb.updateRows(moduleId, tableDefinition.name, filters, updateMap)
+            } catch (e: Exception) {
+                println("ModuleDatabaseService.updateRows threw: ${e.message}")
+                0
+            }
+
+            if (rowsAffected > 0) {
+                // Refresh in-memory store
+                dataStore.clear()
+                val updated = mdb.queryRows(moduleId, tableDefinition.name, emptyMap())
+                dataStore.addAll(updated)
+            }
+            return rowsAffected
+        }
+
+        return 0
     }
 
     private fun validateItem(item: Map<String, Any?>): Boolean {
@@ -162,4 +271,3 @@ class GenericTableLayer(
         return true
     }
 }
-

@@ -23,7 +23,18 @@ class AppletService(
         mergedParams: Map<String, Any>,
         decl: ModuleActionDeclaration,
         resolvedLogic: List<Map<String, Any>>): Map<String, Any?>{
+        val errorList = mutableListOf<String>()
 
+        //param validation
+        for (declaredParam in decl.parameters) {
+            if(declaredParam.name !in mergedParams){
+                errorList.add("Missing parameter ${declaredParam.name}")
+            }
+        }
+        if (errorList.isNotEmpty()){
+            return mapOf("success" to false, "errors" to errorList)
+        }
+        // logic validation
         val resolvedObject = decl.actUponObject.let { obj ->
             val file = File(
                 homelabConfig.modulesScanPath,
@@ -35,6 +46,7 @@ class AppletService(
             val xml = file.readText()
             ModuleDataObjectParser.parseFromXml(xml)
         }
+        println("Resolved object: $resolvedObject")
 
         val genericObject = GenericTableLayer(
             resolvedObject,
@@ -47,6 +59,8 @@ class AppletService(
             val actionType = actionDecl["type"] as String
 
             val action: Action? = actionFactory.resolve(actionType)
+
+            println("Resolved action: $action")
 
             val returnValue = try {
                 action?.execute(id, mergedParams, genericObject, decl)
