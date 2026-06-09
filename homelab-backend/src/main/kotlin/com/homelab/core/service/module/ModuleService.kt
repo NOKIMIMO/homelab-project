@@ -4,9 +4,11 @@ import com.homelab.core.action.ActionFactory
 import com.homelab.core.api.dto.ModuleDto
 import com.homelab.core.config.HomelabConfig
 import com.homelab.core.config.ModuleConfigMemory
+import com.homelab.core.helper.AppLogger
 import com.homelab.core.model.module.Module
 import com.homelab.core.model.module.ModuleStatus
 import com.homelab.core.parser.ModuleDataObjectParser
+import com.homelab.core.service.AppletService
 import jakarta.annotation.*
 import org.springframework.core.io.Resource
 import org.springframework.core.io.FileSystemResource
@@ -25,6 +27,8 @@ class ModuleService(
     private val actionFactory: ActionFactory,
     private val moduleConfigMemory: ModuleConfigMemory
 ) {
+    private val log = AppLogger.loggerFor(AppletService::class)
+
     private val modules = ConcurrentHashMap<String, Module>()
     private val moduleConfigs = ConcurrentHashMap<String, File>()
 
@@ -35,11 +39,19 @@ class ModuleService(
 
     @PreDestroy
     fun cleanup() {
-        println("Shutting down: stopping all managed modules...")
+        log.info("Shutting down: stopping all managed modules...")
         try {
-            println("Cleanup finished")
+            modules.values.forEach { module ->
+                try {
+                    module.stop()
+                } catch (e: Exception) {
+                    log.error("Failed to stop module ${module.id} during shutdown: ${e.message}")
+                }
+            }
+            log.info("All modules stopped")
+
         } catch (e: Exception) {
-            println("Failed to run global cleanup: ${e.message}")
+            log.error("Failed to run global cleanup: ${e.message}")
         }
     }
 
@@ -49,7 +61,7 @@ class ModuleService(
 
     fun scanModules() {
         val root = File(homelabConfig.modulesScanPath).canonicalFile
-        println("Scanning modules in ${root.absolutePath}")
+        log.info("Scanning modules in ${root.absolutePath}")
 
         val discovered = moduleConfigService.scanModuleConfigs(homelabConfig.modulesScanPath)
         discovered.forEach { item ->
@@ -67,17 +79,15 @@ class ModuleService(
                 val iconName = item.config.icon
                 val iconFile = File(item.directory, iconName)
                 if (!iconFile.exists() || !iconFile.isFile) {
-                    println("Warning: icon '${iconName}' declared in module '${item.config.id}' not found at ${iconFile.absolutePath}")
+                    log.warn("Declared icon '${iconName}' for module '${item.config.id}' not found at ${iconFile.absolutePath}")
                 }
             } catch (_: Exception) {
                 // ignore validation errors
             }
             // init DB for module if dataObject is not empty
-            println("[ModuleService] Initializing module database for ${item.config.id}")
             ensureModuleDatabaseReady(item.config.id)
 
             // init DB object from module config
-            println("[ModuleService] Initializing module data objects for ${item.config.id}")
             setUpModuleDataObject(item.config.id, item.config.dataObjects!!)
 
         }
@@ -126,7 +136,7 @@ class ModuleService(
         return try {
             file.readText()
         } catch (e: Exception) {
-            println("Failed to read module page ${file.absolutePath}: ${e.message}")
+            log.error("Failed to read module page ${file.absolutePath}: ${e.message}",e)
             null
         }
     }
@@ -136,18 +146,17 @@ class ModuleService(
         val found = discovered.find { it.config.id == id } ?: return null
 
         if (found.config.page == null){
-            println("Module ${id} has no pages declared")
+            log.warn("Module ${id} has no page declared, skipping page content retrieval")
             return null // API only
         }
 
         val file = File(found.directory, found.config.page)
-        println("Info: module page file path: ${file.absolutePath}")
-        println("Info: module page file exists: ${file.exists()}")
+        log.debug("Attempting to read module page for module '${id}' from file: ${file.absolutePath}")
         if (!file.exists() || !file.isFile) return null
         return try {
             file.readText()
         } catch (e: Exception) {
-            println("Failed to read module page ${file.absolutePath}: ${e.message}")
+            log.error("Failed to read module page ${file.absolutePath}: ${e.message}", e)
             null
         }
     }
@@ -156,7 +165,7 @@ class ModuleService(
         val module = modules[id]
             ?: return ResponseEntity.notFound().build()
         // If the icon is an absolute URL, redirect the client to it
-        println("Serving module icon for $id")
+        log.debug("Serving module icon for module '${id}' with declared icon path '${module.icon}'")
         try {
             if (module.icon.startsWith("http://") || module.icon.startsWith("https://")) {
                 return ResponseEntity.status(org.springframework.http.HttpStatus.FOUND)
@@ -166,14 +175,10 @@ class ModuleService(
 
             val file = File(homelabConfig.modulesScanPath, "$id/${module.icon}")
 
-            println("Info: icon file path: ${file.absolutePath}")
-            println("Info: icon file exists: ${file.exists()}")
             if (file.exists() && file.isFile) {
-                println("Info: serving icon for module '$id' (declared icon='${module.icon}')")
                 val resource: Resource = FileSystemResource(file)
                 val contentType = Files.probeContentType(file.toPath())
                     ?: MediaType.APPLICATION_OCTET_STREAM_VALUE
-                println("Info: detected content type for icon: $contentType, path: ${file.absolutePath}")
                 return ResponseEntity.ok()
                     .header("Cache-Control", "max-age=3600, public")
                     .header("Content-Disposition", "inline; filename=\"${file.name}\"")
@@ -185,7 +190,7 @@ class ModuleService(
             return ResponseEntity.notFound().build()
 
         } catch (e: Exception) {
-            println("Failed to serve module icon for $id: ${e.message}")
+            log.error("Failed to serve module icon for module '${id}': ${e.message}", e)
             return ResponseEntity.status(org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR).build()
         }
     }
@@ -194,14 +199,14 @@ class ModuleService(
 
     fun startModule(id: String): Boolean {
         val module = modules[id] ?: return false
-        println("Starting module $id")
+        log.info("Starting module $id")
         module.start()
         return true
     }
 
     fun stopModule(id: String): Boolean {
         val module = modules[id] ?: return false
-        println("Stopping module $id")
+        log.info("Stopping module $id")
         module.stop()
         return true
     }
@@ -235,7 +240,6 @@ class ModuleService(
         )
     }
     private fun setUpModuleDataObject(moduleId: String, xmlFileName: List<String> ): Boolean {
-
         try {
             // Data object creation
             for (fileName in xmlFileName) {
@@ -248,9 +252,7 @@ class ModuleService(
                     error("Data object XML not found: ${file.absolutePath}")
                 }
                 val xml = file.readText()
-
-                val objectDefinition = ModuleDataObjectParser.parseFromXml(xml)
-
+                val objectDefinition = ModuleDataObjectParser.parseFromXml(xml, moduleId)
                 moduleDatabaseService.setUpModuleDataObject(
                     moduleId,
                     objectDefinition
@@ -269,13 +271,13 @@ class ModuleService(
 
                 moduleDatabaseService.setUpModuleDataObjectRelations(
                     moduleId,
-                    ModuleDataObjectParser.parseFromXml(xml)
+                    ModuleDataObjectParser.parseFromXml(xml, moduleId)
                 )
             }
 
 
         }catch (e: Exception){
-            println("Failed to set up data objects for module $moduleId: ${e.message}")
+            log.error("Failed to set up data objects for module $moduleId: ${e.message}", e)
             return false
         }
         return true

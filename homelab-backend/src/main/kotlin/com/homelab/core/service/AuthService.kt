@@ -1,5 +1,7 @@
 package com.homelab.core.service
 
+import com.homelab.core.controller.AppletControler
+import com.homelab.core.helper.AppLogger
 import com.homelab.core.model.auth.User
 import com.homelab.core.model.auth.UserRepository
 import java.security.KeyFactory
@@ -12,6 +14,8 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 
 @Service
 class AuthService(private val repository: UserRepository) {
+    private val log = AppLogger.loggerFor(AppletControler::class)
+
     private val challenges = ConcurrentHashMap<String, String>()
     private val passwordEncoder = BCryptPasswordEncoder()
 
@@ -38,8 +42,8 @@ class AuthService(private val repository: UserRepository) {
             sig.initVerify(publicKey)
             sig.update(challenge.toByteArray())
             sig.verify(Base64.getDecoder().decode(signatureBase64))
-        } catch (_: Exception) {
-            println("Verification error during signature verification")
+        } catch (e: Exception) {
+            log.error("Verification error during signature verification", e)
             false
         }
     }

@@ -1,5 +1,7 @@
 package com.homelab.core.model.action
 
+import com.homelab.core.helper.AppLogger
+import com.homelab.core.service.AppletService
 import com.homelab.sdk.data.GenericTableLayer
 import com.homelab.sdk.action.Action
 import com.homelab.sdk.module.action.ModuleActionDeclaration
@@ -7,13 +9,15 @@ import java.nio.file.Files
 import java.nio.file.Path
 
 class GetFileAction : Action {
+
+    private val log = AppLogger.loggerFor(AppletService::class)
+
     override fun execute(
         moduleId: String,
         mergedParams: Map<String, Any>,
         genericObject: GenericTableLayer,
         declaration: ModuleActionDeclaration
     ): Any {
-        println("[GetFileAction] invoked module=$moduleId")
 
         val filters = getFilters(mergedParams,declaration)
 
@@ -26,7 +30,7 @@ class GetFileAction : Action {
 
         val p = Path.of(filePath)
         if (!Files.exists(p)) {
-            println("[GetFileAction] physical file not found at path: $filePath")
+            log.warn("[GetFileAction] physical file not found at path: $filePath")
             return mapOf("success" to false, "filePath" to filePath, "fileName" to (fileName ?: p.fileName.toString()), "contentType" to null)
         }
 

@@ -2,17 +2,21 @@ package com.homelab.core.service.module
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
+import com.homelab.core.helper.AppLogger
 import com.homelab.core.model.module.Module
 import com.homelab.core.model.module.ModuleConfig
 import com.homelab.core.model.module.ModuleStatus
 import com.homelab.core.plugin.PluginRegistry
 import com.homelab.core.model.action.ActionsEnum
+import com.homelab.core.service.AppletService
 import java.io.File
 import org.springframework.stereotype.Service
 import com.vdurmont.semver4j.Semver
 
 @Service
 class ModuleConfigService(private val pluginRegistry: PluginRegistry) {
+    private val log = AppLogger.loggerFor(AppletService::class)
+
     private val mapper =
             ObjectMapper()
                     .registerKotlinModule()
@@ -37,7 +41,7 @@ class ModuleConfigService(private val pluginRegistry: PluginRegistry) {
 
                 //duplicate ids
                 if (seenModuleIds.contains(rawConfig.id)) {
-                    println("Duplicate module id '${rawConfig.id}' found in directory '${dir.name}'. Skipping this module.")
+                    log.warn("Duplicate module id '${rawConfig.id}' found in directory '${dir.name}'. Skipping this module.")
                     continue
                 }
 
@@ -47,7 +51,7 @@ class ModuleConfigService(private val pluginRegistry: PluginRegistry) {
                     .map { it.name }
 
                 if (functionNames.size != functionNames.toSet().size) {
-                    println("Module '${rawConfig.id}' has duplicate function names in ${configFile.absolutePath}. Skipping module.")
+                    log.warn("Module '${rawConfig.id}' has duplicate function names in ${configFile.absolutePath}. Skipping module.")
                     continue
                 }
 
@@ -66,7 +70,7 @@ class ModuleConfigService(private val pluginRegistry: PluginRegistry) {
                     }
 
                 if (unknownLogic != null) {
-                    println("Module '${rawConfig.id}' references unknown logic type '$unknownLogic' in ${configFile.absolutePath}. Skipping module.")
+                    log.warn("Module '${rawConfig.id}' references unknown logic type '$unknownLogic' in ${configFile.absolutePath}. Skipping module.")
                     continue
                 }
 
@@ -76,10 +80,7 @@ class ModuleConfigService(private val pluginRegistry: PluginRegistry) {
                     }
 
                 if (incompatibleDep != null) {
-                    println(
-                        "Module '${rawConfig.id}' depends on module '${incompatibleDep.moduleId}' " +
-                                "with version '${incompatibleDep.version}', but current version is '${rawConfig.version}'. Skipping module."
-                    )
+                    log.warn("Module '${rawConfig.id}' has incompatible dependency on module '${incompatibleDep.moduleId}' with version requirement '${incompatibleDep.version}'. Skipping module.")
                     continue
                 }
 
@@ -91,7 +92,7 @@ class ModuleConfigService(private val pluginRegistry: PluginRegistry) {
                 )
 
             } catch (e: Exception) {
-                println("Failed to load module config in ${dir.name}: ${e.message}")
+                log.error("Failed to load module config in ${dir.name}: ${e.message}")
             }
         }
 

@@ -8,18 +8,14 @@ import org.springframework.stereotype.Service
 
 @Service
 class ActionFactory(private val pluginRegistry: PluginRegistry) {
-    private val builtins: Map<String, Action>
-
-    init {
-        builtins = mapOf(
-            ActionsEnum.UPLOAD_FILE.name to UploadFileAction(),
-            ActionsEnum.GET_FILE.name to GetFileAction(),
-            ActionsEnum.DELETE.name to DeleteAction(),
-            ActionsEnum.CREATE.name to SimpleCreateAction(),
-            ActionsEnum.LIST.name to ListAction(),
-            ActionsEnum.READ.name to ReadAction()
-        )
-    }
+    private val builtins: Map<String, Action> = mapOf(
+        ActionsEnum.UPLOAD_FILE.name to UploadFileAction(),
+        ActionsEnum.GET_FILE.name to GetFileAction(),
+        ActionsEnum.DELETE.name to DeleteAction(),
+        ActionsEnum.CREATE.name to SimpleCreateAction(),
+        ActionsEnum.LIST.name to ListAction(),
+        ActionsEnum.READ.name to ReadAction()
+    )
 
     fun resolve(typeName: String): Action? {
         val byBuiltin = builtins[typeName]

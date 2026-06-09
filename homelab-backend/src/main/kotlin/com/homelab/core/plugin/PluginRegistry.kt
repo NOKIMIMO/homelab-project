@@ -1,6 +1,8 @@
 package com.homelab.core.plugin
 
 import com.homelab.core.config.HomelabConfig
+import com.homelab.core.helper.AppLogger
+import com.homelab.core.service.AppletService
 import com.homelab.sdk.module.action.ModuleActionDeclaration
 import com.homelab.sdk.module.action.ModuleActionParameterType
 import com.homelab.sdk.filter.FilterSpec
@@ -17,6 +19,8 @@ import jakarta.annotation.PostConstruct
 
 @Service
 class PluginRegistry(private val homelabConfig: HomelabConfig) {
+    private val log = AppLogger.loggerFor(AppletService::class)
+
     private val registry = ConcurrentHashMap<String, SdkAction>()
 
     fun hasType(name: String): Boolean = registry.containsKey(name)
@@ -30,30 +34,30 @@ class PluginRegistry(private val homelabConfig: HomelabConfig) {
 
     @PostConstruct
     fun loadPlugins() {
-        println("Scanning plugins...")
+        //println("[PluginRegistry] Scanning plugins...")
         val path = homelabConfig.pluginsScanPath
         if (path.isBlank()) return
         val dir = File(path).canonicalFile
         if (!dir.exists() || !dir.isDirectory) {
-            println("Plugin directory not found: ${dir.absolutePath}, creating")
+            log.debug("Plugin directory not found: ${dir.absolutePath}, creating")
             dir.mkdirs()
         }
         val jars = dir.listFiles { f: File -> f.isFile && f.name.endsWith(".jar") } ?: return
-        println("Found ${jars.size} plugin jars")
+        //println("[PluginRegistry] Found ${jars.size} plugin jars")
         for (jar in jars) {
             try {
                 val url = jar.toURI().toURL()
-                println("Loading plugin from ${jar.name}")
+                //println("[PluginRegistry] Loading plugin from ${jar.name}")
                 val cl = URLClassLoader(arrayOf(url), this::class.java.classLoader)
                 val loader = ServiceLoader.load(LogicPlugin::class.java, cl)
-                println("Found ${loader.count()} plugins in ${jar.name}")
+                log.debug("Found ${loader.count()} plugins in ${jar.name}")
                 for (plugin in loader) {
                     try {
                         val type = plugin.typeName()
                         val sdkAction: SdkAction = plugin.actionSingleton()
 
                         if (registry.containsKey(type)) {
-                            println("Plugin type '$type' from '${jar.name}' conflicts with existing type. Skipping.")
+                            log.warn("Plugin type '$type' from '${jar.name}' conflicts with existing type. Skipping.")
                             continue
                         }
 
@@ -99,14 +103,14 @@ class PluginRegistry(private val homelabConfig: HomelabConfig) {
                                     override fun declaration(): ModuleActionDeclaration = declaration
 
                                     override fun log(level: String, msg: String) {
-                                        println("[PLUGIN][$level] $msg")
+                                        log.info("[PLUGIN][$level] $msg")
                                     }
                                 }
 
                                 return try {
                                     sdkAction.execute(moduleId, mergedParams, genericObject, declaration)
                                 } catch (e: Exception) {
-                                    println("Plugin action '$type' threw: ${e.message}")
+                                    log.error("Plugin action '$type' threw an exception: ${e.message}", e)
                                     null
                                 }
 
@@ -114,13 +118,13 @@ class PluginRegistry(private val homelabConfig: HomelabConfig) {
                         }
 
                         registry[type] = wrapped
-                        println("Loaded plugin type '$type' from '${jar.name}'")
+                        log.info("Loaded plugin type '$type' from '${jar.name}'")
                     } catch (e: Exception) {
-                        println("Failed to register plugin from ${jar.name}: ${e.message}")
+                        log.error("Failed to initialize plugin from ${jar.name}: ${e.message}", e)
                     }
                 }
             } catch (e: Exception) {
-                println("Failed to load plugin jar ${jar.absolutePath}: ${e.message}")
+                log.error("Failed to load plugin jar ${jar.absolutePath}: ${e.message}", e)
             }
         }
     }

@@ -1,12 +1,16 @@
 package com.homelab.core.parser
 
+import com.homelab.core.helper.AppLogger
+import com.homelab.core.service.AppletService
 import org.w3c.dom.Node
 import javax.xml.parsers.DocumentBuilderFactory
 import org.w3c.dom.Element
 import com.homelab.sdk.data.*
 
 class ModuleDataObjectParser : Parser<TableDefinition> {
-    override fun parse(element: Element): TableDefinition {
+    private val log = AppLogger.loggerFor(AppletService::class)
+
+    override fun parse(element: Element, moduleId: String?): TableDefinition {
         // Root tag may be the actual table name (e.g. <photos>) or a generic wrapper like <object>
         var name = element.tagName
         if (name.equals("object", ignoreCase = true) || name.equals("table", ignoreCase = true)) {
@@ -59,12 +63,12 @@ class ModuleDataObjectParser : Parser<TableDefinition> {
                             val regexNode = childElement.getElementsByTagName("regex").item(0) as? Element
 
                             val colName = nameNode?.attributes?.getNamedItem("val")?.nodeValue ?: run {
-                                println("[ModuleDataObjectParser] Missing naming for column element; skipping column: ${childElement.tagName}")
+                                log.warn("[ModuleDataObjectParser] Missing naming for column element; skipping column: ${childElement.tagName}")
                                 null
                             }
-                            val colType = typeNode?.attributes?.getNamedItem("val")?.nodeValue ?: "string"
-                            val unique = uniqueNode?.attributes?.getNamedItem("val")?.nodeValue == "True"
-                            val nullable = nullableNode?.attributes?.getNamedItem("val")?.nodeValue != "False"
+                            val colType = DataMapper.mapToColumnTyping(typeNode?.attributes?.getNamedItem("val")?.nodeValue ?: "string")
+                            val unique = uniqueNode?.attributes?.getNamedItem("val")?.nodeValue?.lowercase() == "true"
+                            val nullable = nullableNode?.attributes?.getNamedItem("val")?.nodeValue?.lowercase() != "false"
                             val regex = regexNode?.attributes?.getNamedItem("val")?.nodeValue
 
                             if (colName != null) {
@@ -72,16 +76,21 @@ class ModuleDataObjectParser : Parser<TableDefinition> {
                             }
                         }
                         "linksto" -> {
-                            val moduleName = childElement.getElementsByTagName("moduleName").item(0)?.textContent?.trim()
+                            var moduleName = childElement.getElementsByTagName("moduleName").item(0)?.textContent?.trim()
+                            //println("[ModuleDataObjectParser] Parsing linksto relation, found moduleName: $moduleName and moduleId: $moduleId")
+                            if (moduleName == null && moduleId != null) {
+                                // si pas présent alors c'est dans le meme module
+                                moduleName = moduleId
+                            }else if(moduleName == null)
+                                 throw IllegalArgumentException("moduleName is required for linksto relation when moduleId is not provided in parse()")
+
                             val dataObject = childElement.getElementsByTagName("targetObject").item(0)?.textContent?.trim()
                             val cardinalityText = childElement.getElementsByTagName("cardinality").item(0)?.textContent?.trim()
                             val cascadeDelete = childElement.getElementsByTagName("cascadeDelete").item(0)?.textContent?.trim()?.toBoolean() ?: false
                             val cascadeUpdate = childElement.getElementsByTagName("cascadeUpdate").item(0)?.textContent?.trim()?.toBoolean() ?: false
 
                             if (
-                                moduleName != null &&
-                                dataObject != null &&
-                                cardinalityText != null
+                                dataObject != null && cardinalityText != null
                             ) {
                                 val cardinality = when(cardinalityText.lowercase()) {
                                     "one-to-one" -> Cardinality.ONE_TO_ONE
@@ -106,26 +115,25 @@ class ModuleDataObjectParser : Parser<TableDefinition> {
                         }
                         else -> {
                             // Unknown/irrelevant tag: log for debugging but continue
-                            println("[ModuleDataObjectParser] Skipping unknown child tag: $tag")
+                            log.warn("[ModuleDataObjectParser] Skipping unknown child tag: $tag in table: $name")
                         }
                     }
                 } catch (e: Exception) {
-                    println("[ModuleDataObjectParser] Exception while parsing child tag '$tag': ${e.message}")
+                    log.error("[ModuleDataObjectParser] Exception while parsing child tag '$tag' in table '$name': ${e.message}", e)
                 }
             }
         }
 
-//        println("[ModuleDataObjectParser] Parsed TableDefinition(name='$name', columns=${columns.size}, autoGenerated=${autoGeneratedColumns.size}) with relations: ${relations.size}")
         return TableDefinition(name, columns, autoGeneratedColumns, relations)
     }
 
     companion object {
-        fun parseFromXml(xml: String): TableDefinition {
+        fun parseFromXml(xml: String, moduleId: String?): TableDefinition {
             val factory = DocumentBuilderFactory.newInstance()
             val builder = factory.newDocumentBuilder()
             val document = builder.parse(xml.byteInputStream())
             val root = document.documentElement
-            return ModuleDataObjectParser().parse(root)
+            return ModuleDataObjectParser().parse(root, moduleId)
         }
     }
 

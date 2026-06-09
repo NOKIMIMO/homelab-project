@@ -11,6 +11,7 @@ import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
+import com.homelab.core.helper.AppLogger
 import org.springframework.web.bind.annotation.*
 import org.springframework.web.multipart.MultipartFile
 import java.nio.file.Path
@@ -24,6 +25,8 @@ class AppletControler(
 	private val appletService: AppletService,
 	private val moduleService: ModuleService
 ) {
+
+	private val log = AppLogger.loggerFor(AppletControler::class)
 
 	@GetMapping("/{id}")
 	fun getModuleConfig(@PathVariable id: String): ResponseEntity<Any> {
@@ -44,33 +47,35 @@ class AppletControler(
 		return ResponseEntity.ok(decl)
 	}
 
-	@PostMapping("/{id}/{functionName}", consumes = [MediaType.APPLICATION_JSON_VALUE])
-	fun invokeFunctionJson(
+ 	@PostMapping("/{id}/{functionName}", consumes = [MediaType.APPLICATION_JSON_VALUE])
+ 	fun invokeFunctionJson(
 		@PathVariable id: String,
 		@PathVariable functionName: String,
 		@RequestBody(required = false) body: Map<String, Any>?,
 		@RequestParam(required = false) formParams: Map<String, String>?
 	): ResponseEntity<Any> {
-		println("[AppletControler] Simple JSON call")
+		log.info("Simple JSON call")
 		val mergedParams = mutableMapOf<String, Any>()
 		body?.let { mergedParams.putAll(it) }
 		formParams?.let { mergedParams.putAll(it) }
+		log.debug("mergeParams initial: ${mergedParams.keys}")
+		log.debug("function: ${functionName}")
 		return doInvoke(id, functionName, mergedParams)
 	}
 
-	@PostMapping("/{id}/{functionName}", consumes = [MediaType.MULTIPART_FORM_DATA_VALUE])
-	fun invokeFunctionMultipart(
+ 	@PostMapping("/{id}/{functionName}", consumes = [MediaType.MULTIPART_FORM_DATA_VALUE])
+ 	fun invokeFunctionMultipart(
 		@PathVariable id: String,
 		@PathVariable functionName: String,
 		@RequestPart(required = false, name = "params") params: Map<String, Any>?,
 		@RequestParam(required = false) formParams: Map<String, String>?,
 		@RequestPart(required = false, name = "file") file: MultipartFile?
 	): ResponseEntity<Any> {
-		println("[AppletControler] MultiPart File call")
+		log.info("MultiPart File call")
 		val mergedParams = mutableMapOf<String, Any>()
 		params?.let { mergedParams.putAll(it) }
 		formParams?.let { mergedParams.putAll(it) }
-		println("[AppletControler] mergeParams initial: ${mergedParams.keys}")
+		log.debug("mergeParams initial: ${mergedParams.keys}")
 		file?.let {
 			mergedParams["file"] = it
 			mergedParams["file_meta"] = mapOf(
@@ -88,7 +93,7 @@ class AppletControler(
 		val found = discovered.find { it.config.id == id } ?:
 			return ResponseEntity.status(HttpStatus.NOT_FOUND).body(mapOf("error" to "Module not found"))
 		if (!moduleService.isModuleRunning(id)){
-			println("Module is not running")
+			log.warn("Module is not running")
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(mapOf("error" to "Module $id is not running, please start it first"))
 		}
 		val decl = findFunction(found.config, functionName) ?:
@@ -97,12 +102,12 @@ class AppletControler(
 		val resolvedLogic = decl.logic.map { logic ->
 			mapOf("type" to logic.type)
 		}
-
+		log.debug("Resolved logic: $resolvedLogic")
 		val serviceResult: Map<String, Any?>
 		try {
 			serviceResult = appletService.invokeFunctionOfModule(id, mergedParams, decl, resolvedLogic)
 		} catch (e: Exception) {
-			println("Failed to invoke function: ${e.message}")
+			log.error("Failed to invoke function: ${e.message}", e)
 			return ResponseEntity.ok(mapOf(
 				"success" to false,
 				"module" to found.config.id,

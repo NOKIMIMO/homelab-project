@@ -11,9 +11,6 @@ class ReadAction : Action {
         genericObject: GenericTableLayer,
         declaration: ModuleActionDeclaration
     ): Any {
-        println("[ReadAction] invoked module=$moduleId")
-        println("[ReadAction] mergedParams=$mergedParams")
-
         val filters = getFilters(mergedParams,declaration)
 
         val rows = genericObject.find(filters)

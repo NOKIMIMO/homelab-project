@@ -1,5 +1,7 @@
 package com.homelab.core.config
 
+import com.homelab.core.helper.AppLogger
+import com.homelab.core.service.AppletService
 import com.homelab.core.service.JwtService
 import jakarta.servlet.FilterChain
 import jakarta.servlet.http.HttpServletRequest
@@ -12,6 +14,7 @@ import org.springframework.web.filter.OncePerRequestFilter
 
 @Component
 class JwtAuthenticationFilter(private val jwtService: JwtService) : OncePerRequestFilter() {
+    private val log = AppLogger.loggerFor(AppletService::class)
 
     override fun doFilterInternal(
             request: HttpServletRequest,
@@ -46,9 +49,6 @@ class JwtAuthenticationFilter(private val jwtService: JwtService) : OncePerReque
         }
 
         if (token == null) {
-            if (requestUri.startsWith("/api/proxy/") && !requestUri.contains("/assets/")) {
-                // println("No token found for proxy request: $requestUri")
-            }
             filterChain.doFilter(request, response)
             return
         }
@@ -60,7 +60,7 @@ class JwtAuthenticationFilter(private val jwtService: JwtService) : OncePerReque
             authToken.details = WebAuthenticationDetailsSource().buildDetails(request)
             SecurityContextHolder.getContext().authentication = authToken
         } else if (username == null && requestUri.startsWith("/api/proxy/")) {
-            println("Invalid/Expired token for: $requestUri")
+            log.warn("Invalid/Expired token for proxied request: $requestUri")
         }
 
         filterChain.doFilter(request, response)

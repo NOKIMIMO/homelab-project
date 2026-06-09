@@ -11,27 +11,30 @@ class GenericTableLayer(
 
     private val moduleDatabaseService: ModuleDatabaseService? = null,
     private val moduleId: String? = null
-) {
+ ) {
 
     private val dataStore = mutableListOf<Map<String, Any?>>()
-
+    //TODO: maybe use the logger of core?
+    // pass logger into sdk ?
     fun create(item: Map<String, Any?>): Boolean {
         if (!validateItem(item)) {
-            println("Validation failed for item: $item")
+            //println("Validation failed for item: $item")
             return false
         }
 
         val mdb = moduleDatabaseService
         if (mdb != null && moduleId != null) {
-            val persisted = try {
-                mdb.insertRow(moduleId, tableDefinition.name, item, tableDefinition)
+            try {
+                val persisted = mdb.insertRow(moduleId, tableDefinition.name, item, tableDefinition)
+                if (!persisted) {
+                    val msg = "ModuleDatabaseService.insertRow returned false for ${tableDefinition.name}"
+                    println("[GenericTableLayer] $msg")
+                    throw RuntimeException(msg)
+                }
             } catch (e: Exception) {
-                println("ModuleDatabaseService.insertRow threw: ${e.message}")
-                false
-            }
-            if (!persisted) {
-                println("Persistence failed for item via ModuleDatabaseService: $item")
-                return false
+                println("[GenericTableLayer] ModuleDatabaseService.insertRow threw: ${e.message}")
+                // propagate so action layer / controller can surface error details
+                throw e
             }
         } else {
             persist?.let { p ->
@@ -60,7 +63,16 @@ class GenericTableLayer(
                 // convert SDK-layer typed filters (Pair<value, operator>) into a raw map
                 // where values are Any? so the ModuleDatabaseService implementation can parse them
                 val rawFilters: Map<String, Any?> = filters.mapValues { it.value as Any? }
-                mdb.queryRows(moduleId, tableDefinition.name, rawFilters)
+                val baseRows = mdb.queryRows(moduleId, tableDefinition.name, rawFilters)
+                if (tableDefinition.relations.isEmpty()) return baseRows
+
+                // Ask DB service to enrich the base rows with relations (keeps SQL and connections in DB layer)
+                try {
+                    mdb.loadRelationsForRows(moduleId, tableDefinition.name, baseRows)
+                } catch (e: Exception) {
+                    println("ModuleDatabaseService.loadRelationsForRows threw: ${e.message}")
+                    baseRows
+                }
             } catch (e: Exception) {
                 println("ModuleDatabaseService.queryRows threw: ${e.message}")
                 emptyList()
@@ -77,6 +89,10 @@ class GenericTableLayer(
         }
 
         if (filters.isEmpty()) return dataStore.toList()
+        // Note: in-memory relation enrichment is not implemented here. For DB-backed flows
+        // relation enrichment is performed by the ModuleDatabaseService. Implementing in-memory
+        // joins would require access to other tables' data stores or a registry and is left
+        // for a future enhancement.
         return dataStore.filter { item ->
             filters.entries.all { (k, v) ->
                 if (!item.containsKey(k)) return@all false
@@ -89,7 +105,7 @@ class GenericTableLayer(
         val rows = find(filters)
         if (rows.isEmpty()) return 0
 
-        val fileCols = tableDefinition.columns.filter { it.type.equals("file", true) }.map { it.name }.toMutableSet()
+                                        val fileCols = tableDefinition.columns.filter { it.type == ColumnTyping.file }.map { it.name }.toMutableSet()
         fileCols.add("file")
         fileCols.add("file_name")
 
@@ -271,3 +287,4 @@ class GenericTableLayer(
         return true
     }
 }
+
