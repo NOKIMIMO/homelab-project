@@ -12,7 +12,7 @@ import com.homelab.sdk.action.Action
 import com.homelab.sdk.module.action.ModuleActionDeclaration
 
 class UploadFileAction : Action {
-    private val log = AppLogger.loggerFor(AppletService::class)
+    private val log = AppLogger.loggerFor(UploadFileAction::class)
 
     override fun execute(
         moduleId: String,

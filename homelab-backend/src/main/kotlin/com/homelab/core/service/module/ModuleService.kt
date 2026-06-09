@@ -27,7 +27,7 @@ class ModuleService(
     private val actionFactory: ActionFactory,
     private val moduleConfigMemory: ModuleConfigMemory
 ) {
-    private val log = AppLogger.loggerFor(AppletService::class)
+    private val log = AppLogger.loggerFor(ModuleService::class)
 
     private val modules = ConcurrentHashMap<String, Module>()
     private val moduleConfigs = ConcurrentHashMap<String, File>()

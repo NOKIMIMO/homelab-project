@@ -14,7 +14,7 @@ import org.springframework.web.filter.OncePerRequestFilter
 
 @Component
 class JwtAuthenticationFilter(private val jwtService: JwtService) : OncePerRequestFilter() {
-    private val log = AppLogger.loggerFor(AppletService::class)
+    private val log = AppLogger.loggerFor(JwtAuthenticationFilter::class)
 
     override fun doFilterInternal(
             request: HttpServletRequest,

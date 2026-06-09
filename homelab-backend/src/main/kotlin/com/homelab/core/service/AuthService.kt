@@ -14,7 +14,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 
 @Service
 class AuthService(private val repository: UserRepository) {
-    private val log = AppLogger.loggerFor(AppletControler::class)
+    private val log = AppLogger.loggerFor(AuthService::class)
 
     private val challenges = ConcurrentHashMap<String, String>()
     private val passwordEncoder = BCryptPasswordEncoder()

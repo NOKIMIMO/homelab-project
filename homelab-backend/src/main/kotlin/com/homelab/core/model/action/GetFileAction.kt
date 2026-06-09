@@ -10,7 +10,7 @@ import java.nio.file.Path
 
 class GetFileAction : Action {
 
-    private val log = AppLogger.loggerFor(AppletService::class)
+    private val log = AppLogger.loggerFor(GetFileAction::class)
 
     override fun execute(
         moduleId: String,

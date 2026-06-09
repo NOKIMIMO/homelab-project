@@ -19,7 +19,7 @@ import oshi.SystemInfo
 @Service
 class TelemetryService(private val moduleService: ModuleService) {
 
-        private val log = AppLogger.loggerFor(AppletControler::class)
+        private val log = AppLogger.loggerFor(TelemetryService::class)
 
         private val si = SystemInfo()
         private val os = si.operatingSystem

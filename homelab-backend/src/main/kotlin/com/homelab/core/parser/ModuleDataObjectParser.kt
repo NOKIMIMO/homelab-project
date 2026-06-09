@@ -8,7 +8,7 @@ import org.w3c.dom.Element
 import com.homelab.sdk.data.*
 
 class ModuleDataObjectParser : Parser<TableDefinition> {
-    private val log = AppLogger.loggerFor(AppletService::class)
+    private val log = AppLogger.loggerFor(ModuleDataObjectParser::class)
 
     override fun parse(element: Element, moduleId: String?): TableDefinition {
         // Root tag may be the actual table name (e.g. <photos>) or a generic wrapper like <object>

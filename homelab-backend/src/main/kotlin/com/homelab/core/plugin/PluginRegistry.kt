@@ -19,7 +19,7 @@ import jakarta.annotation.PostConstruct
 
 @Service
 class PluginRegistry(private val homelabConfig: HomelabConfig) {
-    private val log = AppLogger.loggerFor(AppletService::class)
+    private val log = AppLogger.loggerFor(PluginRegistry::class)
 
     private val registry = ConcurrentHashMap<String, SdkAction>()
 

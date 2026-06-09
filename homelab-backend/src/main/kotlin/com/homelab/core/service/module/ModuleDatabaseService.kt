@@ -27,7 +27,7 @@ class ModuleDatabaseService(
         // "magic number" for now, will use module parameter when implemented
         private const val MAX_RELATION_CACHE_KB = 1024
     }
-    private val log = AppLogger.loggerFor(AppletService::class)
+    private val log = AppLogger.loggerFor(ModuleDatabaseService::class)
 
     private val relationLoader = RelationLoader(MAX_RELATION_CACHE_KB)
 
