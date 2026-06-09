@@ -2,7 +2,7 @@ package com.homelab.sdk.data
 
 data class ColumnDefinition(
     val name: String,
-    val type: String,
+    val type: ColumnTyping,
     val unique: Boolean = false,
     val nullable: Boolean = true,
     val regex: String? = null

@@ -11,8 +11,6 @@ class ListAction : Action {
         genericObject: GenericTableLayer,
         declaration: ModuleActionDeclaration
     ): Any {
-        println("[ListAction] invoked module=$moduleId")
-        println("[ListAction] mergedParams=$mergedParams")
 
         val filters = getFilters(mergedParams,declaration)
 

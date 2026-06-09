@@ -4,6 +4,7 @@ import com.homelab.core.config.HomelabConfig
 import com.homelab.core.model.action.*
 import com.homelab.sdk.module.action.ModuleActionDeclaration
 import com.homelab.core.action.ActionFactory
+import com.homelab.core.helper.AppLogger
 import com.homelab.core.parser.ModuleDataObjectParser
 import com.homelab.core.service.module.ModuleDatabaseService
 import com.homelab.sdk.action.Action
@@ -17,7 +18,7 @@ class AppletService(
     private val homelabConfig: HomelabConfig,
     private val actionFactory: ActionFactory
 ) {
-
+    private val log = AppLogger.loggerFor(AppletService::class)
     fun invokeFunctionOfModule(
         id: String,
         mergedParams: Map<String, Any>,
@@ -44,9 +45,8 @@ class AppletService(
                 error("Data object XML not found: ${file.absolutePath}")
             }
             val xml = file.readText()
-            ModuleDataObjectParser.parseFromXml(xml)
+            ModuleDataObjectParser.parseFromXml(xml, id)
         }
-        println("Resolved object: $resolvedObject")
 
         val genericObject = GenericTableLayer(
             resolvedObject,
@@ -60,13 +60,15 @@ class AppletService(
 
             val action: Action? = actionFactory.resolve(actionType)
 
-            println("Resolved action: $action")
-
             val returnValue = try {
                 action?.execute(id, mergedParams, genericObject, decl)
             } catch (e: Exception) {
-                println("Action $actionType threw: ${e.message}")
-                mapOf("error" to e.message)
+                log.error("Error executing action $actionType", e)
+                if (e is com.homelab.core.exception.ApiException) {
+                    mapOf("error" to e.message, "errorCode" to e.code)
+                } else {
+                    mapOf("error" to e.message)
+                }
             }
 
             actionReturn[actionType] = returnValue

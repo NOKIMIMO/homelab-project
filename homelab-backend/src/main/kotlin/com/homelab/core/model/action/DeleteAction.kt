@@ -11,8 +11,6 @@ class DeleteAction : Action {
         genericObject: GenericTableLayer,
         declaration: ModuleActionDeclaration
     ): Any {
-        println("[DeleteAction] invoked module=$moduleId")
-        println("[DeleteAction] mergedParams=$mergedParams")
 
         val filters = this.getFilters(mergedParams,declaration)
 

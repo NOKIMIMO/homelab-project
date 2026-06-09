@@ -18,8 +18,6 @@ class ModuleConfigMemory {
     fun getConfig(moduleId: String): ModuleConfig? =
         configs[moduleId]
 
-
-
     fun getDirectory(moduleId: String): File? =
         directories[moduleId]
 

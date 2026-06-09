@@ -7,8 +7,9 @@
 
     <col>
         <naming val = "index"/>
-        <typing val = "int"/>
-        <unique val = "true"/>
+        <typing val = "String">
+            <regex val = "^.{1,255}$"/>
+        </typing>
     </col>
 
     <!-- Titre obligatoire du chapitre/groupe -->

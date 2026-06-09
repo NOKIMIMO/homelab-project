@@ -22,6 +22,8 @@ interface ModuleDatabaseService {
 
     fun queryRows(moduleId: String, tableName: String, filters: Map<String, Any?>): List<Map<String, Any?>>
 
+    fun loadRelationsForRows(moduleId: String, tableName: String, rows: List<Map<String, Any?>>): List<Map<String, Any?>>
+
     fun deleteRowsByFilters(moduleId: String, tableName: String, filters: Map<String, Any?>): Int
 
     /**

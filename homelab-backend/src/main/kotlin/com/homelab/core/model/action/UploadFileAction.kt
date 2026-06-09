@@ -1,5 +1,7 @@
 package com.homelab.core.model.action
 
+import com.homelab.core.helper.AppLogger
+import com.homelab.core.service.AppletService
 import com.homelab.sdk.data.GenericTableLayer
 import org.springframework.web.multipart.MultipartFile
 import java.nio.file.Files
@@ -10,31 +12,32 @@ import com.homelab.sdk.action.Action
 import com.homelab.sdk.module.action.ModuleActionDeclaration
 
 class UploadFileAction : Action {
+    private val log = AppLogger.loggerFor(AppletService::class)
+
     override fun execute(
         moduleId: String,
         mergedParams: Map<String, Any>,
         genericObject: GenericTableLayer,
         declaration: ModuleActionDeclaration
     ): Any {
-        println("[UploadFileAction] invoked for module=$moduleId} merged=${mergedParams.keys}")
 
         val fileObj = when {
 //            actionParams?.containsKey("file") == true -> actionParams["file"]
             mergedParams.containsKey("file") -> mergedParams["file"]
             else -> null
         }
-        println("[UploadFileAction] fileObj type: ${fileObj?.javaClass?.name}")
+        log.debug("[UploadFileAction] received fileObj: $fileObj")
 
         if (fileObj !is MultipartFile) {
-            println("[UploadFileAction] no MultipartFile provided")
+            log.warn("[UploadFileAction] no MultipartFile provided in params")
             return mapOf("created" to false, "reason" to "no file")
         }
 
-        val uploadDir = Path.of("data", moduleId).toAbsolutePath().normalize()
+        val uploadDir = Path.of("module_storage", moduleId).toAbsolutePath().normalize()
         try {
             Files.createDirectories(uploadDir)
         } catch (e: Exception) {
-            println("[UploadFileAction] failed to create upload dir: ${e.message}")
+            log.error("[UploadFileAction] failed to create upload dir: ${e.message}")
             return mapOf("created" to false, "reason" to "mkdir_failed")
         }
 
@@ -48,7 +51,7 @@ class UploadFileAction : Action {
         val targetPath = uploadDir.resolve(storedFileName).normalize()
 
         if (!targetPath.startsWith(uploadDir)) {
-            println("[UploadFileAction] invalid target path: $targetPath")
+            log.warn("[UploadFileAction] attempted path traversal attack: $originalName")
             return mapOf("created" to false, "reason" to "invalid_path")
         }
 
@@ -57,7 +60,7 @@ class UploadFileAction : Action {
                 Files.copy(input, targetPath, StandardCopyOption.REPLACE_EXISTING)
             }
         } catch (e: Exception) {
-            println("[UploadFileAction] failed to save uploaded file: ${e.message}")
+            log.error("[UploadFileAction] failed to save uploaded file: ${e.message}")
             return mapOf("created" to false, "reason" to "save_failed")
         }
 
@@ -68,14 +71,19 @@ class UploadFileAction : Action {
             )
         )
 
-        val created = try {
-            genericObject.create(dataToCreate)
+        val createdResult = try {
+            val created = genericObject.create(dataToCreate)
+            mapOf("created" to created, "path" to targetPath.toString())
         } catch (e: Exception) {
-            println("[UploadFileAction] create via GenericTableLayer failed: ${e.message}")
-            false
+            log.error("[UploadFileAction] failed to create record in GenericTableLayer: ${e.message}", e)
+            if (e is com.homelab.core.exception.ApiException) {
+                mapOf("created" to false, "path" to targetPath.toString(), "error" to (e.message ?: "unknown"), "errorCode" to e.code)
+            } else {
+                mapOf("created" to false, "path" to targetPath.toString(), "error" to (e.message ?: "unknown"))
+            }
         }
 
-        return mapOf("created" to created, "path" to targetPath.toString())
+        return createdResult
     }
 }
 

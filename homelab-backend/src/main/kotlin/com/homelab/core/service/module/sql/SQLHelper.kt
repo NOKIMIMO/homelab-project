@@ -1,5 +1,6 @@
 package com.homelab.core.service.module.sql
 
+import com.homelab.sdk.data.ColumnTyping
 import java.util.UUID
 
 class SQLHelper {
@@ -15,37 +16,36 @@ class SQLHelper {
 
             return normalized
         }
-        fun dataTypeConversion(typeDef: String, raw: Any?): Any? {
+        fun dataTypeConversion(typeDef: ColumnTyping, raw: Any?): Any? {
             return when (typeDef) {
-                "string" -> raw?.toString()
-                "file" -> raw?.toString()
-                "int", "integer" -> when (raw) {
+                ColumnTyping.string -> raw?.toString()
+                ColumnTyping.file -> raw?.toString()
+                ColumnTyping.int -> when (raw) {
                     is Number -> raw.toInt()
                     is String -> raw.toIntOrNull()
                     else -> null
                 }
-                "long" -> when (raw) {
+                ColumnTyping.long -> when (raw) {
                     is Number -> raw.toLong()
                     is String -> raw.toLongOrNull()
                     else -> null
                 }
-                "boolean" -> when (raw) {
+                ColumnTyping.boolean -> when (raw) {
                     is Boolean -> raw
                     is String -> raw.equals("true", true)
                     is Number -> raw.toInt() != 0
                     else -> null
                 }
-                "date" -> when (raw) {
+                ColumnTyping.date -> when (raw) {
                     is java.sql.Date -> raw
                     is String -> try { java.sql.Date.valueOf(raw) } catch (_: Exception) { null }
                     else -> null
                 }
-                "datetime" -> when (raw) {
+                ColumnTyping.datetime -> when (raw) {
                     is java.sql.Timestamp -> raw
                     is String -> try { java.sql.Timestamp.valueOf(raw) } catch (_: Exception) { null }
                     else -> null
                 }
-                else -> raw
             }
         }
 

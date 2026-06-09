@@ -1,5 +1,7 @@
 package com.homelab.core.service
 
+import com.homelab.core.controller.AppletControler
+import com.homelab.core.helper.AppLogger
 import com.homelab.sdk.helper.Formater
 import com.homelab.core.model.telemetry.DiskData
 import com.homelab.core.model.module.ModuleStatus
@@ -16,6 +18,9 @@ import oshi.SystemInfo
 
 @Service
 class TelemetryService(private val moduleService: ModuleService) {
+
+        private val log = AppLogger.loggerFor(AppletControler::class)
+
         private val si = SystemInfo()
         private val os = si.operatingSystem
         private val hal = si.hardware
@@ -93,7 +98,7 @@ class TelemetryService(private val moduleService: ModuleService) {
                                 )
                         cachedTelemetry.set(data)
                 } catch (e: Exception) {
-                        println("Telemetry update failed: ${e.message}")
+                        log.error("Failed to update telemetry: ${e.message}", e)
                 }
         }
 
@@ -112,6 +117,7 @@ class TelemetryService(private val moduleService: ModuleService) {
                                         .sum()
                         }
                 } catch (e: Exception) {
+                        log.error("Failed to calculate folder size for $root: ${e.message}", e)
                         0L
                 }
         }

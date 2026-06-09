@@ -14,7 +14,7 @@ class ModuleController(private val moduleService: ModuleService) {
     @GetMapping
     fun getModules(request: HttpServletRequest) =
         moduleService.getModules().map { dto ->
-            println(dto)
+
             val absoluteIcon = dto.icon?.let { rel ->
                 if (rel.startsWith("http")) return@let rel
                 try {
@@ -32,6 +32,12 @@ class ModuleController(private val moduleService: ModuleService) {
             }
             dto.copy(icon = absoluteIcon)
         }
+
+    @PostMapping("/scan")
+    fun scanModules() = moduleService.scanModules()
+
+    @GetMapping("/actions")
+    fun getAvailableActions() = moduleService.getAvailableAction()
 
     @GetMapping("/{id}")
     fun getModule(@PathVariable id: String) = moduleService.getModule(id)
@@ -64,9 +70,5 @@ class ModuleController(private val moduleService: ModuleService) {
     @GetMapping("/{id}/health")
     fun healthCheck(@PathVariable id: String) = mapOf("status" to if (moduleService.healthCheck(id)) "UP" else "DOWN")
 
-    @PostMapping("/scan")
-    fun scanModules() = moduleService.scanModules()
 
-    @GetMapping("/actions")
-    fun getAvailableActions() = moduleService.getAvailableAction()
 }
