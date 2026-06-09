@@ -23,7 +23,10 @@ object FilterHelpers {
                         break
                     }
                 }
-                if (found != null) addFilter(filters, Pair(p.name, p.type), found)
+                // None type are passed to action logic, those typed are for filtering in database layer
+                if (found != null && p.type != ModuleActionParameterType.NONE) {
+                    addFilter(filters, Pair(p.name, p.type), found)
+                }
             }
         }
         return filters

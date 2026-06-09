@@ -7,7 +7,7 @@ import com.homelab.sdk.data.GenericTableLayer
 import com.homelab.sdk.module.action.ModuleActionDeclaration
 
 class SimpleCreateAction: Action  {
-    private val log = AppLogger.loggerFor(AppletService::class)
+    private val log = AppLogger.loggerFor(SimpleCreateAction::class)
 
     override fun execute(
         moduleId: String,
@@ -20,7 +20,7 @@ class SimpleCreateAction: Action  {
             val created = genericObject.create(mergedParams)
             mapOf("created" to created)
         } catch (e: Exception) {
-            log.error("[SimpleCreateAction] create via GenericTableLayer failed: ${e.message}", e)
+            log.error("create via GenericTableLayer failed: ${e.message}", e)
             return if (e is com.homelab.core.exception.ApiException) {
                 mapOf("created" to false, "error" to (e.message ?: "unknown"), "errorCode" to e.code)
             } else {

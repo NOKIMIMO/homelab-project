@@ -8,14 +8,13 @@ import com.homelab.core.model.module.ModuleConfig
 import com.homelab.core.model.module.ModuleStatus
 import com.homelab.core.plugin.PluginRegistry
 import com.homelab.core.model.action.ActionsEnum
-import com.homelab.core.service.AppletService
 import java.io.File
 import org.springframework.stereotype.Service
 import com.vdurmont.semver4j.Semver
 
 @Service
 class ModuleConfigService(private val pluginRegistry: PluginRegistry) {
-    private val log = AppLogger.loggerFor(AppletService::class)
+    private val log = AppLogger.loggerFor(ModuleConfigService::class)
 
     private val mapper =
             ObjectMapper()

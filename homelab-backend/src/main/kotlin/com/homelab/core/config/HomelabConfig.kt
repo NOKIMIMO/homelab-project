@@ -11,7 +11,7 @@ class HomelabConfig(private val env: Environment) {
     var appRoot: String = ".."
     var modulesScanPath: String = ".."
     var pluginsScanPath: String = "plugins"
-    private val log = AppLogger.loggerFor(AppletService::class)
+    private val log = AppLogger.loggerFor(HomelabConfig::class)
 
     @PostConstruct
     fun init() {
