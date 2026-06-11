@@ -16,12 +16,11 @@ class ObjectRelationUpdater {
             // TODO: potential issue if relation is of relation, then we've got a first come first served issue coming
             // To Check later
 
-            val targetTable = relation.targetTable
-            val targetSchema = relation.targetObject
+            val targetTable = SQLHelper.safeSqlName(relation.targetTable)
+            val targetSchema =  SQLHelper.safeSqlName(relation.targetObject)
             return when (relation.cardinality) {
                 Cardinality.MANY_TO_MANY -> buildManyToManySql(schemaName, sourceTable, targetSchema, targetTable, relation)
                 Cardinality.ONE_TO_ONE -> buildOneToOneSql(schemaName, sourceTable, targetSchema, targetTable)
-
                 Cardinality.ONE_TO_MANY -> buildOneToManySql(schemaName, sourceTable, targetTable, targetSchema)
                 Cardinality.MANY_TO_ONE -> buildOneToManySql(
                     schemaName,
@@ -82,14 +81,23 @@ class ObjectRelationUpdater {
                 "fk_${manyTable}_${oneTable}"
 
             return """
-        ALTER TABLE "$schemaName"."$manyTable"
-        ADD COLUMN IF NOT EXISTS "${oneTable}_id" UUID;
-
-        ALTER TABLE "$schemaName"."$manyTable"
-        ADD CONSTRAINT $constraintName
-        FOREIGN KEY ("${oneTable}_id")
-        REFERENCES "$targetSchema"."$oneTable"(id);
-    """.trimIndent()
+                ALTER TABLE "$schemaName"."$manyTable"
+                ADD COLUMN IF NOT EXISTS "${oneTable}_id" UUID;
+                
+                DO $$
+                BEGIN
+                    IF NOT EXISTS (
+                        SELECT 1
+                        FROM pg_constraint
+                        WHERE conname = '$constraintName'
+                    ) THEN
+                        ALTER TABLE "$schemaName"."$manyTable"
+                        ADD CONSTRAINT "$constraintName"
+                        FOREIGN KEY ("${oneTable}_id")
+                        REFERENCES "$targetSchema"."$oneTable"(id);
+                    END IF;
+                END $$;
+            """.trimIndent()
         }
 
         private fun buildOneToOneSql(

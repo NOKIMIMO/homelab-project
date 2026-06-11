@@ -39,6 +39,10 @@
                         {
                             "name":"index",
                             "description": "Index du chapitre/groupe dans la série (permet de définir l'ordre d'affichage)"
+                        },
+                        {
+                            "name": "chapterNumber",
+                            "description": "Numéro du chapitre/groupe (ex: 1, 1.1, 2, etc.)"
                         }
                     ],
                     "logic": [
@@ -145,19 +149,43 @@
                     "actUponObject": "groups.xml"
                 },
                 {
-                    "name": "addPhotoToGroup",
-                    "description": "Ajouter une photo existante à un groupe/chapitre.",
+                    "name": "getGroupContent",
+                    "description": "Obtenir le detail d'un contenu de groupe spécifique.",
                     "parameters": [
                         {
                             "name": "id",
                             "type": "EQUAL",
-                            "description": "ID du groupe auquel ajouter la photo"
+                            "description": "ID du contenu de groupe à obtenir (eager loading des images associées)"
+                        }
+                    ],
+                    "logic": [
+                        {
+                            "type": "READ"
+                        }
+                    ],
+                    "actUponObject": "groupContent.xml"
+                },
+                {
+                    "name": "addPhotoToGroupContent",
+                    "description": "Ajouter une photo existante à un groupe/chapitre.",
+                    "parameters": [
+                        {
+                            "name": "groups_id",
+                            "type": "EQUAL",
+                            "description": "ID du groupe auquel ajouter la photo",
+                            "optional": false
+                        },
+                        {
+                            "name": "index",
+                            "description": "Index du contenu dans le groupe (permet de définir l'ordre d'affichage)",
+                            "optional": false
                         },
                         {
                             "name": "photos_id",
                             "relation": "photos.photos.xml",
                             "type": "EQUAL",
-                            "description": "ID de la photo à ajouter au groupe"
+                            "description": "ID de la photo à ajouter au groupe",
+                            "optional": false
                         }
                     ],
                     "logic": [
@@ -165,23 +193,52 @@
                             "type": "CREATE"
                         }
                     ],
-                    "actUponObject": "groups.xml"
+                    "actUponObject": "groupContent.xml"
+                },
+                {
+                    "name": "removePhotoFromGroupContent",
+                    "description": "Supprimer une photo existante d'un groupe/chapitre.",
+                    "parameters": [
+                        {
+                            "name": "groups_id",
+                            "type": "EQUAL",
+                            "description": "ID du groupe auquel supprimer la photo",
+                            "optional": false
+                        },
+                        {
+                            "name": "index",
+                            "description": "Index du contenu dans le groupe (permet de définir l'ordre d'affichage)",
+                            "optional": false
+                        },
+                        {
+                            "name": "photos_id",
+                            "relation": "photos.photos.xml",
+                            "type": "EQUAL",
+                            "description": "ID de la photo à supprimer du groupe",
+                            "optional": false
+                        }
+                    ],
+                    "logic": [
+                        {
+                            "type": "DELETE"
+                        }
+                    ],
+                    "actUponObject": "groupContent.xml"
                 }
-
             ]
         }
     ],
     "page": "reader_ui.json",
     "dataObjects": [
         "groups.xml",
-        "serie.xml"
+        "serie.xml",
+        "groupContent.xml"
     ],
     "permissions": [
         "read:reader",
         "write:reader",
         "delete:reader",
-        "read:photos",
-        "write:photos"
+        "read:photos"
     ]
 }
 

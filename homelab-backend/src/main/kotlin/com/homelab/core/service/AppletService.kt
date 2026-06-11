@@ -4,7 +4,7 @@ import com.homelab.core.config.HomelabConfig
 import com.homelab.core.model.action.*
 import com.homelab.sdk.module.action.ModuleActionDeclaration
 import com.homelab.core.action.ActionFactory
-import com.homelab.core.helper.AppLogger
+import com.homelab.sdk.helper.AppLogger
 import com.homelab.core.parser.ModuleDataObjectParser
 import com.homelab.core.service.module.ModuleDatabaseService
 import com.homelab.sdk.action.Action
@@ -28,6 +28,7 @@ class AppletService(
         mergedParams: Map<String, Any>,
         decl: ModuleActionDeclaration,
         resolvedLogic: List<Map<String, Any>>): Map<String, Any?>{
+
         val errorList = mutableListOf<String>()
 
         //param validation
@@ -42,32 +43,20 @@ class AppletService(
             return mapOf("success" to false, "errors" to errorList)
         }
         // logic validation
-        var targetModuleId = id
-        var targetObjectName = decl.actUponObject
-        val paramWithRelation = decl.parameters.firstOrNull { !it.relation.isNullOrBlank() }
-        if (paramWithRelation != null) {
-            val rel = paramWithRelation.relation!!
-            val dot = rel.indexOf('.')
-            if (dot > 0) {
-                targetModuleId = rel.substring(0, dot)
-                targetObjectName = rel.substring(dot + 1)
-            } else {
-                // fallback: relation provided object only, keep current module id
-                targetObjectName = rel
-            }
-        }
-        val resolvedObject = run {
-            val file = File(homelabConfig.modulesScanPath, "$targetModuleId/$targetObjectName").canonicalFile
-            if (!file.exists()) {
-                error("Data object XML not found: ${file.absolutePath}")
-            }
-            val xml = file.readText()
-            ModuleDataObjectParser.parseFromXml(xml, targetModuleId)
-        }
-
-        val sourceDef = resolvedObject
         val sourceModule = id
+        val sourceObjectName = decl.actUponObject
+        log.debug("Loading source object for action ${decl.name} from module $sourceModule and object name $sourceObjectName")
+        val sourceFile = File(
+            homelabConfig.modulesScanPath,
+            "$sourceModule/$sourceObjectName"
+        ).canonicalFile
 
+        if (!sourceFile.exists()) {
+            error("Source object XML not found: ${sourceFile.absolutePath}")
+        }
+
+        val sourceDef = ModuleDataObjectParser.parseFromXml(sourceFile.readText(), sourceModule)
+        log.debug("Parsed source definition for action ${decl.name}: $sourceDef")
         val actionReturn = mutableMapOf<String, Any?>()
         for (actionDecl in resolvedLogic) {
             val actionType = actionDecl["type"] as String
@@ -80,30 +69,40 @@ class AppletService(
             // If a parameter declares a relation and the client provided that parameter, we may need to
             // route the DB op to a different table (join table, target table, or set a FK on source).
             val relationParam = decl.parameters.firstOrNull { it.relation != null && mergedParams.containsKey(it.name) }
-
+            log.debug("Checking for relation parameters in action declaration: found $relationParam")
             if (relationParam != null) {
                 // Normalize the relation string; allow "mod.object.xml" or "mod.object" or "object.xml"
                 val relRaw = relationParam.relation!!.removeSuffix(".xml")
                 val dot = relRaw.indexOf('.')
                 val relModule = if (dot > 0) relRaw.substring(0, dot) else sourceModule
+                log.debug("Determined relation module: $relModule from raw relation string: ${relationParam.relation}")
                 val relObjectNameOrFile = if (dot > 0) relRaw.substring(dot + 1) else relRaw
-                val relFile = File(homelabConfig.modulesScanPath, "$relModule/$relObjectNameOrFile").canonicalFile
+                log.debug("Determined relation object name or file: $relObjectNameOrFile from raw relation string: ${relationParam.relation}")
+                val relFile = File(homelabConfig.modulesScanPath, "$relModule/$relObjectNameOrFile.xml").canonicalFile
+                log.debug("Resolved relation module: $relModule, object/file: $relObjectNameOrFile, looking for file at ${relFile.absolutePath}")
                 if (relFile.exists()) {
+                    log.debug("Found relation target file at ${relFile.absolutePath}, parsing for table definition")
                     val targetDef = ModuleDataObjectParser.parseFromXml(relFile.readText(), relModule)
 
                     // Find the relation declared on the source object that points to this target table.
                     // RelationDefinition: targetObject == moduleName, targetTable == dataObject name
+                    log.debug("Content of sourceDef.relations: ${sourceDef.relations}")
+                    log.debug("Content of targetDefinition ${targetDef.name}")
                     val declaredRelation = sourceDef.relations.firstOrNull { r ->
                         r.targetTable == targetDef.name
                     }
+                    log.debug("Looking for declared relation from source ${sourceDef.name} to target ${targetDef.name} on source object ${sourceDef.name}: found $declaredRelation")
 
                     if (declaredRelation != null) {
+                        log.debug("Found declared relation from ${sourceDef.name} to ${targetDef.name} with cardinality ${declaredRelation.cardinality}")
                         when (declaredRelation.cardinality) {
                             // join table search
                             Cardinality.MANY_TO_MANY -> {
                                 val joinTableName = listOf(sourceDef.name, targetDef.name).sorted().joinToString("_")
                                 val fkSourceCol = "${sourceDef.name}_id"
                                 val fkTargetCol = "${targetDef.name}_id"
+
+                                log.debug("Handling MANY_TO_MANY relation with join table $joinTableName and FKs $fkSourceCol, $fkTargetCol")
 
                                 objectDefForAction = TableDefinition(
                                     name = joinTableName,
@@ -176,7 +175,7 @@ class AppletService(
                 moduleDatabaseService = moduleDatabaseService,
                 moduleId = moduleForAction
             )
-
+            log.debug("Executing action $actionType on module $moduleForAction with object ${objectDefForAction.name} and params $paramsForAction")
             val returnValue = try {
                 // Use paramsForAction (mapped) for DB operations, but we still pass original caller id as moduleId
                 action?.execute(id, paramsForAction, genericForAction, decl)

@@ -1,6 +1,6 @@
 package com.homelab.core.model.action
 
-import com.homelab.core.helper.AppLogger
+import com.homelab.sdk.helper.AppLogger
 import com.homelab.core.service.AppletService
 import com.homelab.sdk.action.Action
 import com.homelab.sdk.data.GenericTableLayer
@@ -15,6 +15,7 @@ class SimpleCreateAction: Action  {
         genericObject: GenericTableLayer,
         declaration: ModuleActionDeclaration
     ): Any {
+        log.debug("Executing SimpleCreateAction for module $moduleId with mergedParams: $mergedParams and declaration: ${declaration.name}")
 
         return try {
             val created = genericObject.create(mergedParams)

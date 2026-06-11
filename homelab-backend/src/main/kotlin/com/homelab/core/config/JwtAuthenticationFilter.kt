@@ -1,6 +1,6 @@
 package com.homelab.core.config
 
-import com.homelab.core.helper.AppLogger
+import com.homelab.sdk.helper.AppLogger
 import com.homelab.core.service.AppletService
 import com.homelab.core.service.JwtService
 import jakarta.servlet.FilterChain

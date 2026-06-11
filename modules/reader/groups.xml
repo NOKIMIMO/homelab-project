@@ -8,24 +8,29 @@
     <col>
         <naming val = "index"/>
         <typing val = "int"/>
-        <unique val = "true"/>
     </col>
 
     <!-- Titre obligatoire du chapitre/groupe -->
-    <!-- <col>
-        <naming val = "title"/>
+    <col>
+        <naming val = "chapterNumber"/>
         <typing val = "String">
-            <regex val = "^.{1,255}$"/>
+            <regex val = "^\d{1,5}(?:(?:\_|\.)\d{1,5})?$"/>
         </typing>
-    </col> -->
+    </col>
 
-    <!-- Relation many-to-many: Un groupe peut contenir plusieurs photos, une photo peut être dans plusieurs groupes -->
+    <!-- Relation one-to-many: Un groupe peut contenir plusieurs contenus de groupe, un contenu de groupe appartient à un seul groupe -->
     <linksTo>
-        <moduleName>photos</moduleName>
-        <targetObject>photos</targetObject>
-        <cardinality>many-to-many</cardinality>
-        <cascadeDelete>false</cascadeDelete>
+        <targetObject>groupContent</targetObject>
+        <cardinality>one-to-many</cardinality>
+        <cascadeDelete>true</cascadeDelete>
         <cascadeUpdate>false</cascadeUpdate>
     </linksTo>
+
+    <constraints>
+        <uniqueTogether name="uq_groups_serie_index">
+            <field>serie_id</field>
+            <field>index</field>
+        </uniqueTogether>
+    </constraints>
 
 </groups>

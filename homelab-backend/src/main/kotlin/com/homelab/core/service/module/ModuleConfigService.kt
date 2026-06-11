@@ -2,7 +2,7 @@ package com.homelab.core.service.module
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
-import com.homelab.core.helper.AppLogger
+import com.homelab.sdk.helper.AppLogger
 import com.homelab.core.model.module.Module
 import com.homelab.core.model.module.ModuleConfig
 import com.homelab.core.model.module.ModuleStatus

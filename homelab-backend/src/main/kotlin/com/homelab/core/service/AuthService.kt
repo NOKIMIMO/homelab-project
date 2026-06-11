@@ -1,7 +1,7 @@
 package com.homelab.core.service
 
 import com.homelab.core.controller.AppletControler
-import com.homelab.core.helper.AppLogger
+import com.homelab.sdk.helper.AppLogger
 import com.homelab.core.model.auth.User
 import com.homelab.core.model.auth.UserRepository
 import java.security.KeyFactory

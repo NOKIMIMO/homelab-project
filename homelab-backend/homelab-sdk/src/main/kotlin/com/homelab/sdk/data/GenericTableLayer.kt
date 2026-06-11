@@ -1,5 +1,6 @@
 package com.homelab.sdk.data
 
+import com.homelab.sdk.helper.AppLogger
 import com.homelab.sdk.module.action.ModuleActionParameterType
 import java.nio.file.Files
 import java.nio.file.Path
@@ -12,13 +13,12 @@ class GenericTableLayer(
     private val moduleDatabaseService: ModuleDatabaseService? = null,
     private val moduleId: String? = null
  ) {
+    private val log = AppLogger.loggerFor(GenericTableLayer::class)
 
     private val dataStore = mutableListOf<Map<String, Any?>>()
-    //TODO: maybe use the logger of core?
-    // pass logger into sdk ?
     fun create(item: Map<String, Any?>): Boolean {
+        log.debug("Creating item in table ${tableDefinition.name}: $item")
         if (!validateItem(item)) {
-            //println("Validation failed for item: $item")
             return false
         }
 
@@ -28,11 +28,11 @@ class GenericTableLayer(
                 val persisted = mdb.insertRow(moduleId, tableDefinition.name, item, tableDefinition)
                 if (!persisted) {
                     val msg = "ModuleDatabaseService.insertRow returned false for ${tableDefinition.name}"
-                    println("[GenericTableLayer] $msg")
+                    log.warn(msg)
                     throw RuntimeException(msg)
                 }
             } catch (e: Exception) {
-                println("[GenericTableLayer] ModuleDatabaseService.insertRow threw: ${e.message}")
+                log.error("Failed inserting row into database for module ${moduleId}, table ${tableDefinition.name}: ${e.message}", e)
                 // propagate so action layer / controller can surface error details
                 throw e
             }
@@ -41,11 +41,11 @@ class GenericTableLayer(
                 val persisted = try {
                     p(item)
                 } catch (e: Exception) {
-                    println("Persistence callback threw: ${e.message}")
+                    log.error("Persistence callback threw for table ${tableDefinition.name}: ${e.message}", e)
                     false
                 }
                 if (!persisted) {
-                    println("Persistence failed for item: $item")
+                    log.error("Persistence callback returned false for table ${tableDefinition.name}, item: $item")
                     return false
                 }
             }
@@ -56,7 +56,7 @@ class GenericTableLayer(
     }
 
     fun find(filters: Map<String, Pair<Any?, ModuleActionParameterType>>): List<Map<String, Any?>> {
-        println("[Generic Layer] filter: $filters")
+        log.debug("Finding items with filters: $filters")
         val mdb = moduleDatabaseService
         if (mdb != null && moduleId != null) {
             return try {
@@ -70,11 +70,11 @@ class GenericTableLayer(
                 try {
                     mdb.loadRelationsForRows(moduleId, tableDefinition.name, baseRows)
                 } catch (e: Exception) {
-                    println("ModuleDatabaseService.loadRelationsForRows threw: ${e.message}")
+                    log.error("Failed loading relations for rows in module ${moduleId}, table ${tableDefinition.name}: ${e.message}", e)
                     baseRows
                 }
             } catch (e: Exception) {
-                println("ModuleDatabaseService.queryRows threw: ${e.message}")
+                log.error("ModuleDatabaseService.queryRows threw for module ${moduleId}, table ${tableDefinition.name}: ${e.message}", e)
                 emptyList()
             }
         }
@@ -83,7 +83,7 @@ class GenericTableLayer(
             return try {
                 f(filters)
             } catch (e: Exception) {
-                println("Fetch callback threw: ${e.message}")
+                log.error("Fetch callback threw for table ${tableDefinition.name}: ${e.message}", e)
                 emptyList()
             }
         }
@@ -105,7 +105,7 @@ class GenericTableLayer(
         val rows = find(filters)
         if (rows.isEmpty()) return 0
 
-                                        val fileCols = tableDefinition.columns.filter { it.type == ColumnTyping.file }.map { it.name }.toMutableSet()
+        val fileCols = tableDefinition.columns.filter { it.type == ColumnTyping.file }.map { it.name }.toMutableSet()
         fileCols.add("file")
         fileCols.add("file_name")
 
@@ -119,7 +119,7 @@ class GenericTableLayer(
                             Files.delete(p)
                         }
                     } catch (e: Exception) {
-                        println("Failed deleting file for column $col at ${row[col]}: ${e.message}")
+                        log.error("Failed deleting file for column $col at ${row[col]}: ${e.message}", e)
                     }
                 }
             }
@@ -153,7 +153,7 @@ class GenericTableLayer(
     fun update(predicate: (Map<String, Any?>) -> Boolean, updateFunction: (Map<String, Any?>) -> Map<String, Any?>): Boolean {
         val itemsToUpdate = dataStore.filter(predicate)
         if (itemsToUpdate.isEmpty()) {
-            println("No items matching predicate for update")
+            log.warn("No items matching predicate for update in table ${tableDefinition.name}")
             return false
         }
 
@@ -164,7 +164,7 @@ class GenericTableLayer(
             val updatedItem = updateFunction(item)
 
             if (!validateItem(updatedItem)) {
-                println("Validation failed for updated item: $updatedItem")
+                log.warn("Validation failed for updated item in table ${tableDefinition.name}: $updatedItem")
                 continue
             }
 
@@ -183,7 +183,7 @@ class GenericTableLayer(
                     }
 
                     if (filters.isEmpty()) {
-                        println("Cannot identify row for update: no ID field found")
+                        log.warn("Cannot identify row for update in table ${tableDefinition.name}: no ID field found in item $item")
                         continue
                     }
 
@@ -200,7 +200,7 @@ class GenericTableLayer(
                     }
 
                     if (updateMap.isEmpty()) {
-                        println("No fields changed for update")
+                        log.warn("No fields changed for update in table ${tableDefinition.name} for item with filters $filters")
                         continue
                     }
 
@@ -213,10 +213,10 @@ class GenericTableLayer(
                             successCount++
                         }
                     } else {
-                        println("No rows updated in database for filters: $filters")
+                        log.warn("Database update affected 0 rows for table ${tableDefinition.name} with filters $filters and updateMap $updateMap")
                     }
                 } catch (e: Exception) {
-                    println("Database update failed: ${e.message}")
+                    log.error("Failed updating row in database for module ${moduleId}, table ${tableDefinition.name}: ${e.message}", e)
                     e.printStackTrace()
                 }
             } else {
@@ -229,7 +229,7 @@ class GenericTableLayer(
             }
         }
 
-        println("Items updated: $successCount of ${itemsToUpdate.size}")
+        log.debug("Update completed for table ${tableDefinition.name}. Items updated: $successCount of ${itemsToUpdate.size}")
         return successCount > 0
     }
 
@@ -243,7 +243,7 @@ class GenericTableLayer(
      */
     fun updateByFilters(filters: Map<String, Any?>, updateMap: Map<String, Any?>): Int {
         if (filters.isEmpty()) {
-            println("updateByFilters: no filters provided, skipping for safety")
+            log.warn("updateByFilters called with empty filters for table ${tableDefinition.name}, skipping to prevent mass update")
             return 0
         }
 
@@ -252,7 +252,7 @@ class GenericTableLayer(
             val rowsAffected = try {
                 mdb.updateRows(moduleId, tableDefinition.name, filters, updateMap)
             } catch (e: Exception) {
-                println("ModuleDatabaseService.updateRows threw: ${e.message}")
+                log.error("Failed updating rows in database for module ${moduleId}, table ${tableDefinition.name} with filters $filters and updateMap $updateMap: ${e.message}", e)
                 0
             }
 
@@ -271,16 +271,16 @@ class GenericTableLayer(
     private fun validateItem(item: Map<String, Any?>): Boolean {
         for (column in tableDefinition.columns) {
             if (!item.containsKey(column.name)) {
-                println("Missing column: ${column.name}")
+                log.warn("Missing column ${column.name} in item for table ${tableDefinition.name}")
                 return false
             }
             val value = item[column.name]
             if (!column.nullable && value == null) {
-                println("Non-nullable column ${column.name} has null value")
+                log.warn("Non-nullable column ${column.name} has null value in table ${tableDefinition.name}")
                 return false
             }
             if (column.regex != null && value is String && !Regex(column.regex).matches(value)) {
-                println("Value $value does not match regex for column ${column.name}")
+                log.warn("Value '$value' does not match regex '${column.regex}' for column ${column.name} in table ${tableDefinition.name}")
                 return false
             }
         }

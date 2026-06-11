@@ -143,6 +143,31 @@
                         }
                     ],
                     "actUponObject": "groups.xml"
+                },
+                {
+                    "name": "addPhotoToGroup",
+                    "description": "Ajouter une photo existante à un groupe/chapitre.",
+                    "parameters": [
+                        {
+                            "name": "id",
+                            "type": "EQUAL",
+                            "description": "ID du groupe auquel ajouter la photo",
+                            "optional": false
+                        },
+                        {
+                            "name": "photos_id",
+                            "relation": "photos.photos.xml",
+                            "type": "EQUAL",
+                            "description": "ID de la photo à ajouter au groupe",
+                            "optional": false
+                        }
+                    ],
+                    "logic": [
+                        {
+                            "type": "CREATE"
+                        }
+                    ],
+                    "actUponObject": "groups.xml"
                 }
 
             ]
