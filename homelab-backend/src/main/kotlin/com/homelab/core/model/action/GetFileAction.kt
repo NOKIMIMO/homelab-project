@@ -1,6 +1,6 @@
 package com.homelab.core.model.action
 
-import com.homelab.core.helper.AppLogger
+import com.homelab.sdk.helper.AppLogger
 import com.homelab.core.service.AppletService
 import com.homelab.sdk.data.GenericTableLayer
 import com.homelab.sdk.action.Action

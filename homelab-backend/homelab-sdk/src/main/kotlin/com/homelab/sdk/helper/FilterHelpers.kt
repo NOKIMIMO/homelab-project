@@ -4,6 +4,8 @@ import com.homelab.sdk.module.action.ModuleActionDeclaration
 import com.homelab.sdk.module.action.ModuleActionParameterType
 
 object FilterHelpers {
+    private val log = AppLogger.loggerFor(FilterHelpers::class)
+
     fun buildFilters(
         mergedParams: Map<String, Any>,
         declaration: ModuleActionDeclaration
@@ -11,9 +13,12 @@ object FilterHelpers {
         val filters = mutableMapOf<String, Pair<Any?, ModuleActionParameterType>>()
 
         val declaredParams = declaration.parameters
+        log.debug("Building filters for action ${declaration.name} with merged params: $mergedParams and declared params: $declaredParams")
         if (declaredParams.isEmpty()) {
             if (mergedParams.containsKey("id")) filters["id"] = Pair(mergedParams["id"], ModuleActionParameterType.EQUAL)
+            log.debug("No declared parameters, using 'id' from merged params if present: ${filters["id"]}")
         } else {
+            log.debug("Declared parameters found, trying to match with merged params")
             for (p in declaredParams) {
                 val variants = listOf(p.name, Formater.camelToSnake(p.name), p.name.lowercase())
                 var found: Any? = null
@@ -29,6 +34,7 @@ object FilterHelpers {
                 }
             }
         }
+        log.debug("Built filters: $filters")
         return filters
     }
 

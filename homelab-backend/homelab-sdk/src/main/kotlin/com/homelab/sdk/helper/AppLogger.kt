@@ -1,4 +1,4 @@
-package com.homelab.core.helper
+package com.homelab.sdk.helper
 
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -85,7 +85,7 @@ object AppLogger {
 		fun debug(msg: String) = debug(tag, msg)
 		fun info(msg: String) = info(tag, msg)
 		fun warn(msg: String) = warn(tag, msg)
-		fun error(msg: String, t: Throwable? = null) = AppLogger.error(tag, msg, t)
+		fun error(msg: String, t: Throwable? = null) = error(tag, msg, t)
 	}
 
 	fun loggerFor(tag: String) = Logger(tag)

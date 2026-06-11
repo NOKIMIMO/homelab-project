@@ -1,7 +1,7 @@
 package com.homelab.core.plugin
 
 import com.homelab.core.config.HomelabConfig
-import com.homelab.core.helper.AppLogger
+import com.homelab.sdk.helper.AppLogger
 import com.homelab.core.service.AppletService
 import com.homelab.sdk.module.action.ModuleActionDeclaration
 import com.homelab.sdk.module.action.ModuleActionParameterType

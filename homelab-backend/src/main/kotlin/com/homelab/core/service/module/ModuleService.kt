@@ -4,11 +4,11 @@ import com.homelab.core.action.ActionFactory
 import com.homelab.core.api.dto.ModuleDto
 import com.homelab.core.config.HomelabConfig
 import com.homelab.core.config.ModuleConfigMemory
-import com.homelab.core.helper.AppLogger
+import com.homelab.sdk.helper.AppLogger
 import com.homelab.core.model.module.Module
 import com.homelab.core.model.module.ModuleStatus
 import com.homelab.core.parser.ModuleDataObjectParser
-import com.homelab.core.service.AppletService
+import com.homelab.sdk.data.TableDefinition
 import jakarta.annotation.*
 import org.springframework.core.io.Resource
 import org.springframework.core.io.FileSystemResource
@@ -90,6 +90,10 @@ class ModuleService(
             // init DB object from module config
             setUpModuleDataObject(item.config.id, item.config.dataObjects!!)
 
+        }
+        //AUTO start module, easier and keep the circuitBreak idea instead
+        discovered.forEach {
+            startModule(it.config.id)
         }
     }
 
@@ -239,48 +243,39 @@ class ModuleService(
                 moduleId,
         )
     }
-    private fun setUpModuleDataObject(moduleId: String, xmlFileName: List<String> ): Boolean {
-        try {
-            // Data object creation
-            for (fileName in xmlFileName) {
-                val file = File(
-                    homelabConfig.modulesScanPath,
-                    "$moduleId/$fileName"
-                ).canonicalFile
-//                println("Scanning module ${file.absolutePath} for dataObject")
-                if (!file.exists()) {
-                    error("Data object XML not found: ${file.absolutePath}")
-                }
-                val xml = file.readText()
-                val objectDefinition = ModuleDataObjectParser.parseFromXml(xml, moduleId)
-                moduleDatabaseService.setUpModuleDataObject(
-                    moduleId,
-                    objectDefinition
-                )
-            }
-            // Data object relation (separated to let full spung up of original table before relation)
-            for (fileName in xmlFileName) {
-                val file = File(
-                    homelabConfig.modulesScanPath,
-                    "$moduleId/$fileName"
-                ).canonicalFile
-                if (!file.exists()) {
-                    error("Data object XML not found: ${file.absolutePath}")
-                }
-                val xml = file.readText()
 
-                moduleDatabaseService.setUpModuleDataObjectRelations(
-                    moduleId,
-                    ModuleDataObjectParser.parseFromXml(xml, moduleId)
-                )
-            }
+    private fun setUpModuleDataObject(
+        moduleId: String,
+        xmlFileNames: List<String>
+    ): Boolean {
+        return try {
+            val definitions = loadObjectDefinitions(moduleId, xmlFileNames)
 
+            definitions.forEach { moduleDatabaseService.setUpModuleDataObject(moduleId, it) }
+            definitions.forEach { moduleDatabaseService.setUpModuleDataObjectRelations(moduleId, it) }
+            definitions.forEach { moduleDatabaseService.setUpModuleDataObjectConstraints(moduleId, it) }
 
-        }catch (e: Exception){
+            true
+        } catch (e: Exception) {
             log.error("Failed to set up data objects for module $moduleId: ${e.message}", e)
-            return false
+            false
         }
-        return true
     }
 
+    private fun loadObjectDefinitions(
+        moduleId: String,
+        xmlFileNames: List<String>
+    ): List<TableDefinition> {
+        return xmlFileNames.map { fileName ->
+            val file = File(homelabConfig.modulesScanPath, "$moduleId/$fileName").canonicalFile
+
+            require(file.exists()) {
+                "Data object XML not found: ${file.absolutePath}"
+            }
+
+            ModuleDataObjectParser.parseFromXml(file.readText(), moduleId)
+        }
+    }
 }
+
+
