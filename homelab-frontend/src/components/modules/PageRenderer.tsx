@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo } from 'react';
-import { ComponentRenderer } from './ComponentRenderer';
+import { ComponentRenderer } from './renderer/ComponentRenderer';
 import { ModuleRendererProvider } from './ModuleRendererProvider';
 import { useModuleRendererContext } from './useModuleRendererContext';
 import type {
@@ -71,7 +71,7 @@ const PageRendererContent: React.FC<PageRendererContentProps> = ({
   }, [preloadSource, sources]);
 
   return (
-    <div className={`relative w-full max-w-12xl mx-auto min-h-full space-y-6 page-${pageConfig.id}`}>
+    <div className={`relative w-full max-w-12xl mx-auto space-y-6 page-${pageConfig.id}`}>
       {pageConfig.components.map((component, index) => (
         <ComponentRenderer
           key={`${component.type}-${index}`}

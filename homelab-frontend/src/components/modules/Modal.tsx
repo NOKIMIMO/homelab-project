@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 
 interface ModalProps {
   visible: boolean;
@@ -7,58 +7,34 @@ interface ModalProps {
   actions?: React.ReactNode;
   content?: React.ReactNode;
   title?: string;
+  isImageContent?: boolean; 
 }
-
-export const Modal: React.FC<ModalProps> = ({ 
-  visible, 
-  onClose,
-  children,
-  actions,
-  content,
-  title 
+export const Modal: React.FC<ModalProps> = ({
+  visible, onClose, children, content, isImageContent,
 }) => {
-  useEffect(() => {
-    if (!visible) {
-      return undefined;
-    }
+  if (!visible) return null;
+  const resolvedContent = content ?? children;
 
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        onClose?.();
-      }
-    };
+  console.log('Rendering Modal with content:', resolvedContent, 'isImageContent:', isImageContent);
 
-    window.addEventListener('keydown', handleKeyDown);
-
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [onClose, visible]);
-
-  if (!visible) {
-    return null;
+  if (isImageContent) {
+    return (
+      <div
+        className="absolute inset-0 z-50 bg-black/90 flex items-center justify-center p-4"
+        onClick={onClose}
+      >
+        <div onClick={(e) => e.stopPropagation()}>
+          {resolvedContent}
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="absolute inset-0 z-20 flex items-center justify-center bg-base-content/30 p-4">
+    <div className="fixed inset-0 z-50 bg-black/80 overflow-auto p-4">
       <div className="absolute inset-0" onClick={onClose} />
-      <div className="relative z-10 w-full max-w-7xl max-h-full overflow-hidden rounded-2xl border border-base-content/10 bg-base-100/95 shadow-2xl backdrop-blur">
-        {title && (
-          <div className="flex justify-between items-center p-4 border-b border-base-200">
-            <h3 className="font-bold text-lg">{title}</h3>
-            <button type="button" className="btn btn-sm btn-circle btn-ghost" onClick={onClose}>✕</button>
-          </div>
-        )}
-        
-        <div className="max-h-[calc(100vh-10rem)] overflow-auto p-4">
-          {content || children}
-        </div>
-        
-        {actions && (
-          <div className="modal-action p-4 border-t border-base-200 m-0">
-            {actions}
-          </div>
-        )}
+      <div className="relative z-10 mx-auto w-fit max-w-[95vw]">
+        {resolvedContent}
       </div>
     </div>
   );
