@@ -121,6 +121,20 @@ export interface ElementListComponent {
   item: ListItemComponent;
 }
 
+export interface ReaderCarouselComponent {
+  type: 'ReaderCarousel';
+  /** Optional source to fetch the list of items (groupContent) */
+  source?: BindingSource;
+  /** Optional params forwarded to the source */
+  params?: Record<string, unknown>;
+  props?: {
+    /** field name on item that contains image URL */
+    itemImageField?: string;
+    /** state key used for fullscreen id (default: fullscreenPhotoId) */
+    fullscreenStateKey?: string;
+  };
+}
+
 export interface ImageViewerComponent {
   type: 'ImageViewer';
   source?: BindingSource;
@@ -148,6 +162,7 @@ export type RendererComponent =
   | FileUploadZoneComponent
   | ListComponent
   | ElementListComponent
+  | ReaderCarouselComponent
   | ListItemComponent
   | ModalComponent
   | ImageViewerComponent;

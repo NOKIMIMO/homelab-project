@@ -10,6 +10,7 @@ import {
   ElementList,
   ListItem,
   Modal,
+  ReaderCarousel,
   ImageViewer,
 } from './index';
 import type {
@@ -43,6 +44,7 @@ const componentMap = {
   ElementList,
   ListItem,
   Modal,
+  ReaderCarousel,
   ImageViewer,
 } satisfies Record<RendererComponentType, React.ElementType>;
 //TODO: BIG REFONTE, TROP GROS DE LOIN
@@ -136,16 +138,69 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
   const stateWriter = onStateChange || setStateValue;
 
   const resolveExpression = React.useCallback((expression: string, scope: RendererContext): unknown => {
-    const identifierMatch = expression.match(/^[a-zA-Z_$][\w$]*$/);
-    if (identifierMatch) {
-      return scope[expression];
-    }
+    // expression is expected without enclosing {{ }} here
+    // support not-null checks like `var != null`, equality between identifiers `a == b`,
+    // and dotted path resolution `photos.file`
 
-    const nullCheckMatch = expression.match(/^([a-zA-Z_$][\w$]*)\s*([!=]==?)\s*null$/);
+    // not-null / null checks
+    const nullCheckMatch = expression.match(/^([a-zA-Z_$][\w$]*(?:\.[a-zA-Z_$][\w$]*)*)\s*(!==?|==?)\s*null$/);
     if (nullCheckMatch) {
       const [, key, operator] = nullCheckMatch;
-      const value = scope[key];
-      return operator.startsWith('!') ? value != null : value == null;
+      const parts = key.split('.');
+      let cur: unknown = scope;
+      for (const part of parts) {
+        if (cur && typeof cur === 'object' && part in (cur as Record<string, unknown>)) {
+          cur = (cur as Record<string, unknown>)[part];
+        } else {
+          cur = undefined;
+          break;
+        }
+      }
+      return operator.startsWith('!') ? cur != null : cur == null;
+    }
+
+    // equality between two identifiers or dotted paths: `a == b` etc.
+    const eqMatch = expression.match(/^([a-zA-Z_$][\w$]*(?:\.[a-zA-Z_$][\w$]*)*)\s*(==|===|!=|!==)\s*([a-zA-Z_$][\w$]*(?:\.[a-zA-Z_$][\w$]*)*)$/);
+    if (eqMatch) {
+      const [, left, op, right] = eqMatch;
+      const resolvePath = (path: string) => {
+        const parts = path.split('.');
+        let cur: unknown = scope;
+        for (const p of parts) {
+          if (cur && typeof cur === 'object' && p in (cur as Record<string, unknown>)) {
+            cur = (cur as Record<string, unknown>)[p];
+          } else {
+            cur = undefined;
+            break;
+          }
+        }
+        return cur;
+      };
+      const a = resolvePath(left);
+      const b = resolvePath(right);
+      switch (op) {
+        case '==': return a == b;
+        case '===': return a === b;
+        case '!=': return a != b;
+        case '!==': return a !== b;
+        default: return false;
+      }
+    }
+
+    // dotted path or identifier
+    const identifierMatch = expression.match(/^[a-zA-Z_$][\w$]*(?:\.[a-zA-Z_$][\w$]*)*$/);
+    if (identifierMatch) {
+      const parts = expression.split('.');
+      let cur: unknown = scope;
+      for (const part of parts) {
+        if (cur && typeof cur === 'object' && part in (cur as Record<string, unknown>)) {
+          cur = (cur as Record<string, unknown>)[part];
+        } else {
+          cur = undefined;
+          break;
+        }
+      }
+      return cur;
     }
 
     return undefined;
@@ -256,6 +311,13 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
   const sourceData = sourceKey
     ? extractBindingPayload(sourceResource?.data ?? renderContext[sourceKey])
     : undefined;
+
+  // Evaluate `visible` expressions and short-circuit rendering when false
+  const resolvedVisible = 'visible' in config ? resolveValue((config as Record<string, unknown>).visible) : undefined;
+  if (resolvedVisible !== undefined) {
+    // Treat falsy values as hidden. Allow boolean results from expressions.
+    if (!resolvedVisible) return null;
+  }
 
   React.useEffect(() => {
     if (!sourceRequest?.params || !sourceKey || sourceResource) {

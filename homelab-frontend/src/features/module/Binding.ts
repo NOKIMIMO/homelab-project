@@ -10,7 +10,26 @@ export function createBindingHandler(
   return async function handleBindingCall({ binding, method = 'GET', params }: BindingRequest) {
     if (!module) return null;
 
-    const url = getApiUrl(`/api/${module.id}/${binding}`);
+    // allow binding to target another module using syntax "module:binding" or "module/binding"
+    let targetModuleId = module.id;
+    let targetBinding = binding;
+    if (typeof binding === 'string') {
+      if (binding.includes(':')) {
+        const parts = binding.split(':', 2);
+        if (parts.length === 2 && parts[0] && parts[1]) {
+          targetModuleId = parts[0];
+          targetBinding = parts[1];
+        }
+      } else if (binding.includes('/')) {
+        const parts = binding.split('/', 2);
+        if (parts.length === 2 && parts[0] && parts[1]) {
+          targetModuleId = parts[0];
+          targetBinding = parts[1];
+        }
+      }
+    }
+
+    const url = getApiUrl(`/api/${targetModuleId}/${targetBinding}`);
     const isFormData = params instanceof FormData;
 
     const fetchOptions: RequestInit = {

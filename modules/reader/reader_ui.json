@@ -1,0 +1,125 @@
+{
+  "id": "reader_page",
+  "layout": "vertical",
+
+  "bindings": {
+    "series": "listSeries",
+    "groups": "listGroups",
+    "groupContent": "getGroupContent"
+  },
+
+  "state": {
+    "currentSerieId": null,
+    "currentGroupId": null,
+    "fullscreenPhotoId": null
+  },
+
+  "components": [
+    {
+      "type": "Header",
+      "props": { "title": "Liseuse Photo" }
+    },
+
+    {
+      "type": "List",
+      "props": { "emptyMessage": "Aucune série disponible." },
+      "source": { "binding": "listSeries", "method": "POST" },
+      "item": {
+        "type": "ListItem",
+        "props": { "title": "{{title}}", "clickable": true, "selected": "{{currentSerieId == id}}" },
+        "defaultClick": [
+          {
+            "type": "setState",
+            "target": "currentSerieId",
+            "value": "{{id}}"
+          },
+          {
+            "type": "setState",
+            "target": "currentGroupId",
+            "value": null
+          },
+          {
+            "type": "setState",
+            "target": "fullscreenPhotoId",
+            "value": null
+          }
+        ]
+      }
+    },
+
+    {
+      "type": "List",
+      "props": { "emptyMessage": "Aucun groupe.", "compact": true },
+      "visible": "{{currentSerieId != null}}",
+      "source": { "binding": "listGroups", "method": "POST", "params": { "serie_id": "{{currentSerieId}}" } },
+      "item": {
+        "type": "ListItem",
+        "props": { "title": "{{chapternumber}}", "clickable": true, "selected": "{{currentGroupId == id}}" },
+        "defaultClick": [
+          {
+            "type": "setState",
+            "target": "currentGroupId",
+            "value": "{{id}}"
+          },
+          {
+            "type": "setState",
+            "target": "fullscreenPhotoId",
+            "value": null
+          }
+        ]
+      }
+    },
+
+    
+
+    {
+      "type": "Modal",
+      "visible": "{{currentGroupId != null}}",
+      "content": {
+        "type": "ElementList",
+        "props": { "emptyMessage": "Aucune photo disponible." },
+        "source": { "binding": "getGroupContent", "method": "POST", "params": { "group_id": "{{currentGroupId}}" } },
+        "preview": {
+          "type": "ImageViewer",
+          "props": { "src": "{{photos.file}}", "alt": "{{photos.file_name}}" }
+        },
+        "item": {
+          "type": "ListItem",
+          "props": { "title": "Image {{index}}", "subtitle": "{{photos.file}}", "clickable": true, "selected": "{{fullscreenPhotoId == id}}" },
+          "defaultClick": {
+            "type": "setState",
+            "target": "fullscreenPhotoId",
+            "value": "{{id}}"
+          }
+        }
+      },
+      "actions": [
+        {
+          "type": "Button",
+          "props": { "label": "Fermer", "icon": "close" },
+          "action": [
+            { "type": "setState", "target": "currentGroupId", "value": null },
+            { "type": "setState", "target": "fullscreenPhotoId", "value": null }
+          ]
+        }
+      ]
+    },
+
+    {
+      "type": "Modal",
+      "visible": "{{fullscreenPhotoId != null}}",
+      "content": {
+        "type": "ReaderCarousel",
+        "source": { "binding": "getGroupContent", "method": "POST", "params": { "group_id": "{{currentGroupId}}" } },
+        "props": { "fullscreenStateKey": "fullscreenPhotoId" }
+      },
+      "actions": [
+        {
+          "type": "Button",
+          "props": { "label": "Fermer", "icon": "close" },
+          "action": { "type": "setState", "target": "fullscreenPhotoId", "value": null }
+        }
+      ]
+    }
+  ]
+}
