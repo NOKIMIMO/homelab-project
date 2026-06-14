@@ -4,15 +4,17 @@ interface ListItemProps {
   title: string;
   subtitle?: string;
   clickable?: boolean;
+  selected?: boolean;
   onClick?: () => void;
   actions?: React.ReactNode;
   children?: React.ReactNode;
 }
-
+  
 export const ListItem: React.FC<ListItemProps> = ({ 
   title, 
   subtitle, 
   clickable = false,
+  selected = false,
   onClick,
   actions,
   children
@@ -24,7 +26,7 @@ export const ListItem: React.FC<ListItemProps> = ({
   return (
     <li>
       <div 
-        className={`flex justify-between items-center w-full p-4 transition-colors ${clickable ? 'cursor-pointer hover:bg-base-300' : ''}`}
+        className={`flex justify-between items-center w-full p-4 transition-colors ${clickable ? 'cursor-pointer hover:bg-base-300' : ''} ${selected ? 'ring-2 ring-primary' : ''}`}
         onClick={clickable ? onClick : undefined}
       >
         <div className="flex flex-col gap-1">

@@ -8,5 +8,6 @@ export { ElementList } from './ElementList';
 export { ListItem } from './ListItem';
 export { Modal } from './Modal';
 export { ImageViewer } from './ImageViewer';
+export { ReaderCarousel } from './ReaderCarousel';
 export { ComponentRenderer } from './ComponentRenderer';
 export { PageRenderer } from './PageRenderer';
