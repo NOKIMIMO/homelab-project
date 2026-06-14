@@ -142,6 +142,7 @@ export interface ImageViewerComponent {
   props?: {
     src?: string;
     alt?: string;
+    displayViewerMode?: 'light' | 'full'; // ← add this
   };
 }
 

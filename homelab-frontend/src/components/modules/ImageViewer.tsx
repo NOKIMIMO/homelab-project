@@ -1,9 +1,12 @@
 import React from 'react';
 
-interface ImageViewerProps {
+type ImageViewerMode = 'light' | 'full';
+
+export interface ImageViewerProps {
   src?: string;
   source?: string;
   sourceData?: string | { url?: string | null } | null;
+  displayViewerMode?: ImageViewerMode;
   params?: Record<string, unknown>;
   alt?: string;
   loading?: boolean;
@@ -13,10 +16,16 @@ interface ImageViewerProps {
 export const ImageViewer: React.FC<ImageViewerProps> = ({ 
   src, 
   sourceData,
+  displayViewerMode = 'light',
   alt = 'Image',
   loading = false,
   error 
 }) => {
+
+  const isFullMode = displayViewerMode === 'full';
+
+  
+
   if (loading) {
     return (
       <div className="flex justify-center items-center w-full h-80 bg-base-200 rounded-xl">
@@ -45,13 +54,25 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({
     );
   }
 
+  if (isFullMode) {
+    console.log('Rendering full mode image viewer with URL:', imageUrl);
+    return (
+      <img
+        src={imageUrl}
+        alt={alt}
+        className="block w-auto h-auto max-w-full max-h-full object-contain rounded-lg"
+      />
+    );
+  }
+
   return (
-    <div className="flex justify-center items-center w-full">
-      <img 
-        src={imageUrl} 
-        alt={alt} 
-        className="max-w-full max-h-[75vh] object-contain rounded-lg shadow-lg"
+    <div className="w-[400px] h-[300px] bg-base-200 flex items-center justify-center rounded-lg">
+      <img
+        src={imageUrl}
+        alt={alt}
+        className="max-w-full max-h-full object-contain"
       />
     </div>
   );
 };
+ImageViewer.displayName = 'ImageViewer';

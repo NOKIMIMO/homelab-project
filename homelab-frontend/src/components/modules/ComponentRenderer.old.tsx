@@ -313,7 +313,7 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
     : undefined;
 
   // Evaluate `visible` expressions and short-circuit rendering when false
-  const resolvedVisible = 'visible' in config ? resolveValue((config as Record<string, unknown>).visible) : undefined;
+  const resolvedVisible = 'visible' in config ? resolveValue((config as unknown as Record<string, unknown>).visible) : undefined;
   if (resolvedVisible !== undefined) {
     // Treat falsy values as hidden. Allow boolean results from expressions.
     if (!resolvedVisible) return null;

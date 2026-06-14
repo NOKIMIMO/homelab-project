@@ -9,5 +9,5 @@ export { ListItem } from './ListItem';
 export { Modal } from './Modal';
 export { ImageViewer } from './ImageViewer';
 export { ReaderCarousel } from './ReaderCarousel';
-export { ComponentRenderer } from './ComponentRenderer';
+export { ComponentRenderer } from './renderer/ComponentRenderer';
 export { PageRenderer } from './PageRenderer';
