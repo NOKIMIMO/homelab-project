@@ -1,0 +1,35 @@
+# ── Build artifacts ──────────────────────────────────────────────────────────
+homelab-backend/build/
+homelab-backend/homelab-sdk/build/
+
+# ── Gradle tooling ───────────────────────────────────────────────────────────
+homelab-backend/.gradle/
+homelab-backend/gradlew
+homelab-backend/gradlew.bat
+
+# ── Node / Frontend dependencies & output ────────────────────────────────────
+homelab-frontend/node_modules/
+homelab-frontend/dist/
+
+# ── Lock files (generated, not for reading) ──────────────────────────────────
+homelab-frontend/package-lock.json
+
+# ── Binary / media assets ────────────────────────────────────────────────────
+homelab-frontend/src/assets/*.png
+homelab-frontend/src/assets/*.svg
+homelab-frontend/src/assets/*.jpg
+modules/photos/img.jpg
+homelab-backend/src/main/resources/module-example/photos/img.jpg
+arch.png
+arch_PA.drawio.png
+
+# ── Legacy / dead code ───────────────────────────────────────────────────────
+homelab-frontend/src/components/modules/ComponentRenderer.old.tsx
+
+# ── Environment & secrets ────────────────────────────────────────────────────
+.env
+homelab-backend/.env
+homelab-backend/module_storage/
+
+# ── Git internals ────────────────────────────────────────────────────────────
+.git/
