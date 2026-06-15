@@ -7,6 +7,7 @@ import DashboardPage from '@pages/DashboardPage';
 import KeyManagerPage from '@pages/KeyManagerPage';
 import LoginPage from '@pages/LoginPage';
 import ModulePage from '@pages/ModulePage';
+import AdminPage from '@pages/AdminPage';
 import '@app/index.css';
 import App from '@app/App';
 
@@ -26,6 +27,7 @@ const router = createBrowserRouter([
       { index: true, element: <DashboardPage /> },
       { path: 'plugins/:moduleId', element: <ModulePage /> },
       { path: 'settings', element: <KeyManagerPage /> },
+      { path: 'admin', element: <AdminPage /> },
     ]
   }
 ]);

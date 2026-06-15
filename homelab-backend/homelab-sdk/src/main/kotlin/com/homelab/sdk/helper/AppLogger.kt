@@ -4,26 +4,27 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import kotlin.reflect.KClass
 
-/**
- * Simple application logger singleton used across the project.
- *
- * Usage examples:
- *  val log = AppLogger.loggerFor(MyClass::class)
- *  log.info("message")
- *  log.debug("detailed message")
- *  log.error("error while doing X", exception)
- */
 object AppLogger {
 	enum class Level { DEBUG, INFO, WARN, ERROR, ERROR_DETAILED }
+
+	data class LogEntry(
+		val timestamp: String,
+		val level: String,
+		val tag: String,
+		val message: String,
+		val caller: String
+	)
 
 	private val timeFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS")
 
 	@Volatile
 	private var level: Level = Level.DEBUG
 
-	fun setLevel(l: Level) {
-		level = l
-	}
+	private val logBuffer = ArrayDeque<LogEntry>()
+	private const val MAX_BUFFER_SIZE = 500
+
+	fun setLevel(l: Level) { level = l }
+	fun getLevel(): Level = level
 
 	private fun now(): String = LocalDateTime.now().format(timeFormatter)
 
@@ -51,11 +52,24 @@ object AppLogger {
 		return "Unknown:0"
 	}
 
+	private fun store(levelStr: String, tag: String, msg: String, caller: String) {
+		val entry = LogEntry(now(), levelStr, tag, msg, caller)
+		synchronized(logBuffer) {
+			if (logBuffer.size >= MAX_BUFFER_SIZE) logBuffer.removeFirst()
+			logBuffer.addLast(entry)
+		}
+	}
+
+	fun getLogs(): List<LogEntry> = synchronized(logBuffer) { logBuffer.toList() }
+
+	fun clearLogs() = synchronized(logBuffer) { logBuffer.clear() }
+
 	fun debug(tag: String = "", msg: String) {
 		if (!shouldLog(Level.DEBUG)) return
 		val caller = findCaller()
 		val prefix = if (tag.isBlank()) "" else "[$tag] "
 		println("${now()} [DEBUG] $prefix($caller) $msg")
+		store("DEBUG", tag, msg, caller)
 	}
 
 	fun info(tag: String = "", msg: String) {
@@ -63,6 +77,7 @@ object AppLogger {
 		val caller = findCaller()
 		val prefix = if (tag.isBlank()) "" else "[$tag] "
 		println("${now()} [INFO ] $prefix($caller) $msg")
+		store("INFO", tag, msg, caller)
 	}
 
 	fun warn(tag: String = "", msg: String) {
@@ -70,6 +85,7 @@ object AppLogger {
 		val caller = findCaller()
 		val prefix = if (tag.isBlank()) "" else "[$tag] "
 		System.err.println("${now()} [WARN ] $prefix($caller) $msg")
+		store("WARN", tag, msg, caller)
 	}
 
 	fun error(tag: String = "", msg: String, t: Throwable? = null) {
@@ -78,6 +94,7 @@ object AppLogger {
 		val prefix = if (tag.isBlank()) "" else "[$tag] "
 		System.err.println("${now()} [ERROR] $prefix($caller) $msg")
 		if (level == Level.ERROR_DETAILED) t?.printStackTrace()
+		store("ERROR", tag, msg, caller)
 	}
 
 	/** Lightweight logger bound to a tag (typically a class/file name). */
