@@ -13,6 +13,7 @@ data class ModuleDto(
     val icon: String?,
     val description: String? = null,
     var uptimeStart: Long? = null,
+    val hasParams: Boolean = false,
 ){
     fun start() {
         status = ModuleStatus.ACTIVE

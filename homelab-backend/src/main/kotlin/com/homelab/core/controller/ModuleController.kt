@@ -1,6 +1,8 @@
 package com.homelab.core.controller
 
 import com.homelab.core.service.module.ModuleService
+import com.homelab.core.service.module.ModuleParamsService
+import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 import jakarta.servlet.http.HttpServletRequest
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder
@@ -8,7 +10,10 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder
 @RestController
 @RequestMapping("/api/modules")
 @CrossOrigin(origins = ["*"])
-class ModuleController(private val moduleService: ModuleService) {
+class ModuleController(
+    private val moduleService: ModuleService,
+    private val moduleParamsService: ModuleParamsService
+) {
 
     //TODO: move in it's service
     @GetMapping
@@ -70,5 +75,29 @@ class ModuleController(private val moduleService: ModuleService) {
     @GetMapping("/{id}/health")
     fun healthCheck(@PathVariable id: String) = mapOf("status" to if (moduleService.healthCheck(id)) "UP" else "DOWN")
 
+    @GetMapping("/{id}/params")
+    fun getParams(@PathVariable id: String): ResponseEntity<Map<String, Any>> {
+        if (!moduleParamsService.hasParams(id)) return ResponseEntity.notFound().build()
+        val body = mapOf(
+            "moduleId" to id,
+            "declarations" to moduleParamsService.getDeclarations(id),
+            "values" to moduleParamsService.getValues(id)
+        )
+        return ResponseEntity.ok(body)
+    }
 
+    @PutMapping("/{id}/params")
+    fun setParams(
+        @PathVariable id: String,
+        @RequestBody values: Map<String, String>
+    ): ResponseEntity<Map<String, Any>> {
+        if (!moduleParamsService.hasParams(id)) return ResponseEntity.notFound().build()
+        moduleParamsService.setValues(id, values)
+        val body = mapOf(
+            "moduleId" to id,
+            "declarations" to moduleParamsService.getDeclarations(id),
+            "values" to moduleParamsService.getValues(id)
+        )
+        return ResponseEntity.ok(body)
+    }
 }
