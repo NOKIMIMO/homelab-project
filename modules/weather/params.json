@@ -1,0 +1,25 @@
+{
+    "parameters": [
+        {
+            "key": "apiKey",
+            "label": "Clé API OpenWeatherMap",
+            "type": "secret",
+            "defaultValue": "",
+            "description": "Obtenez votre clé gratuite sur openweathermap.org"
+        },
+        {
+            "key": "baseUrl",
+            "label": "URL de base",
+            "type": "string",
+            "defaultValue": "https://api.openweathermap.org/data/2.5/weather",
+            "description": "Endpoint de l'API météo"
+        },
+        {
+            "key": "units",
+            "label": "Unités de température",
+            "type": "string",
+            "defaultValue": "metric",
+            "description": "metric = Celsius · imperial = Fahrenheit · standard = Kelvin"
+        }
+    ]
+}

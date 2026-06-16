@@ -9,5 +9,6 @@ export { ListItem } from './ListItem';
 export { Modal } from './Modal';
 export { ImageViewer } from './ImageViewer';
 export { ReaderCarousel } from './ReaderCarousel';
+export { TextInput } from './TextInput';
 export { ComponentRenderer } from './renderer/ComponentRenderer';
 export { PageRenderer } from './PageRenderer';

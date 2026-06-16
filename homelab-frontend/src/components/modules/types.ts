@@ -153,6 +153,17 @@ export interface ModalComponent {
   content?: RendererComponent;
   actions?: RendererComponent[];
 }
+
+export interface TextInputComponent {
+  type: 'TextInput';
+  props: {
+    placeholder?: string;
+    label?: string;
+    stateKey: string;
+    buttonLabel?: string;
+  };
+  action?: ActionConfig;
+}
 //
 
 export type RendererComponent =
@@ -166,7 +177,8 @@ export type RendererComponent =
   | ReaderCarouselComponent
   | ListItemComponent
   | ModalComponent
-  | ImageViewerComponent;
+  | ImageViewerComponent
+  | TextInputComponent;
 
 export type RendererComponentType = RendererComponent['type'];
 

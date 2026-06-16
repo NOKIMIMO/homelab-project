@@ -1,0 +1,63 @@
+{
+    "id": "weather",
+    "name": "Météo",
+    "version": "1.0.0",
+    "icon": "weather.svg",
+    "description": "Affiche la météo en temps réel via OpenWeatherMap. Configurez votre clé API dans les paramètres du module.",
+    "actions": [
+        {
+            "visual": "weather_cache.xml",
+            "functions": [
+                {
+                    "name": "fetchWeather",
+                    "description": "Récupère la météo pour une ville depuis l'API externe.",
+                    "parameters": [
+                        {
+                            "name": "city",
+                            "type": "NONE",
+                            "description": "Nom de la ville",
+                            "optional": false
+                        }
+                    ],
+                    "logic": [
+                        { "type": "FETCH_EXTERNAL" }
+                    ],
+                    "actUponObject": "weather_cache.xml"
+                },
+                {
+                    "name": "listWeather",
+                    "description": "Liste les dernières météos mises en cache.",
+                    "parameters": [],
+                    "logic": [
+                        { "type": "LIST" }
+                    ],
+                    "actUponObject": "weather_cache.xml"
+                },
+                {
+                    "name": "deleteWeather",
+                    "description": "Supprime une entrée météo du cache.",
+                    "parameters": [
+                        {
+                            "name": "id",
+                            "type": "EQUAL",
+                            "description": "ID de l'entrée à supprimer"
+                        }
+                    ],
+                    "logic": [
+                        { "type": "DELETE" }
+                    ],
+                    "actUponObject": "weather_cache.xml"
+                }
+            ]
+        }
+    ],
+    "page": "weather_ui.json",
+    "dataObjects": [
+        "weather_cache.xml"
+    ],
+    "permissions": [
+        "read:weather",
+        "write:weather",
+        "delete:weather"
+    ]
+}

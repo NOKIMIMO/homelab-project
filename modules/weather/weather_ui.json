@@ -1,0 +1,69 @@
+{
+  "page": {
+    "id": "weather_page",
+    "layout": "vertical",
+
+    "bindings": {
+      "weatherList": "listWeather"
+    },
+
+    "state": {
+      "searchCity": ""
+    },
+
+    "components": [
+      {
+        "type": "Header",
+        "props": { "title": "Météo" }
+      },
+
+      {
+        "type": "ActionBar",
+        "components": [
+          {
+            "type": "TextInput",
+            "props": {
+              "placeholder": "Entrez une ville... (ex: Paris, London)",
+              "stateKey": "searchCity",
+              "buttonLabel": "Rechercher"
+            },
+            "action": [
+              {
+                "action": "fetchWeather",
+                "method": "POST",
+                "params": { "city": "{{searchCity}}" }
+              },
+              {
+                "action": "listWeather",
+                "method": "POST"
+              }
+            ]
+          }
+        ]
+      },
+
+      {
+        "type": "List",
+        "props": { "emptyMessage": "Aucune ville recherchée. Utilisez la barre de recherche ci-dessus." },
+        "source": { "binding": "listWeather", "method": "POST" },
+        "item": {
+          "type": "ListItem",
+          "props": {
+            "title": "{{city}} · {{country}}",
+            "subtitle": "{{description}} · {{temperature}}°C (ressenti {{feels_like}}°C) · Humidité: {{humidity}}% · Vent: {{wind_speed}} m/s"
+          },
+          "actions": [
+            {
+              "type": "IconButton",
+              "props": { "icon": "trash", "tooltip": "Supprimer" },
+              "action": [
+                { "action": "deleteWeather", "method": "POST", "params": { "id": "{{id}}" } },
+                { "action": "listWeather", "method": "POST" }
+              ]
+            }
+          ]
+        }
+      }
+    ]
+  }
+}
