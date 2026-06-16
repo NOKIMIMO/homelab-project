@@ -2,19 +2,24 @@ package com.homelab.core.action
 
 import com.homelab.core.model.action.*
 import com.homelab.core.plugin.PluginRegistry
+import com.homelab.core.service.GlobalParametersService
 import com.homelab.sdk.action.Action
 import org.postgresql.util.LruCache
 import org.springframework.stereotype.Service
 
 @Service
-class ActionFactory(private val pluginRegistry: PluginRegistry) {
+class ActionFactory(
+    private val pluginRegistry: PluginRegistry,
+    private val globalParametersService: GlobalParametersService
+) {
     private val builtins: Map<String, Action> = mapOf(
         ActionsEnum.UPLOAD_FILE.name to UploadFileAction(),
         ActionsEnum.GET_FILE.name to GetFileAction(),
         ActionsEnum.DELETE.name to DeleteAction(),
         ActionsEnum.CREATE.name to SimpleCreateAction(),
         ActionsEnum.LIST.name to ListAction(),
-        ActionsEnum.READ.name to ReadAction()
+        ActionsEnum.READ.name to ReadAction(),
+        ActionsEnum.FETCH_EXTERNAL.name to FetchExternalAction(globalParametersService)
     )
 
     fun resolve(typeName: String): Action? {

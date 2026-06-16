@@ -12,6 +12,7 @@ import {
   Modal,
   ReaderCarousel,
   ImageViewer,
+  TextInput,
 } from './../index';
 
 import {
@@ -52,6 +53,7 @@ const componentMap = {
   Modal,
   ReaderCarousel,
   ImageViewer,
+  TextInput,
 } satisfies Record<RendererComponentType, React.ElementType>;
 
 // ---------------------------------------------------------------------------
@@ -252,6 +254,16 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
     const defaultClickAction = hasDefaultClick(config) ? config.defaultClick : undefined;
     if (defaultClickAction) {
       componentEvents.onClick = () => void handleAction(defaultClickAction);
+    }
+  } else if (type === 'TextInput') {
+    const stateKey = (resolvedProps as Record<string, unknown>).stateKey as string | undefined;
+    if (stateKey) {
+      componentEvents.value = (renderContext[stateKey] as string) ?? '';
+      componentEvents.onChange = (val: string) => stateWriter(stateKey, val);
+    }
+    if (hasAction(config) && config.action) {
+      const actionConfig = config.action;
+      componentEvents.onSubmit = () => void handleAction(actionConfig);
     }
   } else if (hasAction(config) && config.action) {
     const actionConfig = config.action;
