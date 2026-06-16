@@ -25,7 +25,8 @@ class ModuleService(
     private val moduleDatabaseService: ModuleDatabaseService,
     private val moduleConfigService: ModuleConfigService,
     private val actionFactory: ActionFactory,
-    private val moduleConfigMemory: ModuleConfigMemory
+    private val moduleConfigMemory: ModuleConfigMemory,
+    private val moduleParamsService: ModuleParamsService
 ) {
     private val log = AppLogger.loggerFor(ModuleService::class)
 
@@ -105,7 +106,6 @@ class ModuleService(
     // The controller exposes the icon at GET /api/modules/{id}/UI/icon so we return that path.
     fun getModules(): List<ModuleDto> {
         return modules.values.map { m ->
-            val iconUrl = "/api/modules/${m.id}/UI/icon"
             ModuleDto(
                 id = m.id,
                 name = m.name,
@@ -114,7 +114,8 @@ class ModuleService(
                 status = m.status,
                 description = m.description,
                 uptimeStart = m.uptimeStart,
-                icon = iconUrl
+                icon = "/api/modules/${m.id}/UI/icon",
+                hasParams = moduleParamsService.hasParams(m.id)
             )
         }
     }

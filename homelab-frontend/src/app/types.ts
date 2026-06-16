@@ -5,6 +5,21 @@ export interface Module {
   icon: string;
   description?: string;
   uptimeStart?: number;
+  hasParams?: boolean;
+}
+
+export interface ParamDeclaration {
+  key: string;
+  label: string;
+  type: 'string' | 'number' | 'boolean' | 'secret';
+  defaultValue: string;
+  description: string;
+}
+
+export interface ModuleParamsResponse {
+  moduleId: string;
+  declarations: ParamDeclaration[];
+  values: Record<string, string | null>;
 }
 
 export interface AppOutletContext {
