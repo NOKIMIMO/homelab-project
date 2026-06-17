@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Guide de création d'un module — Homelab</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --bg2: #161b27;
+      --bg3: #1e2535;
+      --border: #2a3347;
+      --accent: #3b82f6;
+      --accent-soft: #1d3a6e;
+      --green: #22c55e;
+      --green-soft: #14321f;
+      --yellow: #f59e0b;
+      --yellow-soft: #3a2a06;
+      --purple: #a78bfa;
+      --purple-soft: #2d1f5e;
+      --red: #f87171;
+      --text: #e2e8f0;
+      --text-muted: #8b9ab0;
+      --code-bg: #0d1117;
+      --radius: 8px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+      font-size: 15px;
+    }
+
+    /* ── Layout ── */
+    .page-wrapper {
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* ── Sidebar ── */
+    nav {
+      width: 240px;
+      flex-shrink: 0;
+      background: var(--bg2);
+      border-right: 1px solid var(--border);
+      padding: 24px 0;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow-y: auto;
+    }
+
+    .nav-logo {
+      padding: 0 20px 20px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 16px;
+    }
+    .nav-logo span {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--accent);
+      letter-spacing: .06em;
+      text-transform: uppercase;
+    }
+
+    nav a {
+      display: block;
+      padding: 7px 20px;
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 13.5px;
+      border-left: 2px solid transparent;
+      transition: all .15s;
+    }
+    nav a:hover { color: var(--text); background: var(--bg3); }
+    nav a.active { color: var(--accent); border-left-color: var(--accent); background: var(--accent-soft); }
+
+    .nav-section {
+      padding: 12px 20px 4px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+
+    /* ── Main ── */
+    main {
+      flex: 1;
+      max-width: 900px;
+      padding: 48px 56px;
+      min-width: 0;
+    }
+
+    h1 {
+      font-size: 28px;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 8px;
+    }
+    .subtitle {
+      color: var(--text-muted);
+      margin-bottom: 40px;
+      font-size: 15px;
+    }
+
+    h2 {
+      font-size: 20px;
+      font-weight: 700;
+      color: #fff;
+      margin: 48px 0 16px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+      scroll-margin-top: 24px;
+    }
+
+    h3 {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--accent);
+      margin: 28px 0 10px;
+      scroll-margin-top: 24px;
+    }
+
+    p { margin-bottom: 12px; color: var(--text); }
+
+    /* ── Code ── */
+    code {
+      font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+      font-size: 13px;
+      background: var(--bg3);
+      color: #a5f3fc;
+      padding: 2px 6px;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+    }
+
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px 24px;
+      overflow-x: auto;
+      margin: 14px 0 20px;
+      position: relative;
+    }
+    pre code {
+      background: none;
+      border: none;
+      padding: 0;
+      color: var(--text);
+      font-size: 13px;
+      line-height: 1.65;
+    }
+
+    /* syntax highlight minimal */
+    .kw  { color: #c792ea; }   /* keywords */
+    .str { color: #c3e88d; }   /* strings */
+    .key { color: #82aaff; }   /* json keys */
+    .num { color: #f78c6c; }   /* numbers */
+    .cmt { color: #546e7a; font-style: italic; }  /* comments */
+    .tag { color: #f07178; }   /* xml tags */
+    .atr { color: #ffcb6b; }   /* xml attrs */
+
+    /* ── Tables ── */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 14px 0 20px;
+      font-size: 13.5px;
+    }
+    th {
+      background: var(--bg3);
+      color: var(--text-muted);
+      font-weight: 600;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      padding: 10px 14px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    td {
+      padding: 9px 14px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--bg3); }
+    td code { font-size: 12px; }
+
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .04em;
+    }
+    .badge-req  { background: #1f2d1f; color: var(--green);  border: 1px solid #2a5a2a; }
+    .badge-opt  { background: var(--bg3); color: var(--text-muted); border: 1px solid var(--border); }
+
+    /* ── Callout ── */
+    .callout {
+      border-radius: var(--radius);
+      padding: 14px 18px;
+      margin: 16px 0;
+      font-size: 14px;
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+    }
+    .callout-warn { background: var(--yellow-soft); border: 1px solid #7a5a10; color: #fde68a; }
+    .callout-info { background: var(--accent-soft); border: 1px solid #1e4a9a; color: #bfdbfe; }
+    .callout-tip  { background: var(--green-soft);  border: 1px solid #2a5a2a; color: #bbf7d0; }
+    .callout-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+
+    /* ── File tree ── */
+    .file-tree {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px 24px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      line-height: 1.8;
+      margin: 14px 0 20px;
+      color: var(--text);
+    }
+    .file-tree .dir  { color: var(--accent); }
+    .file-tree .file { color: #c3e88d; }
+    .file-tree .note { color: var(--text-muted); }
+
+    /* ── Checklist ── */
+    .checklist {
+      list-style: none;
+      margin: 14px 0;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .checklist li {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 10px 14px;
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-size: 14px;
+    }
+    .checklist li::before {
+      content: '○';
+      color: var(--text-muted);
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    /* ── Component cards ── */
+    .component-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 10px;
+      margin: 14px 0 20px;
+    }
+    .comp-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 12px 14px;
+      font-size: 13px;
+    }
+    .comp-card strong {
+      display: block;
+      color: var(--purple);
+      font-family: monospace;
+      margin-bottom: 4px;
+    }
+    .comp-card span { color: var(--text-muted); font-size: 12px; }
+
+    /* ── Divider ── */
+    hr { border: none; border-top: 1px solid var(--border); margin: 36px 0; }
+
+    /* ── Action type badges ── */
+    .action-tag {
+      display: inline-block;
+      font-family: monospace;
+      font-size: 12px;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-weight: 700;
+    }
+    .at-list    { background: #0f2a3a; color: #67e8f9; border: 1px solid #164e63; }
+    .at-read    { background: #1e2d1e; color: #86efac; border: 1px solid #166534; }
+    .at-create  { background: #1c2a10; color: #bef264; border: 1px solid #3f6212; }
+    .at-delete  { background: #2a1010; color: #fca5a5; border: 1px solid #7f1d1d; }
+    .at-file    { background: #2a1e0f; color: #fcd34d; border: 1px solid #92400e; }
+    .at-ext     { background: var(--purple-soft); color: #ddd6fe; border: 1px solid #4c1d95; }
+
+    /* ── Section number ── */
+    .section-num {
+      display: inline-block;
+      background: var(--accent);
+      color: #fff;
+      font-size: 12px;
+      font-weight: 700;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      text-align: center;
+      line-height: 22px;
+      margin-right: 8px;
+      vertical-align: middle;
+    }
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  </style>
+</head>
+<body>
+<div class="page-wrapper">
+
+  <!-- ── Sidebar ── -->
+  <nav>
+    <div class="nav-logo"><span>Homelab Modules</span></div>
+
+    <div class="nav-section">Démarrage</div>
+    <a href="#structure">Structure d'un module</a>
+
+    <div class="nav-section">Fichiers</div>
+    <a href="#manifest">1. manifest.json</a>
+    <a href="#xml">2. Schéma XML</a>
+    <a href="#ui">3. UI JSON</a>
+    <a href="#params">6. params.json</a>
+
+    <div class="nav-section">Référence</div>
+    <a href="#components">4. Composants UI</a>
+    <a href="#actions">5. Types d'actions</a>
+    <a href="#chained">7. Actions chaînées</a>
+
+    <div class="nav-section">Exemple</div>
+    <a href="#example">Module "Tâches"</a>
+    <a href="#checklist">Checklist</a>
+  </nav>
+
+  <!-- ── Content ── -->
+  <main>
+    <h1>Guide de création d'un module</h1>
+    <p class="subtitle">Tout ce qu'il faut savoir pour créer un nouveau module sans toucher au backend.</p>
+
+    <!-- ── Structure ── -->
+    <h2 id="structure">Structure d'un module</h2>
+    <p>Un module est un simple dossier placé dans le répertoire scanné par le backend (<code>HOMELAB_MODULES_SCAN_PATH</code>). Le backend le détecte et le charge automatiquement au démarrage — aucune recompilation nécessaire.</p>
+
+    <div class="file-tree">
+      <span class="dir">modules/</span><br>
+      └── <span class="dir">mon-module/</span><br>
+      &nbsp;&nbsp;&nbsp;&nbsp;├── <span class="file">manifest.json</span>  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="note">← obligatoire : déclare le module</span><br>
+      &nbsp;&nbsp;&nbsp;&nbsp;├── <span class="file">ma_table.xml</span>   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="note">← schéma de base de données</span><br>
+      &nbsp;&nbsp;&nbsp;&nbsp;├── <span class="file">mon_ui.json</span>    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="note">← interface utilisateur</span><br>
+      &nbsp;&nbsp;&nbsp;&nbsp;├── <span class="file">params.json</span>    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="note">← paramètres configurables (optionnel)</span><br>
+      &nbsp;&nbsp;&nbsp;&nbsp;└── <span class="file">icone.svg</span>      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="note">← icône affichée dans le dashboard (optionnel)</span>
+    </div>
+
+    <!-- ── Manifest ── -->
+    <h2 id="manifest"><span class="section-num">1</span> manifest.json — Déclaration du module</h2>
+
+    <pre><code><span class="str">{</span>
+    <span class="key">"id"</span>:          <span class="str">"mon-module"</span>,
+    <span class="key">"name"</span>:        <span class="str">"Mon Module"</span>,
+    <span class="key">"version"</span>:     <span class="str">"1.0.0"</span>,
+    <span class="key">"icon"</span>:        <span class="str">"icone.svg"</span>,
+    <span class="key">"description"</span>: <span class="str">"Description courte affichée dans le dashboard."</span>,
+
+    <span class="key">"actions"</span>: [
+        {
+            <span class="key">"visual"</span>: <span class="str">"ma_table.xml"</span>,
+            <span class="key">"functions"</span>: [
+                {
+                    <span class="key">"name"</span>:          <span class="str">"creerEntree"</span>,
+                    <span class="key">"description"</span>:   <span class="str">"Créer une nouvelle entrée."</span>,
+                    <span class="key">"parameters"</span>:    [],
+                    <span class="key">"logic"</span>:         [{ <span class="key">"type"</span>: <span class="str">"CREATE"</span> }],
+                    <span class="key">"actUponObject"</span>: <span class="str">"ma_table.xml"</span>
+                },
+                {
+                    <span class="key">"name"</span>:          <span class="str">"listerEntrees"</span>,
+                    <span class="key">"description"</span>:   <span class="str">"Lister toutes les entrées."</span>,
+                    <span class="key">"parameters"</span>:    [],
+                    <span class="key">"logic"</span>:         [{ <span class="key">"type"</span>: <span class="str">"LIST"</span> }],
+                    <span class="key">"actUponObject"</span>: <span class="str">"ma_table.xml"</span>
+                }
+            ]
+        }
+    ],
+
+    <span class="key">"page"</span>:        <span class="str">"mon_ui.json"</span>,
+    <span class="key">"dataObjects"</span>: [<span class="str">"ma_table.xml"</span>],
+    <span class="key">"permissions"</span>: [<span class="str">"read:mon-module"</span>, <span class="str">"write:mon-module"</span>, <span class="str">"delete:mon-module"</span>]
+}</code></pre>
+
+    <h3>Champs racine</h3>
+    <table>
+      <thead><tr><th>Champ</th><th>Requis</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>id</code></td><td><span class="badge badge-req">oui</span></td><td>Identifiant unique — snake-case ou kebab-case, sans espaces</td></tr>
+        <tr><td><code>name</code></td><td><span class="badge badge-req">oui</span></td><td>Nom affiché dans le dashboard</td></tr>
+        <tr><td><code>version</code></td><td><span class="badge badge-opt">non</span></td><td>Semver libre</td></tr>
+        <tr><td><code>icon</code></td><td><span class="badge badge-opt">non</span></td><td>Fichier SVG ou image dans le dossier du module</td></tr>
+        <tr><td><code>description</code></td><td><span class="badge badge-opt">non</span></td><td>Texte court affiché dans le dashboard</td></tr>
+        <tr><td><code>actions</code></td><td><span class="badge badge-req">oui</span></td><td>Tableau des groupes de fonctions</td></tr>
+        <tr><td><code>page</code></td><td><span class="badge badge-req">oui</span></td><td>Fichier JSON de l'interface</td></tr>
+        <tr><td><code>dataObjects</code></td><td><span class="badge badge-req">oui</span></td><td>Liste des fichiers XML de schémas utilisés</td></tr>
+        <tr><td><code>permissions</code></td><td><span class="badge badge-opt">non</span></td><td>Permissions déclaratives (non encore enforced)</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Paramètre d'une fonction (<code>parameters[]</code>)</h3>
+    <pre><code>{
+    <span class="key">"name"</span>:        <span class="str">"id"</span>,
+    <span class="key">"type"</span>:        <span class="str">"EQUAL"</span>,
+    <span class="key">"description"</span>: <span class="str">"ID de l'entrée"</span>,
+    <span class="key">"optional"</span>:    <span class="num">false</span>
+}</code></pre>
+
+    <table>
+      <thead><tr><th>Type</th><th>Comportement</th></tr></thead>
+      <tbody>
+        <tr><td><code>EQUAL</code></td><td>Filtre <code>WHERE col = valeur</code> en base de données</td></tr>
+        <tr><td><code>NONE</code></td><td>Passé à l'action mais non utilisé comme filtre SQL</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout callout-warn">
+      <span class="callout-icon">⚠️</span>
+      <div><strong>actUponObject est obligatoire</strong> pour chaque fonction. Le backend échoue au démarrage si le fichier XML référencé n'existe pas.</div>
+    </div>
+
+    <!-- ── XML ── -->
+    <h2 id="xml"><span class="section-num">2</span> Schéma XML — Base de données</h2>
+    <p>Le backend génère automatiquement une table SQL à partir de ce fichier lors du démarrage.</p>
+
+    <pre><code><span class="tag">&lt;ma_table&gt;</span>
+
+    <span class="cmt">&lt;!-- Colonnes auto-générées (toujours inclure) --&gt;</span>
+    <span class="tag">&lt;autoGenerated&gt;</span>
+        <span class="tag">&lt;id/&gt;</span>
+        <span class="tag">&lt;createdAt/&gt;</span>
+        <span class="tag">&lt;updatedAt/&gt;</span>
+    <span class="tag">&lt;/autoGenerated&gt;</span>
+
+    <span class="cmt">&lt;!-- Colonne simple --&gt;</span>
+    <span class="tag">&lt;col&gt;</span>
+        <span class="tag">&lt;naming</span> <span class="atr">val</span>=<span class="str">"titre"</span><span class="tag">/&gt;</span>
+        <span class="tag">&lt;typing</span> <span class="atr">val</span>=<span class="str">"string"</span><span class="tag">/&gt;</span>
+    <span class="tag">&lt;/col&gt;</span>
+
+    <span class="cmt">&lt;!-- Colonne avec contraintes --&gt;</span>
+    <span class="tag">&lt;col&gt;</span>
+        <span class="tag">&lt;naming</span>   <span class="atr">val</span>=<span class="str">"slug"</span><span class="tag">/&gt;</span>
+        <span class="tag">&lt;typing</span>   <span class="atr">val</span>=<span class="str">"string"</span><span class="tag">/&gt;</span>
+        <span class="tag">&lt;unique</span>   <span class="atr">val</span>=<span class="str">"true"</span><span class="tag">/&gt;</span>
+        <span class="tag">&lt;nullable</span> <span class="atr">val</span>=<span class="str">"false"</span><span class="tag">/&gt;</span>
+    <span class="tag">&lt;/col&gt;</span>
+
+    <span class="cmt">&lt;!-- Colonne numérique --&gt;</span>
+    <span class="tag">&lt;col&gt;</span>
+        <span class="tag">&lt;naming</span> <span class="atr">val</span>=<span class="str">"score"</span><span class="tag">/&gt;</span>
+        <span class="tag">&lt;typing</span> <span class="atr">val</span>=<span class="str">"integer"</span><span class="tag">/&gt;</span>
+    <span class="tag">&lt;/col&gt;</span>
+
+<span class="tag">&lt;/ma_table&gt;</span></code></pre>
+
+    <h3>Types de colonnes</h3>
+    <table>
+      <thead><tr><th>Valeur typing</th><th>Type SQL généré</th></tr></thead>
+      <tbody>
+        <tr><td><code>string</code></td><td>VARCHAR / TEXT</td></tr>
+        <tr><td><code>integer</code></td><td>INTEGER</td></tr>
+        <tr><td><code>boolean</code></td><td>BOOLEAN</td></tr>
+        <tr><td><code>float</code></td><td>DOUBLE / FLOAT</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Contraintes disponibles</h3>
+    <table>
+      <thead><tr><th>Balise</th><th>Valeur</th><th>Effet</th></tr></thead>
+      <tbody>
+        <tr><td><code>&lt;unique&gt;</code></td><td><code>"true"</code></td><td>Contrainte UNIQUE sur la colonne</td></tr>
+        <tr><td><code>&lt;nullable&gt;</code></td><td><code>"false"</code></td><td>Contrainte NOT NULL</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Colonnes auto-générées</h3>
+    <table>
+      <thead><tr><th>Balise</th><th>Contenu généré</th></tr></thead>
+      <tbody>
+        <tr><td><code>&lt;id/&gt;</code></td><td>UUID auto-généré, clé primaire</td></tr>
+        <tr><td><code>&lt;createdAt/&gt;</code></td><td>Timestamp de création</td></tr>
+        <tr><td><code>&lt;updatedAt/&gt;</code></td><td>Timestamp de dernière mise à jour</td></tr>
+        <tr><td><code>&lt;file/&gt;</code></td><td>Stockage binaire (pour modules avec upload de fichier)</td></tr>
+      </tbody>
+    </table>
+
+    <!-- ── UI JSON ── -->
+    <h2 id="ui"><span class="section-num">3</span> UI JSON — Interface utilisateur</h2>
+
+    <pre><code>{
+  <span class="key">"page"</span>: {
+    <span class="key">"id"</span>:      <span class="str">"mon_module_page"</span>,
+    <span class="key">"layout"</span>: <span class="str">"vertical"</span>,
+
+    <span class="key">"bindings"</span>: {
+      <span class="key">"maListe"</span>: <span class="str">"listerEntrees"</span>    <span class="cmt">// nom local → nom de fonction</span>
+    },
+
+    <span class="key">"state"</span>: {
+      <span class="key">"champRecherche"</span>: <span class="str">""</span>           <span class="cmt">// variables de l'UI</span>
+    },
+
+    <span class="key">"components"</span>: [...]
+  }
+}</code></pre>
+
+    <h3>bindings</h3>
+    <p>Associe un nom local à une fonction du module. Ce nom est utilisé comme <code>source.binding</code> dans les composants. Le binding est rechargé automatiquement au montage de la page.</p>
+
+    <h3>state</h3>
+    <p>Valeurs initiales des variables de l'interface. Lisibles et modifiables via <code>&#123;&#123;nomVariable&#125;&#125;</code> dans les props et params.</p>
+
+    <!-- ── Components ── -->
+    <h2 id="components"><span class="section-num">4</span> Composants UI disponibles</h2>
+
+    <div class="component-grid">
+      <div class="comp-card"><strong>Header</strong><span>Titre de page</span></div>
+      <div class="comp-card"><strong>ActionBar</strong><span>Barre d'actions</span></div>
+      <div class="comp-card"><strong>Button</strong><span>Bouton cliquable</span></div>
+      <div class="comp-card"><strong>TextInput</strong><span>Champ de texte</span></div>
+      <div class="comp-card"><strong>List</strong><span>Liste d'éléments</span></div>
+      <div class="comp-card"><strong>IconButton</strong><span>Bouton icône</span></div>
+      <div class="comp-card"><strong>FileUploadZone</strong><span>Zone de dépôt</span></div>
+      <div class="comp-card"><strong>Modal</strong><span>Fenêtre modale</span></div>
+      <div class="comp-card"><strong>ImageViewer</strong><span>Affichage image</span></div>
+    </div>
+
+    <h3>Header</h3>
+    <pre><code>{ <span class="key">"type"</span>: <span class="str">"Header"</span>, <span class="key">"props"</span>: { <span class="key">"title"</span>: <span class="str">"Mon Module"</span> } }</code></pre>
+
+    <h3>ActionBar</h3>
+    <p>Barre horizontale qui contient d'autres composants (Button, TextInput…).</p>
+    <pre><code>{ <span class="key">"type"</span>: <span class="str">"ActionBar"</span>, <span class="key">"components"</span>: [...] }</code></pre>
+
+    <h3>Button</h3>
+    <pre><code>{
+  <span class="key">"type"</span>: <span class="str">"Button"</span>,
+  <span class="key">"props"</span>: {
+    <span class="key">"label"</span>:        <span class="str">"Rafraîchir"</span>,
+    <span class="key">"icon"</span>:         <span class="str">"refresh"</span>,      <span class="cmt">// icône Lucide</span>
+    <span class="key">"uploadTarget"</span>: <span class="str">"mon-upload"</span>   <span class="cmt">// déclenche une FileUploadZone</span>
+  },
+  <span class="key">"action"</span>: { <span class="key">"action"</span>: <span class="str">"listerEntrees"</span>, <span class="key">"method"</span>: <span class="str">"POST"</span> }
+}</code></pre>
+    <p>Icônes disponibles (Lucide) : <code>"refresh"</code>, <code>"upload"</code>, <code>"trash"</code>, <code>"plus"</code>, <code>"fullscreen"</code>, <code>"search"</code>…</p>
+
+    <h3>TextInput</h3>
+    <p>Champ de texte avec bouton. Lié au state via <code>stateKey</code>. L'action se déclenche sur <strong>Enter</strong> ou clic du bouton.</p>
+    <pre><code>{
+  <span class="key">"type"</span>: <span class="str">"TextInput"</span>,
+  <span class="key">"props"</span>: {
+    <span class="key">"stateKey"</span>:    <span class="str">"champRecherche"</span>,   <span class="cmt">// obligatoire</span>
+    <span class="key">"placeholder"</span>: <span class="str">"Rechercher..."</span>,
+    <span class="key">"label"</span>:       <span class="str">"Ville"</span>,
+    <span class="key">"buttonLabel"</span>: <span class="str">"Go"</span>
+  },
+  <span class="key">"action"</span>: {
+    <span class="key">"action"</span>: <span class="str">"rechercherEntrees"</span>,
+    <span class="key">"method"</span>: <span class="str">"POST"</span>,
+    <span class="key">"params"</span>: { <span class="key">"query"</span>: <span class="str">"{{champRecherche}}"</span> }
+  }
+}</code></pre>
+
+    <h3>List</h3>
+    <p>Liste d'éléments depuis un binding. <code>&#123;&#123;variable&#125;&#125;</code> accède aux champs de chaque ligne. <code>&#123;&#123;id&#125;&#125;</code> est toujours disponible.</p>
+    <pre><code>{
+  <span class="key">"type"</span>: <span class="str">"List"</span>,
+  <span class="key">"props"</span>: { <span class="key">"emptyMessage"</span>: <span class="str">"Aucun élément."</span> },
+  <span class="key">"source"</span>: { <span class="key">"binding"</span>: <span class="str">"maListe"</span>, <span class="key">"method"</span>: <span class="str">"POST"</span> },
+  <span class="key">"item"</span>: {
+    <span class="key">"type"</span>: <span class="str">"ListItem"</span>,
+    <span class="key">"props"</span>: { <span class="key">"title"</span>: <span class="str">"{{nom}}"</span>, <span class="key">"subtitle"</span>: <span class="str">"{{description}}"</span> },
+    <span class="key">"defaultClick"</span>: {
+      <span class="key">"action"</span>: <span class="str">"lireEntree"</span>, <span class="key">"method"</span>: <span class="str">"POST"</span>,
+      <span class="key">"params"</span>: { <span class="key">"id"</span>: <span class="str">"{{id}}"</span> },
+      <span class="key">"then"</span>: { <span class="key">"setState"</span>: { <span class="key">"entreeSelectionnee"</span>: <span class="str">"{{result}}"</span> } }
+    },
+    <span class="key">"actions"</span>: [
+      {
+        <span class="key">"type"</span>: <span class="str">"IconButton"</span>,
+        <span class="key">"props"</span>: { <span class="key">"icon"</span>: <span class="str">"trash"</span>, <span class="key">"tooltip"</span>: <span class="str">"Supprimer"</span> },
+        <span class="key">"action"</span>: [
+          { <span class="key">"action"</span>: <span class="str">"supprimerEntree"</span>, <span class="key">"method"</span>: <span class="str">"POST"</span>, <span class="key">"params"</span>: { <span class="key">"id"</span>: <span class="str">"{{id}}"</span> } },
+          { <span class="key">"action"</span>: <span class="str">"listerEntrees"</span>,  <span class="key">"method"</span>: <span class="str">"POST"</span> }
+        ]
+      }
+    ]
+  }
+}</code></pre>
+
+    <h3>FileUploadZone</h3>
+    <p>Zone de dépôt de fichier. Activée par un <code>Button</code> avec <code>uploadTarget</code> correspondant à l'<code>id</code>.</p>
+    <pre><code>{
+  <span class="key">"type"</span>: <span class="str">"FileUploadZone"</span>,
+  <span class="key">"props"</span>: { <span class="key">"id"</span>: <span class="str">"mon-upload"</span>, <span class="key">"accept"</span>: <span class="str">"image/*"</span>, <span class="key">"multiple"</span>: <span class="num">false</span> },
+  <span class="key">"action"</span>: [
+    { <span class="key">"action"</span>: <span class="str">"ajouterFichier"</span>, <span class="key">"method"</span>: <span class="str">"POST"</span> },
+    { <span class="key">"action"</span>: <span class="str">"listerEntrees"</span>,  <span class="key">"method"</span>: <span class="str">"POST"</span> }
+  ]
+}</code></pre>
+
+    <h3>Modal</h3>
+    <p><code>visible</code> accepte une expression <code>&#123;&#123;...&#125;&#125;</code> évaluée sur le state.</p>
+    <pre><code>{
+  <span class="key">"type"</span>:    <span class="str">"Modal"</span>,
+  <span class="key">"visible"</span>: <span class="str">"{{entreeSelectionnee != null}}"</span>,
+  <span class="key">"content"</span>: {
+    <span class="key">"type"</span>:   <span class="str">"ImageViewer"</span>,
+    <span class="key">"source"</span>: { <span class="key">"binding"</span>: <span class="str">"getFichier"</span>, <span class="key">"method"</span>: <span class="str">"POST"</span> },
+    <span class="key">"params"</span>: { <span class="key">"id"</span>: <span class="str">"{{entreeSelectionneeId}}"</span> }
+  },
+  <span class="key">"actions"</span>: [
+    {
+      <span class="key">"type"</span>: <span class="str">"Button"</span>,
+      <span class="key">"props"</span>: { <span class="key">"label"</span>: <span class="str">"Fermer"</span> },
+      <span class="key">"action"</span>: { <span class="key">"type"</span>: <span class="str">"setState"</span>, <span class="key">"target"</span>: <span class="str">"entreeSelectionnee"</span>, <span class="key">"value"</span>: <span class="num">null</span> }
+    }
+  ]
+}</code></pre>
+
+    <!-- ── Action types ── -->
+    <h2 id="actions"><span class="section-num">5</span> Types d'actions backend</h2>
+    <p>Déclarés dans <code>logic[].type</code> de chaque fonction.</p>
+
+    <table>
+      <thead><tr><th>Type</th><th>Comportement</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><span class="action-tag at-list">LIST</span></td>
+          <td>Retourne toutes les lignes de la table</td>
+        </tr>
+        <tr>
+          <td><span class="action-tag at-read">READ</span></td>
+          <td>Retourne une ligne filtrée par les paramètres <code>EQUAL</code></td>
+        </tr>
+        <tr>
+          <td><span class="action-tag at-create">CREATE</span></td>
+          <td>Insère une nouvelle ligne avec les paramètres fournis</td>
+        </tr>
+        <tr>
+          <td><span class="action-tag at-delete">DELETE</span></td>
+          <td>Supprime la/les lignes filtrées par les paramètres <code>EQUAL</code></td>
+        </tr>
+        <tr>
+          <td><span class="action-tag at-file">UPLOAD_FILE</span></td>
+          <td>Upload un fichier binaire et crée une entrée en base</td>
+        </tr>
+        <tr>
+          <td><span class="action-tag at-file">GET_FILE</span></td>
+          <td>Retourne le fichier binaire d'une entrée</td>
+        </tr>
+        <tr>
+          <td><span class="action-tag at-ext">FETCH_EXTERNAL</span></td>
+          <td>Appelle une API HTTP externe, parse la réponse JSON, upsert le résultat en base. Lit <code>apiKey</code>, <code>baseUrl</code> depuis <code>params.json</code>.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- ── params.json ── -->
+    <h2 id="params"><span class="section-num">6</span> params.json — Paramètres configurables</h2>
+    <p>Optionnel. Expose des valeurs configurables depuis l'UI via l'icône ⚙️ de la carte module dans le dashboard.</p>
+
+    <pre><code>{
+    <span class="key">"parameters"</span>: [
+        {
+            <span class="key">"key"</span>:          <span class="str">"apiKey"</span>,
+            <span class="key">"label"</span>:        <span class="str">"Clé API"</span>,
+            <span class="key">"type"</span>:         <span class="str">"secret"</span>,
+            <span class="key">"defaultValue"</span>: <span class="str">""</span>,
+            <span class="key">"description"</span>:  <span class="str">"Clé secrète pour l'accès à l'API externe"</span>
+        },
+        {
+            <span class="key">"key"</span>:          <span class="str">"baseUrl"</span>,
+            <span class="key">"label"</span>:        <span class="str">"URL de base"</span>,
+            <span class="key">"type"</span>:         <span class="str">"string"</span>,
+            <span class="key">"defaultValue"</span>: <span class="str">"https://api.exemple.com/v1"</span>,
+            <span class="key">"description"</span>:  <span class="str">"Endpoint de l'API"</span>
+        }
+    ]
+}</code></pre>
+
+    <table>
+      <thead><tr><th>Type</th><th>Comportement</th></tr></thead>
+      <tbody>
+        <tr><td><code>string</code></td><td>Champ texte standard, valeur visible</td></tr>
+        <tr><td><code>secret</code></td><td>Champ texte masqué (password), valeur cachée dans l'UI</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Lire un paramètre côté backend (FETCH_EXTERNAL)</h3>
+    <div class="callout callout-info">
+      <span class="callout-icon">ℹ️</span>
+      <div>Utile uniquement si vous créez un nouveau type d'action Kotlin. Pour les modules purement déclaratifs, ce n'est pas nécessaire.</div>
+    </div>
+    <pre><code><span class="kw">val</span> apiKey = globalParametersService.getParam(moduleId, <span class="str">"apiKey"</span>)
+    ?: <span class="kw">return</span> mapOf(<span class="str">"error"</span> to <span class="str">"Paramètre 'apiKey' non configuré"</span>)</code></pre>
+
+    <!-- ── Chained ── -->
+    <h2 id="chained"><span class="section-num">7</span> Actions chaînées</h2>
+    <p>Passer un <strong>tableau</strong> à <code>action</code> exécute les actions en séquence. Pattern classique : modifier puis rafraîchir la liste.</p>
+
+    <pre><code><span class="key">"action"</span>: [
+  { <span class="key">"action"</span>: <span class="str">"supprimerEntree"</span>, <span class="key">"method"</span>: <span class="str">"POST"</span>, <span class="key">"params"</span>: { <span class="key">"id"</span>: <span class="str">"{{id}}"</span> } },
+  { <span class="key">"action"</span>: <span class="str">"listerEntrees"</span>,  <span class="key">"method"</span>: <span class="str">"POST"</span> }
+]</code></pre>
+
+    <!-- ── Example ── -->
+    <h2 id="example">Exemple complet — module "Tâches"</h2>
+
+    <div class="file-tree">
+      <span class="dir">modules/tasks/</span><br>
+      ├── <span class="file">manifest.json</span><br>
+      ├── <span class="file">tasks.xml</span><br>
+      └── <span class="file">tasks_ui.json</span>
+    </div>
+
+    <h3>manifest.json</h3>
+    <pre><code>{
+    <span class="key">"id"</span>: <span class="str">"tasks"</span>, <span class="key">"name"</span>: <span class="str">"Tâches"</span>, <span class="key">"version"</span>: <span class="str">"1.0.0"</span>,
+    <span class="key">"description"</span>: <span class="str">"Gestionnaire de tâches simple."</span>,
+    <span class="key">"actions"</span>: [{
+        <span class="key">"visual"</span>: <span class="str">"tasks.xml"</span>,
+        <span class="key">"functions"</span>: [
+            {
+                <span class="key">"name"</span>: <span class="str">"createTask"</span>, <span class="key">"description"</span>: <span class="str">"Créer une tâche."</span>,
+                <span class="key">"parameters"</span>: [{ <span class="key">"name"</span>: <span class="str">"title"</span>, <span class="key">"type"</span>: <span class="str">"NONE"</span> }, { <span class="key">"name"</span>: <span class="str">"done"</span>, <span class="key">"type"</span>: <span class="str">"NONE"</span> }],
+                <span class="key">"logic"</span>: [{ <span class="key">"type"</span>: <span class="str">"CREATE"</span> }], <span class="key">"actUponObject"</span>: <span class="str">"tasks.xml"</span>
+            },
+            {
+                <span class="key">"name"</span>: <span class="str">"listTasks"</span>, <span class="key">"description"</span>: <span class="str">"Lister toutes les tâches."</span>,
+                <span class="key">"parameters"</span>: [], <span class="key">"logic"</span>: [{ <span class="key">"type"</span>: <span class="str">"LIST"</span> }], <span class="key">"actUponObject"</span>: <span class="str">"tasks.xml"</span>
+            },
+            {
+                <span class="key">"name"</span>: <span class="str">"deleteTask"</span>, <span class="key">"description"</span>: <span class="str">"Supprimer une tâche."</span>,
+                <span class="key">"parameters"</span>: [{ <span class="key">"name"</span>: <span class="str">"id"</span>, <span class="key">"type"</span>: <span class="str">"EQUAL"</span> }],
+                <span class="key">"logic"</span>: [{ <span class="key">"type"</span>: <span class="str">"DELETE"</span> }], <span class="key">"actUponObject"</span>: <span class="str">"tasks.xml"</span>
+            }
+        ]
+    }],
+    <span class="key">"page"</span>: <span class="str">"tasks_ui.json"</span>,
+    <span class="key">"dataObjects"</span>: [<span class="str">"tasks.xml"</span>],
+    <span class="key">"permissions"</span>: [<span class="str">"read:tasks"</span>, <span class="str">"write:tasks"</span>, <span class="str">"delete:tasks"</span>]
+}</code></pre>
+
+    <h3>tasks.xml</h3>
+    <pre><code><span class="tag">&lt;tasks&gt;</span>
+    <span class="tag">&lt;autoGenerated&gt;</span>
+        <span class="tag">&lt;id/&gt;</span> <span class="tag">&lt;createdAt/&gt;</span> <span class="tag">&lt;updatedAt/&gt;</span>
+    <span class="tag">&lt;/autoGenerated&gt;</span>
+
+    <span class="tag">&lt;col&gt;</span>
+        <span class="tag">&lt;naming</span> <span class="atr">val</span>=<span class="str">"title"</span><span class="tag">/&gt;</span>
+        <span class="tag">&lt;typing</span> <span class="atr">val</span>=<span class="str">"string"</span><span class="tag">/&gt;</span>
+        <span class="tag">&lt;nullable</span> <span class="atr">val</span>=<span class="str">"false"</span><span class="tag">/&gt;</span>
+    <span class="tag">&lt;/col&gt;</span>
+
+    <span class="tag">&lt;col&gt;</span>
+        <span class="tag">&lt;naming</span> <span class="atr">val</span>=<span class="str">"done"</span><span class="tag">/&gt;</span>
+        <span class="tag">&lt;typing</span> <span class="atr">val</span>=<span class="str">"boolean"</span><span class="tag">/&gt;</span>
+    <span class="tag">&lt;/col&gt;</span>
+<span class="tag">&lt;/tasks&gt;</span></code></pre>
+
+    <h3>tasks_ui.json</h3>
+    <pre><code>{
+  <span class="key">"page"</span>: {
+    <span class="key">"id"</span>: <span class="str">"tasks_page"</span>, <span class="key">"layout"</span>: <span class="str">"vertical"</span>,
+    <span class="key">"bindings"</span>: { <span class="key">"taskList"</span>: <span class="str">"listTasks"</span> },
+    <span class="key">"state"</span>: { <span class="key">"newTaskTitle"</span>: <span class="str">""</span> },
+    <span class="key">"components"</span>: [
+      { <span class="key">"type"</span>: <span class="str">"Header"</span>, <span class="key">"props"</span>: { <span class="key">"title"</span>: <span class="str">"Tâches"</span> } },
+      {
+        <span class="key">"type"</span>: <span class="str">"ActionBar"</span>,
+        <span class="key">"components"</span>: [{
+          <span class="key">"type"</span>: <span class="str">"TextInput"</span>,
+          <span class="key">"props"</span>: { <span class="key">"placeholder"</span>: <span class="str">"Nouvelle tâche..."</span>, <span class="key">"stateKey"</span>: <span class="str">"newTaskTitle"</span>, <span class="key">"buttonLabel"</span>: <span class="str">"Ajouter"</span> },
+          <span class="key">"action"</span>: [
+            { <span class="key">"action"</span>: <span class="str">"createTask"</span>, <span class="key">"method"</span>: <span class="str">"POST"</span>, <span class="key">"params"</span>: { <span class="key">"title"</span>: <span class="str">"{{newTaskTitle}}"</span>, <span class="key">"done"</span>: <span class="num">false</span> } },
+            { <span class="key">"action"</span>: <span class="str">"listTasks"</span>, <span class="key">"method"</span>: <span class="str">"POST"</span> }
+          ]
+        }]
+      },
+      {
+        <span class="key">"type"</span>: <span class="str">"List"</span>,
+        <span class="key">"props"</span>: { <span class="key">"emptyMessage"</span>: <span class="str">"Aucune tâche pour l'instant."</span> },
+        <span class="key">"source"</span>: { <span class="key">"binding"</span>: <span class="str">"taskList"</span>, <span class="key">"method"</span>: <span class="str">"POST"</span> },
+        <span class="key">"item"</span>: {
+          <span class="key">"type"</span>: <span class="str">"ListItem"</span>,
+          <span class="key">"props"</span>: { <span class="key">"title"</span>: <span class="str">"{{title}}"</span> },
+          <span class="key">"actions"</span>: [{
+            <span class="key">"type"</span>: <span class="str">"IconButton"</span>,
+            <span class="key">"props"</span>: { <span class="key">"icon"</span>: <span class="str">"trash"</span>, <span class="key">"tooltip"</span>: <span class="str">"Supprimer"</span> },
+            <span class="key">"action"</span>: [
+              { <span class="key">"action"</span>: <span class="str">"deleteTask"</span>, <span class="key">"method"</span>: <span class="str">"POST"</span>, <span class="key">"params"</span>: { <span class="key">"id"</span>: <span class="str">"{{id}}"</span> } },
+              { <span class="key">"action"</span>: <span class="str">"listTasks"</span>, <span class="key">"method"</span>: <span class="str">"POST"</span> }
+            ]
+          }]
+        }
+      }
+    ]
+  }
+}</code></pre>
+
+    <!-- ── Checklist ── -->
+    <h2 id="checklist">Checklist de création</h2>
+    <ul class="checklist">
+      <li>Dossier créé dans le répertoire des modules (<code>HOMELAB_MODULES_SCAN_PATH</code>)</li>
+      <li><code>manifest.json</code> — champs <code>id</code>, <code>name</code>, <code>actions</code>, <code>page</code>, <code>dataObjects</code> renseignés</li>
+      <li>Chaque fonction a un <code>actUponObject</code> pointant vers un fichier XML <strong>existant</strong></li>
+      <li>Fichier(s) XML créés avec au moins <code>&lt;autoGenerated&gt;&lt;id/&gt;&lt;/autoGenerated&gt;</code></li>
+      <li>Fichier UI JSON créé avec <code>page.id</code> et <code>page.components</code></li>
+      <li>Backend redémarré pour scanner et charger le nouveau module</li>
+    </ul>
+
+    <div class="callout callout-tip" style="margin-top:32px">
+      <span class="callout-icon">💡</span>
+      <div>Besoin d'appeler une API externe ? Utilisez le type d'action <strong>FETCH_EXTERNAL</strong> (voir module <code>weather</code> comme référence) et ajoutez un <code>params.json</code> pour stocker la clé API.</div>
+    </div>
+  </main>
+</div>
+
+<script>
+  // Highlight active nav link on scroll
+  const sections = document.querySelectorAll('h2[id], h3[id]');
+  const links = document.querySelectorAll('nav a');
+
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        links.forEach(l => l.classList.remove('active'));
+        const active = document.querySelector(`nav a[href="#${e.target.id}"]`);
+        if (active) active.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-20% 0px -70% 0px' });
+
+  sections.forEach(s => obs.observe(s));
+</script>
+</body>
+</html>
