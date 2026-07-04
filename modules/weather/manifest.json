@@ -51,6 +51,7 @@
             ]
         }
     ],
+    "uIFormat": "JSON",
     "page": "weather_ui.json",
     "dataObjects": [
         "weather_cache.xml"

@@ -2,17 +2,21 @@ package com.homelab.core.service.module
 
 import com.homelab.core.action.ActionFactory
 import com.homelab.core.api.dto.ModuleDto
+import com.homelab.core.api.dto.ModulePageResponse
 import com.homelab.core.config.HomelabConfig
 import com.homelab.core.config.ModuleConfigMemory
 import com.homelab.sdk.helper.AppLogger
 import com.homelab.core.model.module.Module
 import com.homelab.core.model.module.ModuleStatus
+import com.homelab.core.model.module.UIFormat
 import com.homelab.core.parser.ModuleDataObjectParser
 import com.homelab.sdk.data.TableDefinition
 import jakarta.annotation.*
+import jakarta.servlet.http.HttpServletRequest
 import org.springframework.core.io.Resource
 import org.springframework.core.io.FileSystemResource
 import org.springframework.http.MediaType
+import org.springframework.http.MediaTypeFactory
 import org.springframework.http.ResponseEntity
 import java.io.File
 import java.util.concurrent.ConcurrentHashMap
@@ -133,38 +137,77 @@ class ModuleService(
         )
     }
 
-    fun getModulePage(id: String, page: String): String? {
-        val discovered = moduleConfigService.scanModuleConfigs(homelabConfig.modulesScanPath)
-        val found = discovered.find { it.config.id == id } ?: return null
-        val file = File(found.directory, page)
-        if (!file.exists() || !file.isFile) return null
-        return try {
-            file.readText()
-        } catch (e: Exception) {
-            log.error("Failed to read module page ${file.absolutePath}: ${e.message}",e)
-            null
+    fun getModulePage(id: String): ModulePageResponse? {
+        val found = moduleConfigService
+            .scanModuleConfigs(homelabConfig.modulesScanPath)
+            .find { it.config.id == id } ?: return null
+
+        return when (found.config.uIFormat) {
+            UIFormat.API -> null
+
+            UIFormat.JSON -> {
+                val file = File(found.directory, found.config.page!!)
+                ModulePageResponse(
+                    type = "json",
+                    content = file.takeIf { it.exists() }?.readText()
+                )
+            }
+
+            UIFormat.STANDALONE -> {
+                val index = File(found.directory, "dist/index.html")
+                if (!index.exists()) return null
+
+                ModulePageResponse(
+                    type = "standalone",
+                    content = "/api/modules/$id/UI/index.html"
+                )
+            }
         }
     }
 
-    fun getModulePage(id: String): String? {
-        val discovered = moduleConfigService.scanModuleConfigs(homelabConfig.modulesScanPath)
-        val found = discovered.find { it.config.id == id } ?: return null
 
-        if (found.config.page == null){
-            log.warn("Module ${id} has no page declared, skipping page content retrieval")
-            return null // API only
+    fun getModuleAsset(
+        id: String,
+        request: HttpServletRequest
+    ): ResponseEntity<Resource> {
+
+        log.debug("getModuleAsset: $id")
+        val discovered = moduleConfigService
+            .scanModuleConfigs(homelabConfig.modulesScanPath)
+
+        val module = discovered.find { it.config.id == id }
+            ?: return ResponseEntity.notFound().build()
+
+        if (module.config.uIFormat != UIFormat.STANDALONE) {
+            return ResponseEntity.status(404).build()
+        }
+        log.debug("module.config.uIFormat: ${module.config.uIFormat}")
+        val fullPath = request.requestURI
+            .substringAfter("/api/modules/$id/UI/")
+
+        log.debug("fullPath: $fullPath")
+        if (fullPath.contains("..")) {
+            return ResponseEntity.badRequest().build()
         }
 
-        val file = File(found.directory, found.config.page)
-        log.debug("Attempting to read module page for module '${id}' from file: ${file.absolutePath}")
-        if (!file.exists() || !file.isFile) return null
-        return try {
-            file.readText()
-        } catch (e: Exception) {
-            log.error("Failed to read module page ${file.absolutePath}: ${e.message}", e)
-            null
+        val file = File(module.directory, "dist/$fullPath")
+        log.debug("file: $file")
+        if (!file.exists() || !file.isFile) {
+            return ResponseEntity.notFound().build()
         }
+
+        val resource = FileSystemResource(file)
+        log.debug("resource: $resource")
+        val mediaType = MediaTypeFactory
+            .getMediaType(file.name)
+            .orElse(MediaType.APPLICATION_OCTET_STREAM)
+
+        return ResponseEntity.ok()
+            .contentType(mediaType)
+            .body(resource)
     }
+
+
 
     fun getModuleIcon(id: String): ResponseEntity<Resource> {
         val module = modules[id]

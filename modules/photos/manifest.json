@@ -66,6 +66,7 @@
             ]
         }
     ],
+    "uIFormat": "JSON",
     "page": "photos_ui.json",
     "dataObjects": [
         "photos.xml"
