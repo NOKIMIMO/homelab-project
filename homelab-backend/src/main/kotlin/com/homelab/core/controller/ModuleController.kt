@@ -5,6 +5,7 @@ import com.homelab.core.service.module.ModuleParamsService
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 import jakarta.servlet.http.HttpServletRequest
+import org.springframework.core.io.Resource
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder
 
 @RestController
@@ -50,9 +51,6 @@ class ModuleController(
     @GetMapping("/{id}/UI")
     fun getModuleUiDeclaration(@PathVariable id: String) = moduleService.getModuleUiDeclaration(id)
 
-    @GetMapping("/{id}/UI/{page}")
-    fun getModulePage(@PathVariable id: String, @PathVariable page: String) = moduleService.getModulePage(id, page)
-
     @GetMapping("/{id}/UI/page")
     fun getModulePage(@PathVariable id: String) = moduleService.getModulePage(id)
 
@@ -61,6 +59,18 @@ class ModuleController(
 
     @GetMapping("/{id}/UI/icon")
     fun getModuleIcon(@PathVariable id: String) = moduleService.getModuleIcon(id)
+
+//    @GetMapping("/{id}/UI/{page}")
+//    fun getModulePage(@PathVariable id: String, @PathVariable page: String) = moduleService.getModulePage(id, page)
+
+//    @GetMapping("/{id}/UI/assets/{fileName:.+}")
+    @GetMapping("/{id}/UI/**")
+fun getModuleAsset(
+        @PathVariable id: String,
+        request: HttpServletRequest
+    ): ResponseEntity<Resource> {
+        return moduleService.getModuleAsset(id, request)
+    }
 
     @PostMapping("/{id}/start")
     fun startModule(@PathVariable id: String) = mapOf("success" to moduleService.startModule(id))

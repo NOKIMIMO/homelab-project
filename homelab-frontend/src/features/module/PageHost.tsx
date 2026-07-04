@@ -6,8 +6,14 @@ import { PageRenderer } from '@renderer/PageRenderer';
 import { extractModulePageConfig, type ModulePageConfig, type BindingRequest } from '@renderer/types';
 import { createBindingHandler } from './Binding';
 
+type PageState =
+  | { type: 'loading' }
+  | { type: 'json'; config: ModulePageConfig }
+  | { type: 'standalone'; url: string };
+
 export default function PageHost({ module, token }: { module: Module; token?: string }) {
-  const [pageConfig, setPageConfig] = useState<ModulePageConfig | null>(null);
+  const [state, setState] = useState<PageState>({ type: 'loading' });
+
   const objectUrlsRef = useRef<string[]>([]);
   const handlerRef = useRef<((req: BindingRequest) => Promise<unknown>) | null>(null);
 
@@ -20,10 +26,9 @@ export default function PageHost({ module, token }: { module: Module; token?: st
   }, []);
 
   useEffect(() => {
-    if (!module || module.status !== 'ACTIVE') {
-      handlerRef.current = null;
-      return;
-    }
+    if (!module || module.status !== 'ACTIVE') return;
+
+    setState({ type: 'loading' });
 
     const pageUrl = getApiUrl(`/api/modules/${module.id}/UI/page`);
 
@@ -35,8 +40,23 @@ export default function PageHost({ module, token }: { module: Module; token?: st
 
         if (!res.ok) return;
 
-        const data: unknown = await res.json();
-        setPageConfig(extractModulePageConfig(data));
+        const data = await res.json();
+
+        if (data.type === 'standalone') {
+          setState({
+            type: 'standalone',
+            url: data.content
+          });
+        } else {
+          const config = extractModulePageConfig(data.content);
+
+          if (!config) return;
+
+          setState({
+            type: 'json',
+            config
+          });
+        }
       } catch (err) {
         console.error('Error fetching module UI:', err);
       }
@@ -54,11 +74,14 @@ export default function PageHost({ module, token }: { module: Module; token?: st
   }, [module, token]);
 
   const callBinding = useCallback((request: BindingRequest) => {
-    if (!handlerRef.current) return Promise.reject(new Error('Binding handler not available'));
+    if (!handlerRef.current) {
+      return Promise.reject(new Error('Binding handler not available'));
+    }
     return handlerRef.current(request);
   }, []);
 
-  if (!pageConfig) {
+
+  if (state.type === 'loading') {
     return (
       <div className="flex flex-col items-center justify-center h-full">
         <Loader2 size={48} className="text-primary animate-spin mb-4" />
@@ -67,5 +90,22 @@ export default function PageHost({ module, token }: { module: Module; token?: st
     );
   }
 
-  return <PageRenderer moduleId={module.id} pageConfig={pageConfig} onBindingCall={callBinding} />;
+
+  if (state.type === 'standalone') {
+    return (
+      <iframe
+        src={state.url}
+        className="w-full h-full border-0"
+      />
+    );
+  }
+
+// default case: render the page using PageRenderer (json)
+  return (
+    <PageRenderer
+      moduleId={module.id}
+      pageConfig={state.config}
+      onBindingCall={callBinding}
+    />
+  );
 }

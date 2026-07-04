@@ -12,6 +12,7 @@ data class ModuleConfig(
     val description: String? = null,
     val actions: List<ModuleAction>,
     val dataObjects: List<String>?,
+    val uIFormat: UIFormat = UIFormat.API, // default api only
     val page: String?, // optional, a module can be API only,
     val dependencies: List<Dependency>?,
     //TODO: Add permissions

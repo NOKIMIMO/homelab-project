@@ -5,7 +5,6 @@
     "icon": "gallery.png",
     "description": "Visualiseur de galerie photo avec organisation par chapitres/groupes. Module de lecture uniquement - utilise le module photos pour le stockage et la récupération d'images.",
     "status": "ACTIVE",
-    "type": "VISUALIZATION",
     "dependencies": [
         {
             "moduleId": "photos",
@@ -228,7 +227,7 @@
             ]
         }
     ],
-    "page": "reader_ui.json",
+    "uIFormat": "STANDALONE",
     "dataObjects": [
         "groups.xml",
         "serie.xml",
