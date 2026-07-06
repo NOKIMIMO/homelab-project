@@ -11,7 +11,7 @@ export type { AppOutletContext, Module };
 function AppLayout() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { logout } = useAuth();
+  const { isAdmin ,logout } = useAuth();
   const [modules, setModules] = useState<Module[]>([]);
   const [isModulesRefreshing, setIsModulesRefreshing] = useState(false);
 
@@ -90,15 +90,17 @@ function AppLayout() {
                 <span className="text-[15px]">Vue d'ensemble</span>
               </button>
             </li>
-            <li>
-              <button
-                className={location.pathname === '/admin' ? 'active font-medium' : 'font-medium'}
-                onClick={() => navigate('/admin')}
-              >
-                <ShieldCheck size={20} className="mr-1 opacity-70" />
-                <span className="text-[15px]">Administration</span>
-              </button>
-            </li>
+            {isAdmin && (
+              <li>
+                <button
+                  className={location.pathname === '/admin' ? 'active font-medium' : 'font-medium'}
+                  onClick={() => navigate('/admin')}
+                >
+                  <ShieldCheck size={20} className="mr-1 opacity-70" />
+                  <span className="text-[15px]">Administration</span>
+                </button>
+              </li>
+            )}
             <div className="divider text-xs text-base-content/50 uppercase tracking-widest my-6">Applications</div>
             {modules.map(mod => (
               <li key={mod.id}>
