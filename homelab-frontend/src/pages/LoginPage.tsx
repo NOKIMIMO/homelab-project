@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 import { useAuth } from '@auth/AuthContext';
-import KeyManager from '@features/keys/KeyManager';
 import LoginForm from '@features/auth/LoginForm';
 
 export default function LoginPage() {
@@ -28,7 +27,6 @@ export default function LoginPage() {
             - Retour a la connexion
           </button>
         </div>
-        <KeyManager />
       </div>
     );
   }

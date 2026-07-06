@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
-import BootstrapPanel from './BootstrapPanel';
-import { fetchKeys } from './authHooks';
+// import { useEffect, useState } from 'react';
+// import BootstrapPanel from './BootstrapPanel';
+// import { fetchKeys } from './authHooks';
 import PasswordLoginForm from './PasswordLoginForm';
 
 interface LoginProps {
@@ -9,19 +9,19 @@ interface LoginProps {
 }
 
 export default function LoginForm({ onLoginSuccess, onShowBootstrap }: LoginProps) {
-  const [noKeys, setNoKeys] = useState(false);
+  // const [noKeys, setNoKeys] = useState(false);
 
-  useEffect(() => {
-    let mounted = true;
-    fetchKeys()
-      .then((keys) => {
-        if (mounted) setNoKeys(keys.length === 0);
-      })
-      .catch((err) => console.error(err));
-    return () => {
-      mounted = false;
-    };
-  }, []);
+  // useEffect(() => {
+  //   let mounted = true;
+  //   fetchKeys()
+  //     .then((keys) => {
+  //       if (mounted) setNoKeys(keys.length === 0);
+  //     })
+  //     .catch((err) => console.error(err));
+  //   return () => {
+  //     mounted = false;
+  //   };
+  // }, []);
 
   return (
     <div className="min-h-screen bg-base-300 p-4 md:p-8">
@@ -37,6 +37,7 @@ export default function LoginForm({ onLoginSuccess, onShowBootstrap }: LoginProp
             <h1 className="text-3xl font-black leading-tight md:text-4xl">Bienvenue sur votre Homelab</h1>
             <p className="mt-3 max-w-md text-sm text-base-content/70">
                Informations diverses du owner (TODO:)
+               {/* ptetre laisser la possibilité de mettre une mot de bienvenue configurable par owner?  */}
             </p>
           </div>
         </div>
@@ -49,7 +50,7 @@ export default function LoginForm({ onLoginSuccess, onShowBootstrap }: LoginProp
 
           <PasswordLoginForm onLoginSuccess={onLoginSuccess} />
 
-          {noKeys && <BootstrapPanel onShowBootstrap={onShowBootstrap} />}
+          {/* {noKeys && <BootstrapPanel onShowBootstrap={onShowBootstrap} />} */}
         </div>
       </div>
 

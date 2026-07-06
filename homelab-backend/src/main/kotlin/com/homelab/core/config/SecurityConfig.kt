@@ -14,9 +14,11 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource
 import org.slf4j.LoggerFactory
 import org.springframework.web.filter.ForwardedHeaderFilter
 import org.springframework.boot.web.servlet.FilterRegistrationBean
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity
 
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity
 class SecurityConfig {
 
     @Bean
@@ -33,6 +35,7 @@ class SecurityConfig {
                     auth.requestMatchers("/error").permitAll() // for 404 and other
                     // Allow public access to module icons and UI assets
                     auth.requestMatchers("/api/modules/*/UI/icon").permitAll()
+                    auth.requestMatchers("/api/admin/**").hasRole("ADMIN")
                     auth.requestMatchers("/api/**").authenticated()
                     auth.anyRequest().authenticated()
                 }

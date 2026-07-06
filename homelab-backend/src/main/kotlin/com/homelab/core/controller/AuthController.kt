@@ -6,8 +6,11 @@ import com.homelab.core.model.auth.User
 import com.homelab.core.model.auth.UserRepository
 import com.homelab.core.model.auth.SignupRequest
 import com.homelab.core.model.auth.SignupRequestRepository
+import com.homelab.core.service.AppletService
 import com.homelab.core.service.AuthService
 import com.homelab.core.service.JwtService
+import com.homelab.core.service.UserService
+import com.homelab.sdk.helper.AppLogger
 import jakarta.servlet.http.HttpServletResponse
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
@@ -18,11 +21,14 @@ import java.time.LocalDateTime
 @CrossOrigin(origins = ["*"])
 
 class AuthController(
-        private val authService: AuthService,
-        private val repository: UserRepository,
-        private val signupRequestRepository: SignupRequestRepository,
-        private val jwtService: JwtService
+    private val authService: AuthService,
+    private val userService: UserService,
+    private val repository: UserRepository,
+    private val signupRequestRepository: SignupRequestRepository,
+    private val jwtService: JwtService
 ) {
+    private val log = AppLogger.loggerFor(this::class)
+
     @GetMapping("/challenge")
     fun getChallenge(): ResponseEntity<Map<String, String>> {
         return ResponseEntity.ok(mapOf("challenge" to authService.generateChallenge()))
@@ -42,7 +48,10 @@ class AuthController(
             if (userOpt.isPresent) {
                 val user = userOpt.get()
                 if (authService.verifyPassword(user.passwordHash, request.password)) {
-                    val token = jwtService.generateToken(user.email)
+                    val token = jwtService.generateToken(
+                        username = user.email,
+                        isAdmin = user.isAdmin
+                    )
                     val cookie = jakarta.servlet.http.Cookie("homelab_token", token)
                     cookie.isHttpOnly = true
                     cookie.path = "/"
@@ -67,7 +76,10 @@ class AuthController(
             }
 
             return if (matchedUser != null) {
-                val token = jwtService.generateToken(matchedUser.email)
+                val token = jwtService.generateToken(
+                    username = matchedUser.email,
+                    isAdmin = matchedUser.isAdmin
+                )
                 val cookie = jakarta.servlet.http.Cookie("homelab_token", token)
                 cookie.isHttpOnly = true
                 cookie.path = "/"
@@ -82,13 +94,7 @@ class AuthController(
         return ResponseEntity.status(400).body(mapOf("success" to false, "message" to "Invalid request"))
     }
 
-    @GetMapping("/users") fun getUsers(): List<User> = authService.getAllUsers()
 
-    @DeleteMapping("/users/{id}")
-    fun deleteUser(@PathVariable id: Long): ResponseEntity<Void> {
-        authService.deleteUser(id)
-        return ResponseEntity.ok().build()
-    }
 // TODO:
 //    maybe split those into two controllers
     @PostMapping("/signup-requests")
@@ -96,6 +102,13 @@ class AuthController(
         if (request.email.isBlank()) {
             return ResponseEntity.badRequest().body(mapOf("success" to false, "message" to "Email is required"))
         }
+        log.debug("request: $request")
+        val found = signupRequestRepository.findByEmail(request.email)
+        log.debug("found: $found")
+        if (found.isPresent) {
+            return ResponseEntity.badRequest().body(mapOf("success" to false, "message" to "Email already in use"))
+        }
+
 
         val passwordHash = AuthService.encodePassword(request.password!!)
 
@@ -103,8 +116,8 @@ class AuthController(
 
         if (repository.count() == 0L) {
             return try {
-                val passwordHash = AuthService.encodePassword(request.password!!)
-                val user = authService.registerUser(request.name, request.email, request.publicKey, passwordHash)
+                val passwordHash = AuthService.encodePassword(request.password)
+                val user = userService.registerUser(request.name, request.email, request.publicKey, isAdmin = true, passwordHash = passwordHash)
                 signup.status = "APPROVED"
                 signup.processedAt = LocalDateTime.now()
                 signupRequestRepository.save(signup)
@@ -114,43 +127,9 @@ class AuthController(
             }
         }
 
-        val saved = signupRequestRepository.save(signup)
-        return ResponseEntity.ok(saved)
+
+        signupRequestRepository.save(signup)
+        return ResponseEntity.ok().build()
     }
 
-    @GetMapping("/signup-requests")
-    fun getSignupRequests(): List<SignupRequest> = signupRequestRepository.findAll()
-
-    @PutMapping("/signup-requests/{id}/approve")
-    fun approveSignupRequest(@PathVariable id: Long): ResponseEntity<Any> {
-        val opt = signupRequestRepository.findById(id)
-        if (!opt.isPresent) return ResponseEntity.notFound().build()
-        val req = opt.get()
-        if (req.status != "PENDING") {
-            return ResponseEntity.badRequest().body(mapOf("success" to false, "message" to "Request already processed"))
-        }
-        return try {
-            val user = authService.registerUser(req.name, req.email, req.publicKey, req.passwordHash)
-            req.status = "APPROVED"
-            req.processedAt = LocalDateTime.now()
-            signupRequestRepository.save(req)
-            ResponseEntity.ok(mapOf("success" to true, "user" to user))
-        } catch (e: IllegalArgumentException) {
-            ResponseEntity.badRequest().body(mapOf("success" to false, "message" to e.message))
-        }
-    }
-
-    @PutMapping("/signup-requests/{id}/reject")
-    fun rejectSignupRequest(@PathVariable id: Long): ResponseEntity<Any> {
-        val opt = signupRequestRepository.findById(id)
-        if (!opt.isPresent) return ResponseEntity.notFound().build()
-        val req = opt.get()
-        if (req.status != "PENDING") {
-            return ResponseEntity.badRequest().body(mapOf("success" to false, "message" to "Request already processed"))
-        }
-        req.status = "REJECTED"
-        req.processedAt = LocalDateTime.now()
-        signupRequestRepository.save(req)
-        return ResponseEntity.ok(mapOf("success" to true))
-    }
 }

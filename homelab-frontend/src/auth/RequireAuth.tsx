@@ -1,4 +1,4 @@
-import { Navigate, useLocation } from 'react-router';
+import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@auth/AuthContext';
 
 export default function RequireAuth({ children }: { children: React.ReactNode }) {

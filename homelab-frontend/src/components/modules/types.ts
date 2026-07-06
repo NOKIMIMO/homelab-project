@@ -194,6 +194,20 @@ export interface ModulePagePayload {
   page: ModulePageConfig;
 }
 
+export interface JsonModulePageResponse {
+  type: 'json';
+  content: unknown;
+}
+
+export interface StandaloneModulePageResponse {
+  type: 'standalone';
+  content: string;
+}
+
+export type ModulePageResponse =
+  | JsonModulePageResponse
+  | StandaloneModulePageResponse;
+
 const normalizeBindingKeyValue = (value: unknown): unknown => {
   if (Array.isArray(value)) {
     return value.map((entry) => normalizeBindingKeyValue(entry));
@@ -225,6 +239,7 @@ const serializeBindingKeyParams = (params?: BindingRequestPayload | Record<strin
 
 export const isModulePageConfig = (value: unknown): value is ModulePageConfig => {
   if (!value || typeof value !== 'object') {
+    console.warn('Invalid module page config: not an object', value);
     return false;
   }
 
@@ -232,11 +247,12 @@ export const isModulePageConfig = (value: unknown): value is ModulePageConfig =>
   return typeof candidate.id === 'string' && Array.isArray(candidate.components);
 };
 
-export const extractModulePageConfig = (value: unknown): ModulePageConfig | null => {
+export const extractModulePageConfig = (
+  value: unknown
+): ModulePageConfig | null => {
   if (isModulePageConfig(value)) {
     return value;
   }
-
   if (
     value &&
     typeof value === 'object' &&

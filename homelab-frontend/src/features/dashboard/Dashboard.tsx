@@ -110,17 +110,25 @@ export default function Dashboard({ modules, onRefresh, isModulesRefreshing }: D
               )
             }
           </div>
-        
-          {/* module listing  */}
-            {modules.length ===0 ? (
-                <div className="col-span-full py-10 text-center bg-base-100/30 rounded-3xl border-2 border-dashed border-base-content/10">
-                  <p className="text-base-content/50 font-medium italic">Aucun module dynamique découvert. Vérifiez vos fichiers homelab-module.json.</p>
-                </div>
-              ):
-                modules.map(module => (
-                  <ModuleCard modules={module} handleModuleAction={handleModuleAction} actionLoading={actionLoading} />
-                ))
-              }
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {modules.length === 0 ? (
+              <div className="col-span-full py-10 text-center bg-base-100/30 rounded-3xl border-2 border-dashed border-base-content/10">
+                <p className="text-base-content/50 font-medium italic">
+                  Aucun module dynamique découvert. Vérifiez vos fichiers homelab-module.json.
+                </p>
+              </div>
+            ) : (
+              modules.map((module) => (
+                <ModuleCard
+                  key={module.id} // or another unique identifier
+                  modules={module}
+                  handleModuleAction={handleModuleAction}
+                  actionLoading={actionLoading}
+                />
+              ))
+            )}
+          </div>
+          
 
           <div className="divider opacity-50 mb-10 text-xs font-bold uppercase tracking-[.3em] text-base-content/20">Ressources Système</div>
           

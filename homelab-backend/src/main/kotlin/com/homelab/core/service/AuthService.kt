@@ -13,7 +13,7 @@ import org.springframework.stereotype.Service
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 
 @Service
-class AuthService(private val repository: UserRepository) {
+class AuthService {
     private val log = AppLogger.loggerFor(AuthService::class)
 
     private val challenges = ConcurrentHashMap<String, String>()
@@ -100,22 +100,6 @@ class AuthService(private val repository: UserRepository) {
         throw IllegalArgumentException("Unsupported public key format")
     }
 
-    fun getAllUsers(): List<User> = repository.findAll()
-
-    fun registerUser(name: String?, email: String, publicKeyPem: String?, passwordHash: String?): User {
-        if (publicKeyPem.isNullOrBlank() && passwordHash.isNullOrBlank()) {
-            throw IllegalArgumentException("Either publicKey or password must be provided")
-        }
-
-        if (repository.findByEmail(email).isPresent) {
-            throw IllegalArgumentException("User with this email already exists")
-        }
-
-        val user = User(name = name, email = email, publicKey = publicKeyPem, passwordHash = passwordHash)
-        return repository.save(user)
-    }
-
-    fun deleteUser(id: Long) = repository.deleteById(id)
 
     fun verifyPassword(storedHash: String?, passwordPlain: String?): Boolean {
         if (storedHash == null || passwordPlain == null) return false

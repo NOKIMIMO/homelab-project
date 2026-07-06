@@ -1,5 +1,6 @@
 package com.homelab.core.service.module
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.homelab.core.action.ActionFactory
 import com.homelab.core.api.dto.ModuleDto
 import com.homelab.core.api.dto.ModulePageResponse
@@ -30,7 +31,8 @@ class ModuleService(
     private val moduleConfigService: ModuleConfigService,
     private val actionFactory: ActionFactory,
     private val moduleConfigMemory: ModuleConfigMemory,
-    private val moduleParamsService: ModuleParamsService
+    private val moduleParamsService: ModuleParamsService,
+    private val objectMapper: ObjectMapper
 ) {
     private val log = AppLogger.loggerFor(ModuleService::class)
 
@@ -147,9 +149,12 @@ class ModuleService(
 
             UIFormat.JSON -> {
                 val file = File(found.directory, found.config.page!!)
+                if (!file.exists()) {
+                    return null
+                }
                 ModulePageResponse(
                     type = "json",
-                    content = file.takeIf { it.exists() }?.readText()
+                    content = objectMapper.readTree(file)
                 )
             }
 

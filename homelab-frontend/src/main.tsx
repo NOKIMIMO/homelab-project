@@ -1,10 +1,9 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import { createBrowserRouter, RouterProvider } from 'react-router';
+import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import { AuthProvider } from '@auth/AuthProvider';
 import RequireAuth from '@auth/RequireAuth';
 import DashboardPage from '@pages/DashboardPage';
-import KeyManagerPage from '@pages/KeyManagerPage';
 import LoginPage from '@pages/LoginPage';
 import ModulePage from '@pages/ModulePage';
 import AdminPage from '@pages/AdminPage';
@@ -26,7 +25,6 @@ const router = createBrowserRouter([
     children: [
       { index: true, element: <DashboardPage /> },
       { path: 'plugins/:moduleId', element: <ModulePage /> },
-      { path: 'settings', element: <KeyManagerPage /> },
       { path: 'admin', element: <AdminPage /> },
     ]
   }

@@ -7,6 +7,7 @@ interface User {
   id: number;
   email: string;
   name: string | null;
+  isAdmin: boolean;
   createdAt: string;
   publicKey: string | null;
 }
@@ -28,7 +29,7 @@ const STATUS_BADGE: Record<string, string> = {
 };
 
 export default function AccessTab() {
-  const { token } = useAuth();
+  const { token, userName } = useAuth();
   const [users, setUsers] = useState<User[]>([]);
   const [requests, setRequests] = useState<SignupRequest[]>([]);
   const [loading, setLoading] = useState(false);
@@ -42,8 +43,8 @@ export default function AccessTab() {
     setLoading(true);
     try {
       const [usersRes, requestsRes] = await Promise.all([
-        fetch(getApiUrl('/api/auth/users'), { headers }),
-        fetch(getApiUrl('/api/auth/signup-requests'), { headers }),
+        fetch(getApiUrl('/api/admin/users'), { headers }),
+        fetch(getApiUrl('/api/admin/signup-requests'), { headers }),
       ]);
       if (usersRes.ok) setUsers(await usersRes.json() as User[]);
       if (requestsRes.ok) setRequests(await requestsRes.json() as SignupRequest[]);
@@ -54,11 +55,35 @@ export default function AccessTab() {
 
   useEffect(() => { void fetchData(); }, [fetchData]);
 
-  const deleteUser = async (id: number) => {
+  const deleteUser = async (id: number, email: string) => {
+    if (email === userName) {
+      alert("Vous ne pouvez pas supprimer votre propre compte.");
+      return;
+    }
+
     setActionId(id);
     try {
-      await fetch(getApiUrl(`/api/auth/users/${id}`), { method: 'DELETE', headers });
+      await fetch(getApiUrl(`/api/admin/users/${id}`), { method: 'DELETE', headers });
       setUsers(prev => prev.filter(u => u.id !== id));
+    } finally {
+      setActionId(null);
+    }
+  };
+
+  const switchAdminStatus = async (id: number, isAdmin: boolean, email: string) => {
+    if (email === userName) {
+      alert("Vous ne pouvez pas modifier votre propre statut d'administrateur.");
+      return;
+    }
+
+    setActionId(id);
+    try {
+      await fetch(getApiUrl(`/api/admin/users/${id}/admin/${!isAdmin}`), {
+        method: 'PUT',
+        headers,
+        body: JSON.stringify({ isAdmin: !isAdmin }),
+      });
+      setUsers(prev => prev.map(u => u.id === id ? { ...u, isAdmin: !isAdmin } : u));
     } finally {
       setActionId(null);
     }
@@ -67,7 +92,7 @@ export default function AccessTab() {
   const handleRequest = async (id: number, action: 'approve' | 'reject') => {
     setActionId(id);
     try {
-      await fetch(getApiUrl(`/api/auth/signup-requests/${id}/${action}`), {
+      await fetch(getApiUrl(`/api/admin/signup-requests/${id}/${action}`), {
         method: 'PUT',
         headers,
       });
@@ -100,8 +125,8 @@ export default function AccessTab() {
                 <th>ID</th>
                 <th>Nom</th>
                 <th>Email</th>
+                <th>Admin</th>
                 <th>Créé le</th>
-                <th>Clé pub.</th>
                 <th></th>
               </tr>
             </thead>
@@ -115,26 +140,31 @@ export default function AccessTab() {
               ) : (
                 users.map(u => (
                   <tr key={u.id} className="hover">
-                    <td className="text-xs opacity-40 tabular-nums">{u.id}</td>
+                    <td className="text-xs opacity-40 tabular-nums">{u.id} {u.email  === userName ? " (vous)" : ""}</td>
                     <td>{u.name ?? <span className="opacity-30 italic">—</span>}</td>
                     <td className="font-mono text-xs">{u.email}</td>
+                    <td>
+                      <input
+                        type="checkbox"
+                        className={`toggle toggle-sm toggle-success ${
+                          actionId === u.id ? "opacity-50" : ""
+                        }
+                        ${u.email === userName ? "cursor-not-allowed  disabled" : ""}`}
+                        checked={u.isAdmin}
+                        disabled={actionId === u.id && u.email !== userName}
+                        onChange={() => switchAdminStatus(u.id, u.isAdmin, u.email)}
+                      />
+                    </td>
                     <td className="text-xs opacity-60">
                       {new Date(u.createdAt).toLocaleDateString('fr-FR')}
                     </td>
                     <td>
-                      {u.publicKey ? (
-                        <span className="badge badge-xs badge-success gap-1">
-                          <Key size={8} /> Oui
-                        </span>
-                      ) : (
-                        <span className="badge badge-xs badge-ghost">Non</span>
-                      )}
-                    </td>
-                    <td>
                       <button
-                        className="btn btn-xs btn-error btn-ghost"
-                        disabled={actionId === u.id}
-                        onClick={() => deleteUser(u.id)}
+                        className={`btn btn-xs btn-error btn-ghost 
+                          ${u.email === userName ? "cursor-not-allowed opacity-50 disabled" : ""}
+                        `}
+                        disabled={actionId === u.id && u.email !== userName}
+                        onClick={() => deleteUser(u.id, u.email)}
                       >
                         {actionId === u.id
                           ? <span className="loading loading-spinner loading-xs" />
@@ -169,11 +199,6 @@ export default function AccessTab() {
                     Demandé le {new Date(r.createdAt).toLocaleString('fr-FR')}
                   </p>
                 </div>
-                {r.publicKey && (
-                  <span className="badge badge-xs badge-info gap-1 shrink-0">
-                    <Key size={8} /> Clé publique
-                  </span>
-                )}
                 <div className="flex gap-2 shrink-0">
                   <button
                     className="btn btn-sm btn-success gap-1"
