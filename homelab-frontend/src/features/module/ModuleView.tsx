@@ -32,7 +32,7 @@ export default function ModuleView({ module }: { module?: Module }) {
   // module is active — delegate fetching and rendering to PageHost
   return (
     <div className="flex-1 w-full h-full min-h-0 bg-base-100 flex flex-col p-4 overflow-y-auto">
-      <PageHost module={module} token={undefined} />
+      <PageHost module={module}/>
     </div>
   );
 }
