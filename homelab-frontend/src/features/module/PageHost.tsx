@@ -1,27 +1,36 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { Loader2 } from 'lucide-react';
 import type { Module } from '@app/types';
 import { getApiUrl } from '@lib/api';
 import { PageRenderer } from '@renderer/PageRenderer';
-import { extractModulePageConfig, type ModulePageConfig, type BindingRequest } from '@renderer/types';
+import {
+  extractModulePageConfig,
+  type ModulePageConfig,
+  type BindingRequest
+} from '@renderer/types';
 import { createBindingHandler } from './Binding';
+import { useAuth } from '@auth/AuthContext';
 
 type PageState =
   | { type: 'loading' }
   | { type: 'json'; config: ModulePageConfig }
   | { type: 'standalone'; url: string };
 
-export default function PageHost({ module, token }: { module: Module; token?: string }) {
-  const [state, setState] = useState<PageState>({ type: 'loading' });
+export default function PageHost({ module }: { module: Module }) {
+  const { token } = useAuth();
 
-  const objectUrlsRef = useRef<string[]>([]);
+  const [state, setState] = useState<PageState>({ type: 'loading' });
+  const [devUrl, setDevUrl] = useState<string>('');
+
+  const iframeRef = useRef<HTMLIFrameElement>(null);
   const handlerRef = useRef<((req: BindingRequest) => Promise<unknown>) | null>(null);
+
+  const iframeReadyRef = useRef(false);
 
   useEffect(() => {
     return () => {
-      objectUrlsRef.current.forEach((u) => URL.revokeObjectURL(u));
-      objectUrlsRef.current = [];
       handlerRef.current = null;
+      iframeReadyRef.current = false;
     };
   }, []);
 
@@ -43,34 +52,18 @@ export default function PageHost({ module, token }: { module: Module; token?: st
         const data = await res.json();
 
         if (data.type === 'standalone') {
-          setState({
-            type: 'standalone',
-            url: data.content
-          });
+          setState({ type: 'standalone', url: data.content });
         } else {
           const config = extractModulePageConfig(data.content);
-
-          // console.log('Extracted module page config:', config);
-
-          if (!config) {
-            throw new Error('Invalid module page configuration');
-          }
-
-          setState({
-            type: 'json',
-            config
-          });
+          if (!config) return;
+          setState({ type: 'json', config });
         }
-      } catch (err) {
-        console.error('Error fetching module UI:', err);
-      }
+      } catch {}
     };
 
     fetchModuleUi();
 
-    handlerRef.current = createBindingHandler(module, token, (url) => {
-      objectUrlsRef.current.push(url);
-    });
+    handlerRef.current = createBindingHandler(module, token!!, () => {});
 
     return () => {
       handlerRef.current = null;
@@ -78,33 +71,71 @@ export default function PageHost({ module, token }: { module: Module; token?: st
   }, [module, token]);
 
   const callBinding = useCallback((request: BindingRequest) => {
-    if (!handlerRef.current) {
-      return Promise.reject(new Error('Binding handler not available'));
-    }
+    if (!handlerRef.current) return Promise.reject();
     return handlerRef.current(request);
   }, []);
 
+  const iframeSrc = useMemo(() => {
+    return devUrl.trim() || (state.type === 'standalone' ? state.url : '');
+  }, [devUrl, state]);
+
+  const sendToken = useCallback(() => {
+    if (!iframeRef.current?.contentWindow) return;
+    if (!token) return;
+    if (!iframeReadyRef.current) return;
+
+    iframeRef.current.contentWindow.postMessage(
+      { type: 'AUTH_TOKEN', token },
+      '*'
+    );
+  }, [token]);
+
+  useEffect(() => {
+    const handler = (event: MessageEvent) => {
+      if (event.data?.type === 'IFRAME_READY') {
+        iframeReadyRef.current = true;
+        sendToken();
+      }
+    };
+
+    window.addEventListener('message', handler);
+    return () => window.removeEventListener('message', handler);
+  }, [sendToken]);
 
   if (state.type === 'loading') {
     return (
       <div className="flex flex-col items-center justify-center h-full">
         <Loader2 size={48} className="text-primary animate-spin mb-4" />
-        <p>Initialisation de l'interface du module...</p>
       </div>
     );
   }
 
-
   if (state.type === 'standalone') {
     return (
-      <iframe
-        src={state.url}
-        className="w-full h-full border-0"
-      />
+      <div className="flex flex-col h-full">
+        <div className="flex items-center gap-2 p-2 bg-base-300 border-b border-base-content/10">
+          <input
+            value={devUrl}
+            onChange={(e) => setDevUrl(e.target.value)}
+            className="input input-sm input-bordered w-full text-xs"
+          />
+          {devUrl && (
+            <button className="btn btn-xs btn-ghost" onClick={() => setDevUrl('')}>
+              Reset
+            </button>
+          )}
+        </div>
+
+        <iframe
+          ref={iframeRef}
+          src={iframeSrc}
+          className="w-full h-full border-0"
+          onLoad={() => sendToken()}
+        />
+      </div>
     );
   }
 
-// default case: render the page using PageRenderer (json)
   return (
     <PageRenderer
       moduleId={module.id}

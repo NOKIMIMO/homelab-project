@@ -20,6 +20,7 @@ export default defineConfig({
     }
   },
   server: {
+    cors: true,
     host: true,
     port: 80,
     watch: {
