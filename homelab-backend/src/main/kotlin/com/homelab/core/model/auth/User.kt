@@ -19,6 +19,9 @@ class User(
     @Column(nullable = true, length = 2048)
     var passwordHash: String? = null,
 
+    @Column(nullable = false)
+    var isAdmin: Boolean = false,
+    
     @Column(nullable = true, length = 2048)
     var publicKey: String? = null,
 

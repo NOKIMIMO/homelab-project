@@ -1,17 +1,17 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate, Outlet } from 'react-router';
-import { BarChart, Camera, Box, Menu, Settings, ShieldCheck } from 'lucide-react';
+import { BarChart, Camera, Box, Menu, ShieldCheck } from 'lucide-react';
 import { useAuth } from '@auth/AuthContext';
-import { getApiUrl } from '@lib/api';
 import type { AppOutletContext, Module } from '@app/types';
 import './index.css';
+import { authFetch } from '@auth/f_authFetch';
 
 export type { AppOutletContext, Module };
 
 function AppLayout() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { token, logout } = useAuth();
+  const { logout } = useAuth();
   const [modules, setModules] = useState<Module[]>([]);
   const [isModulesRefreshing, setIsModulesRefreshing] = useState(false);
 
@@ -21,20 +21,25 @@ function AppLayout() {
   }, [location.pathname]);
 
   const fetchModules = useCallback(async () => {
-    setIsModulesRefreshing(true);
-    try {
-      const response = await fetch(getApiUrl('/api/modules'), {
-        headers: token ? { 'Authorization': `Bearer ${token}` } : undefined
-      });
-      const data = await response.json();
-      console.log('Fetched modules:', data);
-      setModules(data);
-    } catch (error) {
-      console.error('Error fetching modules:', error);
-    } finally {
-      setIsModulesRefreshing(false);
-    }
-  }, [token]);
+  setIsModulesRefreshing(true);
+
+  try {
+    const response = await authFetch("/api/modules", {}, () => {
+      logout();
+      navigate("/login");
+    });
+
+    if (!response) return;
+
+    const data = await response.json();
+    setModules(data);
+
+  } catch (error) {
+    console.error("Error fetching modules:", error);
+  } finally {
+    setIsModulesRefreshing(false);
+  }
+}, [logout, navigate]);
 
   useEffect(() => {
     fetchModules();
@@ -122,12 +127,12 @@ function AppLayout() {
             ))}
           </ul>
           <div className="mt-auto px-2 space-y-2">
-            <button
+            {/* <button
               className={`btn bg-base-100 btn-sm w-full gap-2 ${location.pathname === '/settings' ? 'btn-primary' : 'btn-outline'}`}
               onClick={() => navigate('/settings')}
             >
               <Settings size={16} /> Options
-            </button>
+            </button> */}
             <button
               className="btn btn-ghost btn-sm w-full gap-2 text-error"
               onClick={() => {

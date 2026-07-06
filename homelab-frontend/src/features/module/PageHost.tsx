@@ -50,7 +50,11 @@ export default function PageHost({ module, token }: { module: Module; token?: st
         } else {
           const config = extractModulePageConfig(data.content);
 
-          if (!config) return;
+          console.log('Extracted module page config:', config);
+
+          if (!config) {
+            throw new Error('Invalid module page configuration');
+          }
 
           setState({
             type: 'json',
