@@ -91,7 +91,7 @@ export const PageRenderer: React.FC<PageRendererProps> = ({
   onBindingCall,
 }) => {
 
-  console.log('Rendering page with config:', pageConfig);
+  // console.log('Rendering page with config:', pageConfig);
 
   const sources = useMemo(() => {
     const sourceMap = new Map<string, BindingSource>();

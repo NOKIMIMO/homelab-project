@@ -3,6 +3,7 @@ package com.homelab.core.service.module
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.homelab.core.config.ModuleConfigMemory
+import com.homelab.sdk.helper.AppLogger
 import com.homelab.sdk.module.param.ModuleParamDeclaration
 import com.homelab.sdk.module.param.ModuleParamsConfig
 import org.springframework.stereotype.Service
@@ -10,6 +11,8 @@ import java.io.File
 
 @Service
 class ModuleParamsService(private val moduleConfigMemory: ModuleConfigMemory) {
+
+    private val log = AppLogger.loggerFor(this::class)
 
     private val mapper = jacksonObjectMapper()
     private val PARAMS_FILE = "params.json"
@@ -33,12 +36,13 @@ class ModuleParamsService(private val moduleConfigMemory: ModuleConfigMemory) {
 
     // Returns values with secret fields masked as null
     fun getValues(moduleId: String): Map<String, String?> {
+        log.debug("Getting values for moduleId: $moduleId")
         val dir = moduleConfigMemory.getDirectory(moduleId) ?: return emptyMap()
         val declarations = getDeclarations(moduleId)
         val stored = readStoredValues(dir)
         return declarations.associate { param ->
             val raw = stored[param.key] ?: param.defaultValue.ifEmpty { null }
-            val masked = if (param.type == "secret" && raw != null) null else raw
+            val masked = if (param.type == "secret" && raw != null) "***" else raw
             param.key to masked
         }
     }
@@ -65,6 +69,7 @@ class ModuleParamsService(private val moduleConfigMemory: ModuleConfigMemory) {
     }
 
     private fun readStoredValues(dir: File): Map<String, String> {
+        log.debug("Reading stored values from $dir")
         val file = File(dir, VALUES_FILE)
         if (!file.exists()) return emptyMap()
         return try {
