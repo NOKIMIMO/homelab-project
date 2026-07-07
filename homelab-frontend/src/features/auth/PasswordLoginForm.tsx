@@ -15,7 +15,7 @@ export default function PasswordLoginForm({ onLoginSuccess }: PasswordLoginFormP
   const [passwordFlow, setPasswordFlow] = useState<'login' | 'signup'>('login');
 
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
+  const [, setSuccess] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   const emailValid = emailRegex.test(email);

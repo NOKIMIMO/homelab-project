@@ -1,0 +1,30 @@
+# Déploiement "tout-en-un" : frontend + backend + Postgres dans un seul
+# conteneur/une seule image. Alternative à docker-compose.yml (services séparés).
+#
+#   docker compose -f docker-compose.all-in-one.yml up -d --build
+#
+# Les données Postgres sont conservées sur le volume `db-data` : le conteneur
+# peut être supprimé/recréé sans perte de données.
+services:
+  homelab:
+    build:
+      context: .
+      dockerfile: Dockerfile.all-in-one
+    container_name: homelab-all-in-one
+    ports:
+      - "80:80"
+    env_file:
+      - .env.all-in-one
+    volumes:
+      - db-data:/var/lib/postgresql/data
+      - ./modules:/app_root/modules:ro
+      # requis par OSHI pour lire les métriques CPU/RAM/disque de l'hôte
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /etc/os-release:/host/etc/os-release:ro
+    environment:
+      - JAVA_OPTS=-Doshi.os.windows.proc.path=/host/proc -Doshi.os.windows.sys.path=/host/sys -Doshi.os.windows.osRelease.path=/host/etc/os-release
+    restart: unless-stopped
+
+volumes:
+  db-data:

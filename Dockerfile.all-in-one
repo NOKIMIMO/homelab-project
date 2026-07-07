@@ -1,0 +1,49 @@
+# =========================================================================
+# Homelab - image "tout-en-un" (frontend + backend + base de données)
+#
+# Build depuis la racine du repo:
+#   docker build -f Dockerfile.all-in-one -t homelab:all-in-one .
+# =========================================================================
+
+# ---- Backend build ----
+FROM gradle:8.7-jdk21-alpine AS backend-build
+COPY --chown=gradle:gradle homelab-backend /home/gradle/src
+WORKDIR /home/gradle/src
+RUN gradle build --no-daemon -x test
+
+# ---- Frontend build ----
+FROM node:20-alpine AS frontend-build
+WORKDIR /app
+COPY homelab-frontend/package*.json ./
+RUN npm install
+COPY homelab-frontend .
+RUN npm run build
+
+# ---- Runtime ----
+FROM alpine:3.21
+
+RUN apk add --no-cache \
+        openjdk21-jre-headless \
+        nginx \
+        postgresql16 \
+        su-exec
+
+ENV PGDATA=/var/lib/postgresql/data \
+    HOMELAB_MODULES_SCAN_PATH=/app_root/modules
+
+RUN mkdir -p /app "$PGDATA" /run/nginx /run/postgresql /var/log/postgresql \
+    && chown -R postgres:postgres /var/lib/postgresql /var/log/postgresql /run/postgresql
+
+COPY --from=backend-build /home/gradle/src/build/libs/*.jar /app/homelab.jar
+COPY --from=frontend-build /app/dist /usr/share/nginx/html
+COPY docker/all-in-one/nginx.conf /etc/nginx/http.d/default.conf
+COPY docker/all-in-one/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+# Les données Postgres doivent être montées sur un volume externe pour
+# survivre à la suppression du conteneur (voir docker-compose.all-in-one.yml)
+VOLUME ["/var/lib/postgresql/data"]
+
+EXPOSE 80
+
+ENTRYPOINT ["/entrypoint.sh"]
