@@ -90,7 +90,9 @@ jobs:
               -e POSTGRES_USER=user \
               -e POSTGRES_PASSWORD=change-me \
               -v homelab-data:/var/lib/postgresql/data \
+              -v ./modules:/app_root/modules:ro \
               ${{ steps.vars.outputs.image }}:${{ steps.vars.outputs.tag }}
             ```
 
             - `POSTGRES_USER` / `POSTGRES_PASSWORD` : à choisir librement (utilisés uniquement à la création de la base).
+            - `./modules` : dossier sur la machine hôte où déposer les modules (`manifest.json` + fichiers) ; le backend le scanne à ce même emplacement (`HOMELAB_MODULES_SCAN_PATH=/app_root/modules`). Remplace `./modules` par un chemin absolu si tu ne lances pas la commande depuis le dossier du repo.
