@@ -3,7 +3,7 @@ set -e
 
 : "${POSTGRES_USER:?POSTGRES_USER doit être défini}"
 : "${POSTGRES_PASSWORD:?POSTGRES_PASSWORD doit être défini}"
-: "${POSTGRES_DB:?POSTGRES_DB doit être défini}"
+export POSTGRES_DB="${POSTGRES_DB:-homelab}"
 
 # Le backend et Postgres tournent dans le même conteneur.
 export DB_URL="localhost:5432"

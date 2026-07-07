@@ -13,6 +13,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -28,7 +30,34 @@ jobs:
         id: vars
         run: |
           echo "image=ghcr.io/$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_OUTPUT"
-          echo "tag=v$(date -u +'%Y.%m.%d')-${{ github.run_number }}" >> "$GITHUB_OUTPUT"
+
+          latest=$(git tag -l 'v[0-9]*.[0-9]*.[0-9]*' | sort -V | tail -n1)
+          if [ -z "$latest" ]; then
+            new_tag="v1.0.0"
+          else
+            range="${latest}..HEAD"
+            commits=$(git log "$range" --format='%B')
+
+            bump="patch"
+            if echo "$commits" | grep -qE '^[a-zA-Z]+(\([^)]*\))?!:|^BREAKING[ -]CHANGE:'; then
+              bump="major"
+            elif echo "$commits" | grep -qE '^feat(\([^)]*\))?:'; then
+              bump="minor"
+            fi
+
+            version="${latest#v}"
+            major="${version%%.*}"
+            rest="${version#*.}"
+            minor="${rest%%.*}"
+            patch="${rest#*.}"
+
+            case "$bump" in
+              major) new_tag="v$((major + 1)).0.0" ;;
+              minor) new_tag="v${major}.$((minor + 1)).0" ;;
+              patch) new_tag="v${major}.${minor}.$((patch + 1))" ;;
+            esac
+          fi
+          echo "tag=$new_tag" >> "$GITHUB_OUTPUT"
 
       - name: Build and push image
         uses: docker/build-push-action@v6
@@ -52,3 +81,16 @@ jobs:
             ```
             docker pull ${{ steps.vars.outputs.image }}:${{ steps.vars.outputs.tag }}
             ```
+
+            Commande pour la lancer :
+
+            ```
+            docker run -d --name homelab \
+              -p 80:80 \
+              -e POSTGRES_USER=user \
+              -e POSTGRES_PASSWORD=change-me \
+              -v homelab-data:/var/lib/postgresql/data \
+              ${{ steps.vars.outputs.image }}:${{ steps.vars.outputs.tag }}
+            ```
+
+            - `POSTGRES_USER` / `POSTGRES_PASSWORD` : à choisir librement (utilisés uniquement à la création de la base).
