@@ -27,6 +27,11 @@ class ModuleConfigMemory {
     fun contains(moduleId: String): Boolean =
         configs.containsKey(moduleId)
 
+    fun remove(moduleId: String) {
+        configs.remove(moduleId)
+        directories.remove(moduleId)
+    }
+
     fun clear() {
         configs.clear()
         directories.clear()

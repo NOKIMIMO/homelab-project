@@ -1,15 +1,17 @@
 import { useState } from 'react';
-import { ScrollText, ShieldCheck, SlidersHorizontal } from 'lucide-react';
+import { Blocks, ScrollText, ShieldCheck, SlidersHorizontal } from 'lucide-react';
 import LogsTab from './LogsTab';
 import AccessTab from './AccessTab';
 import SettingsTab from './SettingsTab';
+import ModuleBuilderTab from './ModuleBuilderTab';
 
-type Tab = 'logs' | 'access' | 'settings';
+type Tab = 'logs' | 'access' | 'settings' | 'modules';
 
 const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
   { id: 'logs',     label: 'Logs',        icon: <ScrollText size={15} /> },
   { id: 'access',   label: 'Accès',       icon: <ShieldCheck size={15} /> },
   { id: 'settings', label: 'Paramètres',  icon: <SlidersHorizontal size={15} /> },
+  { id: 'modules',  label: 'Modules',     icon: <Blocks size={15} /> },
 ];
 
 export default function AdminPanel() {
@@ -43,6 +45,7 @@ export default function AdminPanel() {
         {active === 'logs'     && <LogsTab />}
         {active === 'access'   && <AccessTab />}
         {active === 'settings' && <SettingsTab />}
+        {active === 'modules'  && <ModuleBuilderTab />}
       </div>
     </div>
   );

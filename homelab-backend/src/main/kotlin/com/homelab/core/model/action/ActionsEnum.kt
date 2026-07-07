@@ -4,6 +4,7 @@ enum class ActionsEnum {
     UPLOAD_FILE,
     GET_FILE,
     FETCH_EXTERNAL,
+    FETCH_EXTERNAL_GENERIC,
 
 //    CRUD actions
 //    maybe make them become default to some types?
