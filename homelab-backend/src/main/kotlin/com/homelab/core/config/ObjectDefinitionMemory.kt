@@ -26,6 +26,15 @@ class ObjectDefinitionMemory {
     fun contains(moduleId: String): Boolean =
         definitions.containsKey(moduleId)
 
+    fun removeForModule(moduleId: String) {
+        val prefix = "${moduleId}_"
+        definitions.keys.filter { it.startsWith(prefix) }.forEach { definitions.remove(it) }
+    }
+
+    fun remove(moduleId: String, obj: String) {
+        definitions.remove(listOf(moduleId, obj).joinToString("_"))
+    }
+
     fun clear() {
         definitions.clear()
     }
