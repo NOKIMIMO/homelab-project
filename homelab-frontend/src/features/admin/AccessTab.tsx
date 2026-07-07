@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Check, X, Trash2, RefreshCw, Key } from 'lucide-react';
+import { Check, X, Trash2, RefreshCw } from 'lucide-react';
 import { useAuth } from '@auth/AuthContext';
 import { getApiUrl } from '@lib/api';
 

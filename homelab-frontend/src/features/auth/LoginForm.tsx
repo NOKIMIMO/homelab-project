@@ -8,7 +8,7 @@ interface LoginProps {
   onShowBootstrap: () => void;
 }
 
-export default function LoginForm({ onLoginSuccess, onShowBootstrap }: LoginProps) {
+export default function LoginForm({ onLoginSuccess }: LoginProps) {
   // const [noKeys, setNoKeys] = useState(false);
 
   // useEffect(() => {

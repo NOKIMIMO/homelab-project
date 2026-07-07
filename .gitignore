@@ -1,7 +1,10 @@
 *.vscode*
 *.idea*
 *.env
+.env.all-in-one
 *.DS_Store*
+.claude
+graphify-out
 
 # specific
 modules/photo-module/public/storage

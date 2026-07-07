@@ -1,5 +1,5 @@
 import type { TelemetryData } from "@app/types";
-import { Cpu, MemoryStick, HardDrive, FolderOpen, Clock, Activity } from "lucide-react";
+import { Cpu, MemoryStick, HardDrive, Activity } from "lucide-react";
 
 interface DashboardProps {
     telemetry: TelemetryData;
