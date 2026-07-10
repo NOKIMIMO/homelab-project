@@ -9,7 +9,7 @@ import type {
 } from './../types';
 import { ComponentRenderer } from './ComponentRenderer';
 
-// Lazy import to avoid a circular dependency with the barrel — the parent
+// Lazy import to avoid a circular dependency with the barrel --- the parent
 // passes ComponentRenderer in as a prop instead.
 interface ListRendererProps {
   config: Extract<RendererComponent, { source: unknown; item: RendererComponent }>;

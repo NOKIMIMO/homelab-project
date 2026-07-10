@@ -21,7 +21,7 @@ const TEXT: Record<
 > = {
   fr: {
     title: 'Interface en JSON',
-    badge: 'WIP — usage bêta',
+    badge: 'WIP --- usage bêta',
     intro: (
       <>
         L'interface pilotée par JSON (<code>uIFormat: "JSON"</code>) est en
@@ -60,7 +60,7 @@ const TEXT: Record<
   },
   en: {
     title: 'JSON-driven UI',
-    badge: 'WIP — beta usage',
+    badge: 'WIP --- beta usage',
     intro: (
       <>
         The JSON-driven interface (<code>uIFormat: "JSON"</code>) is still

@@ -32,8 +32,8 @@ const TEXT: Record<
     section1Title: '1. Le créateur de module (recommandé)',
     section1Intro: (
       <>
-        Le backend expose une API de création de module —{' '}
-        <code className="text-accent">ModuleBuilderService</code> — qui
+        Le backend expose une API de création de module ---{' '}
+        <code className="text-accent">ModuleBuilderService</code> --- qui
         génère <code>manifest.json</code>, le schéma <code>.xml</code> (le
         « dataobject ») et une page UI de base à partir d'une simple
         description JSON. Réservé au rôle <code>ADMIN</code>.
@@ -43,7 +43,7 @@ const TEXT: Record<
     endpointsRows: [
       ['GET', '/api/admin/module-builder', 'Liste les modules créés via le builder'],
       ['GET', '/api/admin/module-builder/{id}/schema', 'Schéma (tables) d’un module'],
-      ['POST', '/api/admin/module-builder', 'Crée un module — génère manifest.json, .xml et la page UI'],
+      ['POST', '/api/admin/module-builder', 'Crée un module --- génère manifest.json, .xml et la page UI'],
       ['PUT', '/api/admin/module-builder/{id}', 'Met à jour un module existant'],
       ['POST', '/api/admin/module-builder/{id}/tables/{table}/columns', 'Ajoute une colonne à une table'],
       ['DELETE', '/api/admin/module-builder/{id}?dropData=false', 'Supprime le module'],
@@ -51,7 +51,7 @@ const TEXT: Record<
     afterRequest: (
       <>
         Ce corps de requête suffit à générer <code>manifest.json</code>,{' '}
-        <code>tasks.xml</code> et une page UI — pas besoin d'écrire le JSON ou
+        <code>tasks.xml</code> et une page UI --- pas besoin d'écrire le JSON ou
         le XML à la main. <code>relations</code> et <code>uniqueTogether</code>{' '}
         sur une table suivent le même format que la section{' '}
         <Link to="/docs/orm" className="link link-primary">
@@ -60,7 +60,7 @@ const TEXT: Record<
         .
       </>
     ),
-    section2Title: '2. Format manuel — pour un contrôle total',
+    section2Title: '2. Format manuel --- pour un contrôle total',
     section2Intro: (
       <>
         Un module reste un simple dossier scanné au démarrage (
@@ -77,7 +77,7 @@ const TEXT: Record<
       ['description', 'non', 'Texte court affiché dans le dashboard'],
       ['actions', 'oui', 'Groupes de fonctions exposées par le module'],
       ['dataObjects', 'non', 'Fichiers .xml de schéma utilisés par les actions'],
-      ['page', 'non', 'Fichier JSON de l’interface — absent = module API only'],
+      ['page', 'non', 'Fichier JSON de l’interface --- absent = module API only'],
       [
         'uIFormat',
         'non',
@@ -87,7 +87,7 @@ const TEXT: Record<
           cœur)
         </>,
       ],
-      ['dependencies', 'non', <><code>[{'{ moduleId, version }'}]</code> — modules requis</>],
+      ['dependencies', 'non', <><code>[{'{ moduleId, version }'}]</code> --- modules requis</>],
       ['permissions', 'non', 'Permissions déclarées, ex. read:module, write:module'],
     ],
     dataObjectIntro: (
@@ -107,7 +107,7 @@ const TEXT: Record<
     actionTypesTitle: "Types d'actions backend",
     actionTypesIntro: (
       <>
-        Déclarés dans <code>logic[].type</code> de chaque fonction — un type
+        Déclarés dans <code>logic[].type</code> de chaque fonction --- un type
         standard ne nécessite aucun code Kotlin.
       </>
     ),
@@ -134,8 +134,8 @@ const TEXT: Record<
     section1Title: '1. The module builder (recommended)',
     section1Intro: (
       <>
-        The backend exposes a module-creation API —{' '}
-        <code className="text-accent">ModuleBuilderService</code> — which
+        The backend exposes a module-creation API ---{' '}
+        <code className="text-accent">ModuleBuilderService</code> --- which
         generates <code>manifest.json</code>, the <code>.xml</code> schema
         (the "dataobject") and a basic UI page from a plain JSON description.
         Restricted to the <code>ADMIN</code> role.
@@ -145,7 +145,7 @@ const TEXT: Record<
     endpointsRows: [
       ['GET', '/api/admin/module-builder', 'Lists modules created via the builder'],
       ['GET', '/api/admin/module-builder/{id}/schema', 'Schema (tables) of a module'],
-      ['POST', '/api/admin/module-builder', 'Creates a module — generates manifest.json, .xml and the UI page'],
+      ['POST', '/api/admin/module-builder', 'Creates a module --- generates manifest.json, .xml and the UI page'],
       ['PUT', '/api/admin/module-builder/{id}', 'Updates an existing module'],
       ['POST', '/api/admin/module-builder/{id}/tables/{table}/columns', 'Adds a column to a table'],
       ['DELETE', '/api/admin/module-builder/{id}?dropData=false', 'Deletes the module'],
@@ -153,7 +153,7 @@ const TEXT: Record<
     afterRequest: (
       <>
         This request body is enough to generate <code>manifest.json</code>,{' '}
-        <code>tasks.xml</code> and a UI page — no need to hand-write the JSON
+        <code>tasks.xml</code> and a UI page --- no need to hand-write the JSON
         or the XML. <code>relations</code> and <code>uniqueTogether</code> on
         a table follow the same format as the{' '}
         <Link to="/docs/orm" className="link link-primary">
@@ -162,7 +162,7 @@ const TEXT: Record<
         section.
       </>
     ),
-    section2Title: '2. Manual format — for full control',
+    section2Title: '2. Manual format --- for full control',
     section2Intro: (
       <>
         A module is still just a plain folder scanned at startup (
@@ -178,7 +178,7 @@ const TEXT: Record<
       ['description', 'no', 'Short text shown on the dashboard'],
       ['actions', 'yes', 'Groups of functions exposed by the module'],
       ['dataObjects', 'no', 'XML schema files used by the actions'],
-      ['page', 'no', 'JSON UI file — absent = API-only module'],
+      ['page', 'no', 'JSON UI file --- absent = API-only module'],
       [
         'uIFormat',
         'no',
@@ -188,7 +188,7 @@ const TEXT: Record<
           the core)
         </>,
       ],
-      ['dependencies', 'no', <><code>[{'{ moduleId, version }'}]</code> — required modules</>],
+      ['dependencies', 'no', <><code>[{'{ moduleId, version }'}]</code> --- required modules</>],
       ['permissions', 'no', 'Declared permissions, e.g. read:module, write:module'],
     ],
     dataObjectIntro: (
@@ -208,7 +208,7 @@ const TEXT: Record<
     actionTypesTitle: 'Backend action types',
     actionTypesIntro: (
       <>
-        Declared in each function's <code>logic[].type</code> — a standard
+        Declared in each function's <code>logic[].type</code> --- a standard
         type needs no Kotlin code.
       </>
     ),

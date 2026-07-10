@@ -132,7 +132,7 @@ class ModuleBuilderService(
         return ModuleBuilderSummary(moduleId, request.name, request.description, custom = true)
     }
 
-    // Full editable spec for the builder UI — read back from the persisted request rather than
+    // Full editable spec for the builder UI --- read back from the persisted request rather than
     // reverse-engineered from the generated manifest/UI JSON (which is lossy, see createModule()).
     fun getFullSpec(moduleId: String): ModuleBuilderRequest {
         val directory = requireBuilderModuleDirectory(moduleId)
@@ -172,7 +172,7 @@ class ModuleBuilderService(
 
             if (table.name != oldTable.name) {
                 // Block the rename if the table is referenced by a relation either before or
-                // after this edit (checking both old and new target-table spellings) — the FK
+                // after this edit (checking both old and new target-table spellings) --- the FK
                 // column name is derived from the "one" side's table name, so a rename would
                 // silently desync it from the manifest's declared parameter name otherwise.
                 val stillReferenced = (previous.tables + request.tables).any { other ->
@@ -584,7 +584,7 @@ class ModuleBuilderService(
     }
 
     // -------------------------------------------------------------------
-    // UI page generation — reuses only existing declarative components
+    // UI page generation --- reuses only existing declarative components
     // -------------------------------------------------------------------
 
     private fun buildUiPage(request: ModuleBuilderRequest): Map<String, Any?> = buildAutoTablePage(request)
@@ -677,7 +677,7 @@ class ModuleBuilderService(
     }
 
     // -------------------------------------------------------------------
-    // XML (de)serialization — mirrors ModuleDataObjectParser's expected tags
+    // XML (de)serialization --- mirrors ModuleDataObjectParser's expected tags
     // -------------------------------------------------------------------
 
     private fun toTableSpec(definition: TableDefinition): TableSpec {

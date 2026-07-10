@@ -47,7 +47,7 @@ class ModuleParamsService(private val moduleConfigMemory: ModuleConfigMemory) {
         }
     }
 
-    // Returns values unmasked — for internal/module use only
+    // Returns values unmasked --- for internal/module use only
     fun getRawValues(moduleId: String): Map<String, String?> {
         val dir = moduleConfigMemory.getDirectory(moduleId) ?: return emptyMap()
         val declarations = getDeclarations(moduleId)
