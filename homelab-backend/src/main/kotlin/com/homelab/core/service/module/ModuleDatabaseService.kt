@@ -216,7 +216,7 @@ class ModuleDatabaseService(
         } catch (e: Exception) {
             log.error("Failed retyping column '$columnName' on '$schemaName.$tblName': ${e.message}", e)
             throw BadRequestException(
-                "Failed changing type of column '$columnName' to '$newType' — existing data may not convert cleanly: ${e.message}", e
+                "Failed changing type of column '$columnName' to '$newType' --- existing data may not convert cleanly: ${e.message}", e
             )
         }
 

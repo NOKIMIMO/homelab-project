@@ -8,6 +8,96 @@ export const DOCKER_RUN = `docker run -d --name homelab \\
   -v ./modules:/app_root/modules:ro \\
   ghcr.io/nokimimo/homelab-project:v1.0.2`
 
+export const DOCKER_COMPOSE_ALL_IN_ONE_YML = `# docker-compose.all-in-one.yml
+services:
+  homelab:
+    build:
+      context: .
+      dockerfile: Dockerfile.all-in-one
+    container_name: homelab-all-in-one
+    ports:
+      - "80:80"
+    env_file:
+      - .env.all-in-one
+    volumes:
+      - db-data:/var/lib/postgresql/data
+      - ./modules:/app_root/modules:ro
+      - /etc/os-release:/host/etc/os-release:ro
+    environment:
+      - JAVA_OPTS=-Doshi.os.windows.osRelease.path=/host/etc/os-release
+    restart: unless-stopped
+
+volumes:
+  db-data:`
+
+export const ENV_ALL_IN_ONE = `# .env.all-in-one
+  POSTGRES_USER=user
+  POSTGRES_PASSWORD=change-me
+  POSTGRES_DB=homelab`
+
+export const DOCKER_COMPOSE_SPLIT_YML = `# docker-compose.yml
+services:
+  homelab-backend:
+    build: ./homelab-backend
+    container_name: homelab-backend
+    ports:
+      - "8080:8080"
+    depends_on:
+      - homelab-db
+    env_file:
+      - .env.production
+    volumes:
+      - /proc:/host/proc:ro # read-only mount of proc for oshi : CPU and memory info
+      - /sys:/host/sys:ro # read-only mount of sys for oshi : CPU and memory info
+      - /etc/os-release:/host/etc/os-release:ro # read-only mount of os-release for oshi : OS info
+      - //var/run/docker.sock:/var/run/docker.sock
+      - .:/app_root:ro # read-only mount of the current dir for modules discovery
+    environment:
+      - JAVA_OPTS=-Doshi.os.windows.proc.path=/host/proc -Doshi.os.windows.sys.path=/host/sys -Doshi.os.windows.osRelease.path=/host/etc/os-release
+    restart: unless-stopped
+    networks:
+      - homelab-network
+      - db-network
+
+  homelab-db:
+    image: postgres:16-alpine
+    container_name: homelab-db
+    env_file:
+      - .env.production
+    environment:
+      - POSTGRES_DB=homelab
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    networks:
+      - db-network
+    restart: unless-stopped
+
+  homelab-frontend:
+    build: ./homelab-frontend
+    container_name: homelab-frontend
+    ports:
+      - "80:80"
+    restart: unless-stopped
+    networks:
+      - homelab-network
+
+networks:
+  homelab-network:
+    name: homelab-network
+  db-network:
+    name: db-network
+
+volumes:
+  db-data:`
+
+export const ENV_PRODUCTION_EXAMPLE = `# .env.production
+POSTGRES_USER=user
+POSTGRES_PASSWORD=change-me
+POSTGRES_DB=homelab
+# hostname is the db service name from docker-compose.yml, not localhost
+DB_URL=homelab-db:5432
+HOMELAB_MODULES_SCAN_PATH=/app_root/modules`
+
 export const BUILDER_REQUEST = `POST /api/admin/module-builder
 Authorization: Bearer <token admin>
 
@@ -209,7 +299,7 @@ export const UI_JSON_EXAMPLE = `{
 export const SDK_GRADLE = `repositories {
     mavenCentral()
     maven {
-        // TODO: URL du repository (GitHub Packages / Maven) — publication à venir
+        // TODO: URL du repository (GitHub Packages / Maven) --- publication à venir
         url = uri("https://TODO-add-repository-url")
     }
 }

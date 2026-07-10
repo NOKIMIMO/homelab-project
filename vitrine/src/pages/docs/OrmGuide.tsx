@@ -27,7 +27,7 @@ const TEXT: Record<
     ),
     tagColumns: ['Balise', 'Requis', 'Description'],
     tagRows: [
-      ['moduleName', 'non', 'Module cible — défaut : module courant (relation intra-module)'],
+      ['moduleName', 'non', 'Module cible --- défaut : module courant (relation intra-module)'],
       ['targetObject', 'oui', 'Nom de la table/objet cible'],
       [
         'cardinality',
@@ -44,10 +44,10 @@ const TEXT: Record<
       <>
         Exemple réel du module <code>reader</code> : une{' '}
         <strong>Série</strong> contient plusieurs <strong>Groupes</strong>{' '}
-        (1—N), un <strong>Groupe</strong> contient plusieurs{' '}
-        <strong>GroupContent</strong> (1—N), et chaque{' '}
+        (1---N), un <strong>Groupe</strong> contient plusieurs{' '}
+        <strong>GroupContent</strong> (1---N), et chaque{' '}
         <strong>GroupContent</strong> pointe vers une seule{' '}
-        <strong>Photo</strong> du module <code>photos</code> (N—1,
+        <strong>Photo</strong> du module <code>photos</code> (N---1,
         cross-module).
       </>
     ),
@@ -55,7 +55,7 @@ const TEXT: Record<
     constraintsBody: (
       <>
         <code>{'<constraints><uniqueTogether>'}</code> garantit qu'une
-        combinaison de colonnes est unique — utilisé ci-dessus pour forcer un{' '}
+        combinaison de colonnes est unique --- utilisé ci-dessus pour forcer un{' '}
         <code>index</code> unique par série (<code>serie_id + index</code>) et
         par groupe (<code>groups_id + index</code>), ce qui fixe l'ordre
         d'affichage.
@@ -73,7 +73,7 @@ const TEXT: Record<
     ),
     tagColumns: ['Tag', 'Required', 'Description'],
     tagRows: [
-      ['moduleName', 'no', 'Target module — defaults to the current module (intra-module relation)'],
+      ['moduleName', 'no', 'Target module --- defaults to the current module (intra-module relation)'],
       ['targetObject', 'yes', 'Name of the target table/object'],
       [
         'cardinality',
@@ -90,17 +90,17 @@ const TEXT: Record<
       <>
         Real example from the <code>reader</code> module: a{' '}
         <strong>Series</strong> contains several <strong>Groups</strong>{' '}
-        (1—N), a <strong>Group</strong> contains several{' '}
-        <strong>GroupContent</strong> rows (1—N), and each{' '}
+        (1---N), a <strong>Group</strong> contains several{' '}
+        <strong>GroupContent</strong> rows (1---N), and each{' '}
         <strong>GroupContent</strong> points to a single <strong>Photo</strong>{' '}
-        in the <code>photos</code> module (N—1, cross-module).
+        in the <code>photos</code> module (N---1, cross-module).
       </>
     ),
     constraintsTitle: 'Composite unique constraints',
     constraintsBody: (
       <>
         <code>{'<constraints><uniqueTogether>'}</code> guarantees a
-        combination of columns is unique — used above to force a unique{' '}
+        combination of columns is unique --- used above to force a unique{' '}
         <code>index</code> per series (<code>serie_id + index</code>) and per
         group (<code>groups_id + index</code>), which fixes the display
         order.

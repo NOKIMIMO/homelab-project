@@ -161,7 +161,7 @@ export default function ModuleBuilderTab() {
                 <tr key={mod.id} className="hover">
                   <td className="font-mono text-xs">{mod.id}</td>
                   <td>{mod.name}</td>
-                  <td className="text-xs opacity-60">{mod.description ?? <span className="opacity-30 italic">—</span>}</td>
+                  <td className="text-xs opacity-60">{mod.description ?? <span className="opacity-30 italic">---</span>}</td>
                   <td>
                     <span className={`badge badge-xs ${mod.custom ? 'badge-primary' : 'badge-ghost'}`}>
                       {mod.custom ? 'Personnalisé' : 'Système'}

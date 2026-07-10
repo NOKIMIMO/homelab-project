@@ -45,14 +45,14 @@ export const useValueResolver = (renderContext: RendererContext) => {
   const resolveValue = React.useCallback(
     (value: unknown, scope: RendererContext = renderContext): unknown => {
       if (typeof value === 'string' && value.includes('{{')) {
-        // exact match — return the native type, not a string
+        // exact match --- return the native type, not a string
         const exactMatch = value.match(/^\{\{([^}]+)\}\}$/);
         if (exactMatch?.[1]) {
           const resolved = resolveExpression(exactMatch[1].trim(), scope);
           return resolved !== undefined ? resolved : value;
         }
 
-        // partial interpolation — always returns a string
+        // partial interpolation --- always returns a string
         return value.replace(/\{\{([^}]+)\}\}/g, (match, key: string) => {
           const resolved = resolveExpression(key.trim(), scope);
           return resolved !== undefined ? String(resolved) : match;

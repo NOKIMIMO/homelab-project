@@ -72,7 +72,7 @@ class ObjectTableGenerate {
             return """ALTER TABLE "$schemaName"."$tableName" RENAME COLUMN "$old" TO "$new""""
         }
 
-        // Uses Postgres' own USING cast — if the existing data can't be cast to the new type,
+        // Uses Postgres' own USING cast --- if the existing data can't be cast to the new type,
         // this fails loudly (transaction rolls back) rather than silently truncating/losing data.
         fun buildRetypeColumnSql(schemaName: String, tableName: String, columnName: String, newType: ColumnTyping): String {
             val col = safeSqlName(columnName)

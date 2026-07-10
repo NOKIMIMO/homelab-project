@@ -141,7 +141,7 @@ export default function AccessTab() {
                 users.map(u => (
                   <tr key={u.id} className="hover">
                     <td className="text-xs opacity-40 tabular-nums">{u.id} {u.email  === userName ? " (vous)" : ""}</td>
-                    <td>{u.name ?? <span className="opacity-30 italic">—</span>}</td>
+                    <td>{u.name ?? <span className="opacity-30 italic">---</span>}</td>
                     <td className="font-mono text-xs">{u.email}</td>
                     <td>
                       <input
@@ -260,7 +260,7 @@ export default function AccessTab() {
                     <td className="text-xs opacity-60">
                       {r.processedAt
                         ? new Date(r.processedAt).toLocaleDateString('fr-FR')
-                        : '—'}
+                        : '---'}
                     </td>
                   </tr>
                 ))}
