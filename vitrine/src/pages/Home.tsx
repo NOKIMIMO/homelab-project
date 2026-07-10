@@ -1,51 +1,217 @@
-import type { ReactNode } from 'react'
+import type { ComponentType, ReactNode } from 'react'
 import { Link } from 'react-router'
-import { Terminal, BookOpen } from 'lucide-react'
+import {
+  Terminal,
+  BookOpen,
+  Package,
+  Database,
+  LayoutTemplate,
+  Activity,
+  ShieldCheck,
+  Sliders,
+  Image,
+  BookOpenText,
+  CloudSun,
+  ScrollText,
+  Users,
+  Settings2,
+  ArrowRight,
+} from 'lucide-react'
 import { useLanguage, type Lang } from '../i18n/LanguageContext'
+
+const STACK = [
+  { name: 'Kotlin', color: '#f59e0b' },
+  { name: 'Spring Boot', color: '#6366f1' },
+  { name: 'React', color: '#38bdf8' },
+  { name: 'TypeScript', color: '#38bdf8' },
+  { name: 'Vite', color: '#22d3ee' },
+  { name: 'DaisyUI', color: '#a78bfa' },
+  { name: 'JWT Auth', color: '#22c55e' },
+]
+
+const FLOW = ['UI JSON', 'ComponentRenderer', 'POST /api/{id}/{fn}', 'AppletController', 'ActionFactory', 'SQL / API']
+
+type Feature = { icon: ComponentType<{ size?: number; className?: string }>; title: string; body: string }
+type Step = { title: string; body: ReactNode }
+type ArchItem = { name: string; desc: string; color: string }
+type ModuleCard = { icon: ComponentType<{ size?: number; className?: string }>; name: string; body: string; tags: string[] }
+type OpsCard = { icon: ComponentType<{ size?: number; className?: string }>; title: string; body: string }
 
 const TEXT: Record<
   Lang,
   {
-    tagline: (manifest: string) => ReactNode
+    badge: string
+    heroLead: string
+    heroHighlight: string
+    heroSub: string
     quickstart: string
     docs: string
-    cards: { title: string; body: string }[]
+    featuresLabel: string
+    featuresTitle: string
+    featuresSub: string
+    features: Feature[]
+    howLabel: string
+    howTitle: string
+    howSub: string
+    steps: Step[]
+    archLabel: string
+    archTitle: string
+    archSub: string
+    backendTitle: string
+    backend: ArchItem[]
+    frontendTitle: string
+    frontend: ArchItem[]
+    flowTitle: string
+    modulesLabel: string
+    modulesTitle: string
+    modulesSub: string
+    modules: ModuleCard[]
+    opsLabel: string
+    opsTitle: string
+    opsSub: string
+    ops: OpsCard[]
   }
 > = {
   fr: {
-    tagline: (manifest) => (
-      <>
-        Orchestrateur de services auto-hébergés. Un cœur (authentification,
-        stockage, supervision) et des modules indépendants pilotés par un
-        simple <code className="text-accent">{manifest}</code>.
-      </>
-    ),
+    badge: 'Plateforme self-hosted',
+    heroLead: 'Ton homelab,',
+    heroHighlight: 'entièrement modulaire',
+    heroSub:
+      "Une plateforme unifiée pour gérer tes services self-hosted. Ajoute des modules sans toucher au code backend — juste du JSON et du XML.",
     quickstart: 'Démarrage rapide',
-    docs: 'Documentation',
-    cards: [
-      { title: 'Core', body: "Kotlin / Spring Boot — authentification, scan des modules, stockage de fichiers, supervision." },
-      { title: 'Modules', body: 'Dossiers indépendants (manifest + schéma + UI) scannés au démarrage, sans recompilation du core.' },
-      { title: 'Frontend', body: 'React / TypeScript / Vite — dashboard, gestion des modules, administration.' },
-      { title: 'SDK', body: "Types Kotlin partagés pour écrire la logique métier d'un module (schéma, relations, filtres, actions)." },
+    docs: 'Créer un module',
+    featuresLabel: 'Fonctionnalités',
+    featuresTitle: "Tout ce dont tu as besoin, rien de superflu",
+    featuresSub: "Le cœur gère l'infrastructure. Toi tu déclares ce que tu veux faire.",
+    features: [
+      { icon: Package, title: 'Système de modules', body: "Chaque module est un dossier avec un manifest.json. Le backend le découvre, crée sa base de données et l'expose automatiquement." },
+      { icon: Database, title: 'Base de données auto-générée', body: 'Déclare tes colonnes dans un fichier XML — le backend génère la table SQL, les contraintes et les relations sans aucun ORM à configurer.' },
+      { icon: LayoutTemplate, title: 'UI déclarative', body: 'Ton interface est un fichier JSON. Composants prêts à l’emploi : listes, formulaires, upload, galerie, modale — aucun JSX à écrire.' },
+      { icon: Activity, title: 'Télémétrie système', body: 'CPU, RAM, stockage et uptime en temps réel via OSHI, exposés par le cœur au dashboard.' },
+      { icon: ShieldCheck, title: 'Auth JWT intégrée', body: "Inscription soumise à validation admin, login par token JWT. Panel d'administration dédié." },
+      { icon: Sliders, title: 'Paramètres par module', body: 'Chaque module peut exposer des paramètres configurables depuis l’UI (clés API, URLs, secrets masqués) sans redémarrage.' },
+    ],
+    howLabel: 'Fonctionnement',
+    howTitle: 'Zéro code pour un nouveau module',
+    howSub: "Du dossier vide à un module fonctionnel en quelques fichiers texte.",
+    steps: [
+      { title: 'Créer le dossier', body: <>Un dossier dans <code>HOMELAB_MODULES_SCAN_PATH</code>. Le nom devient l'ID du module.</> },
+      { title: 'Déclarer le manifest', body: <>Un <code>manifest.json</code> qui liste les fonctions, leurs types d'actions et les fichiers XML associés.</> },
+      { title: 'Définir le schéma XML', body: 'Le backend génère automatiquement les tables SQL à partir des colonnes déclarées. Contraintes, types, relations inclus.' },
+      { title: "Écrire l'UI en JSON", body: 'Liste les composants visuels, lie les bindings aux fonctions, définit le state et les actions chaînées.' },
+      { title: 'Redémarrer le backend', body: 'Le module apparaît dans le dashboard. Démarrage, arrêt, paramètres — tout depuis l’UI.' },
+    ],
+    archLabel: 'Architecture',
+    archTitle: 'Stack technique',
+    archSub: 'Backend API REST, frontend SPA découplé. Communication via proxy Vite en développement.',
+    backendTitle: 'Backend — Kotlin / Spring Boot',
+    backend: [
+      { name: 'Kotlin 2.1 + Spring Boot', desc: 'Framework principal', color: '#f59e0b' },
+      { name: 'JWT Auth', desc: 'Filtre de sécurité', color: '#3b82f6' },
+      { name: 'JDBC / SQL', desc: 'Base par module', color: '#22c55e' },
+      { name: 'OSHI', desc: 'Télémétrie système', color: '#22d3ee' },
+      { name: 'SDK interne', desc: 'Interfaces modules', color: '#a78bfa' },
+      { name: 'HttpClient (Java 11)', desc: 'APIs externes', color: '#f87171' },
+    ],
+    frontendTitle: 'Frontend — React / TypeScript',
+    frontend: [
+      { name: 'React 19 + Vite', desc: 'SPA + bundler', color: '#3b82f6' },
+      { name: 'TypeScript', desc: 'Typage strict', color: '#22d3ee' },
+      { name: 'DaisyUI + Tailwind', desc: 'Thème night', color: '#a78bfa' },
+      { name: 'React Router v7', desc: 'Navigation SPA', color: '#22c55e' },
+      { name: 'ComponentRenderer', desc: 'Moteur UI JSON', color: '#f59e0b' },
+      { name: 'Lucide Icons', desc: 'Icônes SVG', color: '#f87171' },
+    ],
+    flowTitle: "Flux d'un appel de module",
+    modulesLabel: 'Modules inclus',
+    modulesTitle: 'Prêts à l’emploi',
+    modulesSub: 'Trois modules de démonstration illustrant les capacités de la plateforme.',
+    modules: [
+      { icon: Image, name: 'Photos', body: 'Upload, stockage et visualisation de photos.', tags: ['UPLOAD_FILE', 'GET_FILE', 'LIST', 'DELETE'] },
+      { icon: BookOpenText, name: 'Reader', body: 'Liseuse photo organisée en séries et chapitres, dépendante du module Photos.', tags: ['dépendance', 'CREATE', 'READ', 'LIST'] },
+      { icon: CloudSun, name: 'Météo', body: 'Appel OpenWeatherMap, cache des résultats en base. Clé API configurable.', tags: ['FETCH_EXTERNAL', 'params.json', 'LIST'] },
+    ],
+    opsLabel: 'Administration',
+    opsTitle: "Panel d'administration",
+    opsSub: 'Un espace dédié aux opérations sensibles, accessible uniquement aux admins.',
+    ops: [
+      { icon: ScrollText, title: 'Logs en direct', body: 'Consultation des logs applicatifs en temps réel depuis le panel.' },
+      { icon: Users, title: 'Gestion des accès', body: "Liste des utilisateurs, validation des inscriptions en attente, révocation de comptes." },
+      { icon: Settings2, title: 'Paramètres globaux', body: "Configuration générale de l'application." },
     ],
   },
   en: {
-    tagline: (manifest) => (
-      <>
-        Self-hosted service orchestrator. A core (authentication, storage,
-        monitoring) and independent modules driven by a plain{' '}
-        <code className="text-accent">{manifest}</code>.
-      </>
-    ),
+    badge: 'Self-hosted platform',
+    heroLead: 'Your homelab,',
+    heroHighlight: 'fully modular',
+    heroSub:
+      'A unified platform to manage your self-hosted services. Add modules without touching backend code — just JSON and XML.',
     quickstart: 'Quickstart',
-    docs: 'Documentation',
-    cards: [
-      { title: 'Core', body: 'Kotlin / Spring Boot — authentication, module scanning, file storage, monitoring.' },
-      { title: 'Modules', body: 'Independent folders (manifest + schema + UI) scanned at startup, no core recompilation needed.' },
-      { title: 'Frontend', body: 'React / TypeScript / Vite — dashboard, module management, administration.' },
-      { title: 'SDK', body: "Shared Kotlin types for writing a module's backend logic (schema, relations, filters, actions)." },
+    docs: 'Create a module',
+    featuresLabel: 'Features',
+    featuresTitle: 'Everything you need, nothing you don’t',
+    featuresSub: 'The core handles the infrastructure. You declare what you want to do.',
+    features: [
+      { icon: Package, title: 'Module system', body: "Each module is a folder with a manifest.json. The backend discovers it, creates its database and exposes it automatically." },
+      { icon: Database, title: 'Auto-generated database', body: 'Declare your columns in an XML file — the backend generates the SQL table, constraints and relations, no ORM to configure.' },
+      { icon: LayoutTemplate, title: 'Declarative UI', body: 'Your interface is a JSON file. Ready-made components: lists, forms, upload, gallery, modal — no JSX to write.' },
+      { icon: Activity, title: 'System telemetry', body: 'CPU, RAM, storage and uptime in real time via OSHI, exposed by the core to the dashboard.' },
+      { icon: ShieldCheck, title: 'Built-in JWT auth', body: 'Sign-up subject to admin approval, JWT token login. Dedicated administration panel.' },
+      { icon: Sliders, title: 'Per-module settings', body: 'Each module can expose configurable parameters from the UI (API keys, URLs, masked secrets) with no restart.' },
+    ],
+    howLabel: 'How it works',
+    howTitle: 'Zero code for a new module',
+    howSub: 'From an empty folder to a working module in a handful of text files.',
+    steps: [
+      { title: 'Create the folder', body: <>A folder inside <code>HOMELAB_MODULES_SCAN_PATH</code>. Its name becomes the module ID.</> },
+      { title: 'Declare the manifest', body: <>A <code>manifest.json</code> listing the functions, their action types and the associated XML files.</> },
+      { title: 'Define the XML schema', body: 'The backend automatically generates the SQL tables from the declared columns — constraints, types, relations included.' },
+      { title: 'Write the UI in JSON', body: 'List the visual components, bind them to functions, define the state and chained actions.' },
+      { title: 'Restart the backend', body: 'The module appears in the dashboard. Start, stop, settings — all from the UI.' },
+    ],
+    archLabel: 'Architecture',
+    archTitle: 'Tech stack',
+    archSub: 'REST API backend, decoupled SPA frontend. Communication through a Vite proxy in development.',
+    backendTitle: 'Backend — Kotlin / Spring Boot',
+    backend: [
+      { name: 'Kotlin 2.1 + Spring Boot', desc: 'Main framework', color: '#f59e0b' },
+      { name: 'JWT Auth', desc: 'Security filter', color: '#3b82f6' },
+      { name: 'JDBC / SQL', desc: 'Per-module database', color: '#22c55e' },
+      { name: 'OSHI', desc: 'System telemetry', color: '#22d3ee' },
+      { name: 'Internal SDK', desc: 'Module interfaces', color: '#a78bfa' },
+      { name: 'HttpClient (Java 11)', desc: 'External APIs', color: '#f87171' },
+    ],
+    frontendTitle: 'Frontend — React / TypeScript',
+    frontend: [
+      { name: 'React 19 + Vite', desc: 'SPA + bundler', color: '#3b82f6' },
+      { name: 'TypeScript', desc: 'Strict typing', color: '#22d3ee' },
+      { name: 'DaisyUI + Tailwind', desc: 'Night theme', color: '#a78bfa' },
+      { name: 'React Router v7', desc: 'SPA navigation', color: '#22c55e' },
+      { name: 'ComponentRenderer', desc: 'JSON UI engine', color: '#f59e0b' },
+      { name: 'Lucide Icons', desc: 'SVG icons', color: '#f87171' },
+    ],
+    flowTitle: 'Flow of a module call',
+    modulesLabel: 'Included modules',
+    modulesTitle: 'Ready to use',
+    modulesSub: 'Three demo modules illustrating the platform’s capabilities.',
+    modules: [
+      { icon: Image, name: 'Photos', body: 'Upload, storage and viewing of photos.', tags: ['UPLOAD_FILE', 'GET_FILE', 'LIST', 'DELETE'] },
+      { icon: BookOpenText, name: 'Reader', body: 'Photo reader organized into series and chapters, depends on the Photos module.', tags: ['dependency', 'CREATE', 'READ', 'LIST'] },
+      { icon: CloudSun, name: 'Weather', body: 'Calls OpenWeatherMap, caches results in the database. Configurable API key.', tags: ['FETCH_EXTERNAL', 'params.json', 'LIST'] },
+    ],
+    opsLabel: 'Administration',
+    opsTitle: 'Admin panel',
+    opsSub: 'A dedicated space for sensitive operations, accessible to admins only.',
+    ops: [
+      { icon: ScrollText, title: 'Live logs', body: 'Real-time application logs from the panel.' },
+      { icon: Users, title: 'Access management', body: 'User list, approval of pending sign-ups, account revocation.' },
+      { icon: Settings2, title: 'Global settings', body: 'General application configuration.' },
     ],
   },
+}
+
+function SectionLabel({ children }: { children: string }) {
+  return <p className="text-primary text-xs font-bold uppercase tracking-widest mb-3">{children}</p>
 }
 
 function Home() {
@@ -54,10 +220,21 @@ function Home() {
 
   return (
     <div>
-      <h1 className="text-5xl font-black mb-5">Homelab</h1>
-      <p className="text-xl text-base-content/70 max-w-2xl leading-relaxed">
-        {t.tagline('manifest.json')}
-      </p>
+      {/* Hero */}
+      <div className="badge badge-outline gap-2 py-3 px-4 mb-6">
+        <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
+        <span className="text-xs font-semibold uppercase tracking-wide">{t.badge}</span>
+      </div>
+
+      <h1 className="text-5xl sm:text-6xl font-black leading-[1.1] tracking-tight mb-6">
+        {t.heroLead}
+        <br />
+        <span className="bg-linear-to-r from-primary to-accent bg-clip-text text-transparent">
+          {t.heroHighlight}
+        </span>
+      </h1>
+
+      <p className="text-xl text-base-content/70 max-w-2xl leading-relaxed">{t.heroSub}</p>
 
       <div className="flex flex-wrap gap-3 mt-8">
         <Link to="/quickstart" className="btn btn-primary gap-2">
@@ -70,14 +247,144 @@ function Home() {
         </Link>
       </div>
 
-      <div className="divider my-10" />
+      <div className="flex flex-wrap gap-2.5 mt-10">
+        {STACK.map((s) => (
+          <span key={s.name} className="badge badge-lg bg-base-100 border-base-content/10 gap-2 font-medium">
+            <span className="w-1.5 h-1.5 rounded-full" style={{ background: s.color }} />
+            {s.name}
+          </span>
+        ))}
+      </div>
+
+      <div className="divider my-16" />
+
+      {/* Features */}
+      <SectionLabel>{t.featuresLabel}</SectionLabel>
+      <h2 className="text-3xl font-bold mb-2">{t.featuresTitle}</h2>
+      <p className="text-base-content/60 max-w-xl mb-8">{t.featuresSub}</p>
+
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {t.features.map((f) => (
+          <div key={f.title} className="card bg-base-100 border border-base-content/10">
+            <div className="card-body gap-2">
+              <f.icon size={22} className="text-primary mb-1" />
+              <h3 className="card-title text-base">{f.title}</h3>
+              <p className="text-sm text-base-content/60 leading-relaxed">{f.body}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="divider my-16" />
+
+      {/* How it works */}
+      <SectionLabel>{t.howLabel}</SectionLabel>
+      <h2 className="text-3xl font-bold mb-2">{t.howTitle}</h2>
+      <p className="text-base-content/60 max-w-xl mb-8">{t.howSub}</p>
+
+      <ol className="flex flex-col">
+        {t.steps.map((s, i) => (
+          <li key={s.title} className="flex gap-4 pb-8">
+            <div className="w-9 h-9 rounded-full border-2 border-primary text-primary flex items-center justify-center text-sm font-bold shrink-0">
+              {i + 1}
+            </div>
+            <div className="pt-1">
+              <h3 className="font-semibold mb-1">{s.title}</h3>
+              <p className="text-sm text-base-content/60">{s.body}</p>
+            </div>
+          </li>
+        ))}
+      </ol>
+
+      <div className="divider my-16" />
+
+      {/* Architecture */}
+      <SectionLabel>{t.archLabel}</SectionLabel>
+      <h2 className="text-3xl font-bold mb-2">{t.archTitle}</h2>
+      <p className="text-base-content/60 max-w-xl mb-8">{t.archSub}</p>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        {t.cards.map((card) => (
-          <div key={card.title} className="card bg-base-100 border border-base-content/10">
-            <div className="card-body">
-              <h3 className="card-title text-lg">{card.title}</h3>
-              <p className="text-base text-base-content/60">{card.body}</p>
+        <div className="card bg-base-100 border border-base-content/10">
+          <div className="card-body">
+            <h3 className="text-xs font-bold uppercase tracking-wide text-base-content/60 mb-2">{t.backendTitle}</h3>
+            {t.backend.map((row) => (
+              <div key={row.name} className="flex items-center gap-3 py-2.5 border-b border-base-content/10 last:border-0">
+                <span className="w-2 h-2 rounded-full shrink-0" style={{ background: row.color }} />
+                <span className="text-sm font-medium">{row.name}</span>
+                <span className="text-xs text-base-content/50 ml-auto text-right">{row.desc}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="card bg-base-100 border border-base-content/10">
+          <div className="card-body">
+            <h3 className="text-xs font-bold uppercase tracking-wide text-base-content/60 mb-2">{t.frontendTitle}</h3>
+            {t.frontend.map((row) => (
+              <div key={row.name} className="flex items-center gap-3 py-2.5 border-b border-base-content/10 last:border-0">
+                <span className="w-2 h-2 rounded-full shrink-0" style={{ background: row.color }} />
+                <span className="text-sm font-medium">{row.name}</span>
+                <span className="text-xs text-base-content/50 ml-auto text-right">{row.desc}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="card bg-base-100 border border-base-content/10 mt-4">
+        <div className="card-body">
+          <h3 className="text-xs font-bold uppercase tracking-wide text-base-content/60 mb-3">{t.flowTitle}</h3>
+          <div className="flex flex-wrap items-center gap-2">
+            {FLOW.map((step, i) => (
+              <span key={step} className="flex items-center gap-2">
+                <span className="badge badge-ghost font-mono text-xs py-3">{step}</span>
+                {i < FLOW.length - 1 && <ArrowRight size={14} className="text-base-content/30" />}
+              </span>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="divider my-16" />
+
+      {/* Modules showcase */}
+      <SectionLabel>{t.modulesLabel}</SectionLabel>
+      <h2 className="text-3xl font-bold mb-2">{t.modulesTitle}</h2>
+      <p className="text-base-content/60 max-w-xl mb-8">{t.modulesSub}</p>
+
+      <div className="grid gap-4 sm:grid-cols-3">
+        {t.modules.map((m) => (
+          <div key={m.name} className="card bg-base-100 border border-base-content/10">
+            <div className="card-body gap-2">
+              <m.icon size={22} className="text-accent mb-1" />
+              <h3 className="card-title text-base">{m.name}</h3>
+              <p className="text-sm text-base-content/60 leading-relaxed">{m.body}</p>
+              <div className="flex flex-wrap gap-1.5 mt-2">
+                {m.tags.map((tag) => (
+                  <span key={tag} className="badge badge-sm badge-ghost font-mono">
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="divider my-16" />
+
+      {/* Admin / ops */}
+      <SectionLabel>{t.opsLabel}</SectionLabel>
+      <h2 className="text-3xl font-bold mb-2">{t.opsTitle}</h2>
+      <p className="text-base-content/60 max-w-xl mb-8">{t.opsSub}</p>
+
+      <div className="grid gap-4 sm:grid-cols-3">
+        {t.ops.map((o) => (
+          <div key={o.title} className="card bg-base-100 border border-base-content/10">
+            <div className="card-body gap-2">
+              <o.icon size={20} className="text-secondary mb-1" />
+              <h3 className="card-title text-sm">{o.title}</h3>
+              <p className="text-sm text-base-content/60 leading-relaxed">{o.body}</p>
             </div>
           </div>
         ))}
