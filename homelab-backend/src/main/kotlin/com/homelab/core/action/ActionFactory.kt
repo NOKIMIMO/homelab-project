@@ -19,7 +19,9 @@ class ActionFactory(
         ActionsEnum.CREATE.name to SimpleCreateAction(),
         ActionsEnum.LIST.name to ListAction(),
         ActionsEnum.READ.name to ReadAction(),
-        ActionsEnum.FETCH_EXTERNAL.name to FetchExternalAction(globalParametersService)
+        ActionsEnum.UPDATE.name to UpdateAction(),
+        ActionsEnum.FETCH_EXTERNAL.name to FetchExternalAction(globalParametersService),
+        ActionsEnum.FETCH_EXTERNAL_GENERIC.name to GenericFetchExternalAction(globalParametersService)
     )
 
     fun resolve(typeName: String): Action? {

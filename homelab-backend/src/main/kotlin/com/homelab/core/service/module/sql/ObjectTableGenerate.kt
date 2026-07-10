@@ -53,19 +53,53 @@ class ObjectTableGenerate {
             )
         """.trimIndent()
         }
+
+        // Columns added after initial table creation must be nullable: Postgres rejects
+        // ADD COLUMN ... NOT NULL on a table that may already contain rows, and ColumnDefinition
+        // has no default-value concept to work around that.
+        fun buildAddColumnSql(
+            schemaName: String,
+            tableName: String,
+            column: ColumnDefinition
+        ): String {
+            require(column.nullable) { "Columns added after table creation must be nullable" }
+            return """ALTER TABLE "$schemaName"."$tableName" ADD COLUMN IF NOT EXISTS ${buildColumnSql(column)}"""
+        }
+
+        fun buildRenameColumnSql(schemaName: String, tableName: String, oldName: String, newName: String): String {
+            val old = safeSqlName(oldName)
+            val new = safeSqlName(newName)
+            return """ALTER TABLE "$schemaName"."$tableName" RENAME COLUMN "$old" TO "$new""""
+        }
+
+        // Uses Postgres' own USING cast — if the existing data can't be cast to the new type,
+        // this fails loudly (transaction rolls back) rather than silently truncating/losing data.
+        fun buildRetypeColumnSql(schemaName: String, tableName: String, columnName: String, newType: ColumnTyping): String {
+            val col = safeSqlName(columnName)
+            val sqlType = sqlTypeFor(newType)
+            return """ALTER TABLE "$schemaName"."$tableName" ALTER COLUMN "$col" TYPE $sqlType USING "$col"::$sqlType"""
+        }
+
+        fun buildRenameTableSql(schemaName: String, oldTableName: String, newTableName: String): String {
+            val old = safeSqlName(oldTableName)
+            val new = safeSqlName(newTableName)
+            return """ALTER TABLE "$schemaName"."$old" RENAME TO "$new""""
+        }
+
+        fun sqlTypeFor(type: ColumnTyping): String = when (type) {
+            ColumnTyping.string  -> "VARCHAR(1028)"
+            ColumnTyping.int-> "INTEGER"
+            ColumnTyping.long -> "BIGINT"
+            ColumnTyping.boolean -> "BOOLEAN"
+            ColumnTyping.date -> "DATE"
+            ColumnTyping.datetime -> "TIMESTAMP"
+            else -> error("Unsupported column type: $type")
+        }
+
         // Good
         private fun buildColumnSql(column: ColumnDefinition): String {
             val columnName = safeSqlName(column.name)
-
-            val sqlType = when (column.type) {
-                ColumnTyping.string  -> "VARCHAR(1028)"
-                ColumnTyping.int-> "INTEGER"
-                ColumnTyping.long -> "BIGINT"
-                ColumnTyping.boolean -> "BOOLEAN"
-                ColumnTyping.date -> "DATE"
-                ColumnTyping.datetime -> "TIMESTAMP"
-                else -> error("Unsupported column type: ${column.type}")
-            }
+            val sqlType = sqlTypeFor(column.type)
 
             val nullable = if (column.nullable) "" else " NOT NULL"
             val unique = if (column.unique) " UNIQUE" else ""

@@ -1,0 +1,14 @@
+@import "tailwindcss";
+@plugin "daisyui";
+
+body,
+html {
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+}
+
+code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.9em;
+}

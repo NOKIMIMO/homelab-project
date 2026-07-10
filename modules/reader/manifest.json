@@ -148,6 +148,23 @@
                     "actUponObject": "groups.xml"
                 },
                 {
+                    "name": "getGroupContentOfGroup",
+                    "description": "Obtenir le detail d'un contenu de groupe spécifique.",
+                    "parameters": [
+                        {
+                            "name": "groups_id",
+                            "type": "EQUAL",
+                            "description": "Id du group de contenu à obtenir (eager loading des images associées)"
+                        }
+                    ],
+                    "logic": [
+                        {
+                            "type": "READ"
+                        }
+                    ],
+                    "actUponObject": "groupContent.xml"
+                },
+                {
                     "name": "getGroupContent",
                     "description": "Obtenir le detail d'un contenu de groupe spécifique.",
                     "parameters": [

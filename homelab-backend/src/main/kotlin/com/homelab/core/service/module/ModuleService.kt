@@ -6,6 +6,7 @@ import com.homelab.core.api.dto.ModuleDto
 import com.homelab.core.api.dto.ModulePageResponse
 import com.homelab.core.config.HomelabConfig
 import com.homelab.core.config.ModuleConfigMemory
+import com.homelab.core.config.ObjectDefinitionMemory
 import com.homelab.sdk.helper.AppLogger
 import com.homelab.core.model.module.Module
 import com.homelab.core.model.module.ModuleStatus
@@ -32,7 +33,8 @@ class ModuleService(
     private val actionFactory: ActionFactory,
     private val moduleConfigMemory: ModuleConfigMemory,
     private val moduleParamsService: ModuleParamsService,
-    private val objectMapper: ObjectMapper
+    private val objectMapper: ObjectMapper,
+    private val objectDefinitionMemory: ObjectDefinitionMemory
 ) {
     private val log = AppLogger.loggerFor(ModuleService::class)
 
@@ -262,6 +264,16 @@ class ModuleService(
         log.info("Stopping module $id")
         module.stop()
         return true
+    }
+
+    // Used by the module builder when deleting a generated module: removes it from all
+    // in-memory tracking so it stops appearing on the dashboard without a backend restart.
+    fun unregisterModule(id: String) {
+        modules[id]?.stop()
+        modules.remove(id)
+        moduleConfigs.remove(id)
+        moduleConfigMemory.remove(id)
+        objectDefinitionMemory.removeForModule(id)
     }
 
     //TODO:
