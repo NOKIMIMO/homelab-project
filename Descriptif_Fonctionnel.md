@@ -1,143 +1,110 @@
-# Descriptif Fonctionnel - Homelab
+# Descriptif Fonctionnel --- Homelab
 
 ## 1. Introduction
-**Homelab** est une solution d'orchestration et de centralisation de services auto-hébergés. Conçu pour simplifier l'accès et la gestion d'un écosystème de serveurs personnels (PLEX, Pi-hole, stockages, lecteurs de mangas, etc.), Homelab agit comme une couche d'abstraction (Wrapper + Proxy) offrant une interface unifiée, sécurisée et monitorée.
 
-L'application ne se contente pas d'agréger des liens ; elle encapsule les services pour leur offrir un cadre technique commun (Authentification, Stockage, Monitoring).
+**Homelab** est une plateforme d'orchestration de services auto-hébergés, entièrement modulaire. Un **cœur** (Kotlin / Spring Boot) gère l'authentification, le stockage, la base de données et la télémétrie ; des **modules** indépendants --- de simples dossiers déclarés par un `manifest.json` --- viennent s'y greffer sans jamais toucher au code du cœur.
 
-TL/DR : **Homelab** permet aux enthousiaste de l'auto-hébergement de centraliser, sécuriser et monitorer leurs services depuis une interface unique et simplifier.
----
-
-## 2. Objectifs et Vision
-L'objectif principal est de décharger l'utilisateur des complexités liées à l'exposition de multiples ports et services, tout en apportant des fonctionnalités transverses :
-- **Centralisation** : Un seul point d'entrée (endpoint unique) pour l'ensemble des outils du serveur.
-- **Sécurité & Sandboxing** : Isolation des services via Docker et gestion centralisée des droits d'accès.
-- **Observabilité** : Monitoring en temps réel de l'état des services et des ressources de la machine hôte.
-- **Extensibilité** : Facilité d'ajout de nouveaux modules grâce à un SDK standardisé. (Auth & Storage handlers)
+TL;DR : Homelab permet de créer et d'exposer de nouvelles fonctionnalités (stockage de photos, lecteur, appel à une API météo, etc.) en écrivant du JSON/XML, pas du Kotlin.
 
 ---
 
-## 3. Architecture & Services Core
+## 2. Vision et objectifs
 
-### 3.1 Proxy & Routage (ProxyService)
-Le coeur de l'application (Homelab Core) sert de passerelle intelligente :
-- **Routage dynamique** : Les requêtes vers `/api/{module}/` sont redirigées vers le module correspondant.
-- **Injection de rendu** : Le Core gère l'enveloppe applicative (sidebar, header) tandis que le module s'occupe de son propre contenu métier.
-
-### 3.2 Gestion des Modules (ModulesService)
-Service responsable du cycle de vie des modules :
-- Enregistrement des services actifs.
-- Configuration des routes et des permissions associées à chaque application tierce.
-
-### 3.3 Authentification Centralisée (AuthService)
-Homelab propose un système de sécurité partagé :
-- **SDK d'Auth** : Les modules utilisent le `homelab-auth-sdk` (TBD) pour déléguer l'authentification au Core.
-- **Sécurisation des APIs** : Validation des jetons JWT pour l'ensemble des appels inter-services.
-- **Modularité**: Des niveaux de sécurité seront présents a la demande (ex: connexion par clé, par mdp + user ou encore par code d'accés permanent / temporaire)
-
-### 3.4 Couche de Stockage (StorageService)
-Abstraction de la manipulation de fichiers sur le serveur :
-- **Standardisation** : Utilisation du `homelab-storage-sdk` (TBD) pour garantir une manipulation sécurisée des fichiers.
-- **Indépendance** : Le module ne communique pas directement avec le système de fichiers hôte, mais passe par l'interface du Core.
-- **Sécurité** : Le module doit excplicitement annoncé les répertoires qu'il souhaite vouloir avoir accés. Le core doit valider ces répertoires et les rendre accessibles au module.
-
-### 3.5 Monitoring & Résilience
-- **Télémétrie Système** : Visualisation de l'utilisation CPU/RAM (type `htop`) et de l'espace disque.
-- **Health Checks** : Monitoring "Keep Alive" avec mécanisme de **Circuit Breaker** pour isoler les modules tombés ou instables.
+- **Zéro code pour un module standard** : un module se décrit avec un `manifest.json` + un schéma XML (+ une page UI JSON optionnelle) --- aucune recompilation du cœur.
+- **Base de données auto-générée** : les colonnes déclarées dans le XML produisent directement la table SQL, ses contraintes et ses relations.
+- **Sécurité centralisée** : authentification JWT gérée par le cœur, inscriptions soumises à validation admin.
+- **Extensibilité réelle via SDK** : pour la logique qui dépasse les actions standard, `homelab-sdk` (Kotlin) expose les types nécessaires (schéma, relations, filtres, actions, paramètres).
 
 ---
 
-## 4. Écosystème des Modules
-Les modules sont des briques indépendantes venant se greffer sur le Core.
+## 3. Architecture
 
-### 4.1 Modules prioritaires (En cours/POC)
-- **Photos Storage** : Gestionnaire de photothèque avec préservation des métadonnées originales (EXIF).
-
-### 4.2 Modules planifiés
-- **File Storage** : Explorateur de fichiers universel (possible fusion avec le module Photo).
-- **Média Center** : Bibliothèque vidéo avec lecteur intégré et liseuse de documents/mangas.
-- **DB Explorer** : Interface de requêtage SQL web (inspirée de SnowFlake ou DataGrip).
-- **Auto Torrent / ETL** : Flux automatisés de synchronisation de fichiers ou de téléchargements programmables.
+- **Cœur (`homelab-backend`)** : Kotlin 2.1 / Spring Boot --- scan des modules, auth JWT, génération de schéma SQL par module, télémétrie système (OSHI), API REST.
+- **Frontend (`homelab-frontend`)** : React 19 / TypeScript / Vite, DaisyUI + Tailwind (thème *night*), React Router v7.
+- **SDK (`homelab-sdk`)** : bibliothèque Kotlin partagée entre le cœur et la logique custom d'un module (pas encore publiée sur un repository public).
+- **Vitrine (`vitrine`)** : site de présentation et documentation du projet, déployé séparément (Cloudflare Workers).
 
 ---
-## 5. A qui s'adresse ce projet ?
-Enthousiaste de l'auto-hébergement, Développeur, Sysadmin. 
 
-### 5.1 Acteurs sur l'application
-- Utilisateur
-- Développeur
-- Sysadmin
-- Invité
+## 4. Créer un module
 
----
-## 6. Fonctionnalités
-**Auth**
-- Se connecter (3 niveaux : clé, mdp + user, code d'accés permanent / temporaire)
-- Se déconnecter
-**Dashboard**
-- Voir les services disponibles
-- Voir leur état (up/down)
-**Gestion des modules**
-- Ajouter un module
-- Supprimer un module
-- Configurer un module
-- Run / Stop / Restart un module
-- Voir les logs d'un module
-**Monitoring**
-- Voir CPU / RAM
-- Voir l'espace disque
-- Voir l'état des services
+Deux façons de faire, décrites en détail dans `docs/MODULE_CREATION_GUIDE.md` et sur le site vitrine :
 
----
-## 7. Spécifications Techniques
-- **Backend** : Kotlin / Spring Boot (Gestion du multithreading et de la résilience).
-- **Frontend** : React / TypeScript / Vite (Interface moderne et réactive).
-- **Mobile** : React Native / TypeScript // Flutter (Application mobile pour l'accès nomade, en attente de maturité).
-- **Conteneurisation** : Docker & Docker Compose (Isolation et portabilité) / greffage possible de service en run déja existant (ex: Pi-hole, Plex, etc || maturité sur le sujet nécessaire).
-- **Communication** : API REST sécurisée.
+1. **Le créateur de module** --- une API réservée aux admins (`/api/admin/module-builder`, `ModuleBuilderService`) qui génère `manifest.json`, le schéma XML et une page UI à partir d'une simple description JSON (tables, colonnes, relations, contraintes).
+2. **Format manuel** --- écrire directement `manifest.json` (id, name, actions, dataObjects, page, `uIFormat`, dependencies, permissions) et le schéma XML (`<col>`, `<autoGenerated>`, `<linksTo>` pour les relations, `<constraints><uniqueTogether>` pour les contraintes composites).
+
+### Cardinalité des relations (`<linksTo>`)
+
+`one-to-one` · `one-to-many` · `many-to-one` · `many-to-many`, avec `cascadeDelete` / `cascadeUpdate` optionnels et relations inter-modules via `moduleName`.
+
+### Types d'actions backend (`logic[].type`)
+
+| Type | Comportement |
+|---|---|
+| `LIST` | Retourne toutes les lignes de la table |
+| `READ` | Retourne une ligne filtrée (`EQUAL`) |
+| `CREATE` | Insère une nouvelle ligne |
+| `DELETE` | Supprime la/les lignes filtrées |
+| `UPLOAD_FILE` | Upload un fichier binaire, crée une entrée |
+| `GET_FILE` | Retourne le fichier binaire d'une entrée |
+| `FETCH_EXTERNAL` | Appelle une API HTTP externe, upsert le résultat |
+
+Aucun de ces types standard ne nécessite de code Kotlin.
+
+### Interface utilisateur (`uIFormat`)
+
+- `JSON` --- page pilotée par un fichier JSON (bindings, state, composants prêts à l'emploi : Header, ActionBar, Button, List, Modal, ImageViewer…). **En cours de stabilisation (bêta).**
+- `STANDALONE` --- un frontend dédié qui appelle l'API du module directement (le cœur lui fournit une clé d'API).
+- `API` --- pas d'UI servie par le cœur (module API-only).
 
 ---
-## 8. Use Case
-### 8.1 Ajouter un module
-- L'admin ajoute le dossier du module dans {project.root}/module
-- Il configure le fichier homelab-module.json pour etre découvert par le core
-- Le core scanne le dossier module et ajoute les modules trouvés
-- Le module est maintenant disponible dans le dashboard
-- L'admin peut maintenant lancé le module
-### 8.1 Stopper un module
-- L'admin clique sur le bouton stop du module
-- Le module est arrêté
-### 8.2 Accéder à un module
-- L'utilisateur clique sur le module dans le dashboard
-- Il est redirigé vers l'interface du module
-### 8.3 Donner l'accés à l'application
-- L'admin vas dans les options
-- En fonction du niveau de sécurité activé, l'utilisateur devra soit donner son mail soit donner sa clé publique. 
-- L'admin ajoute l'utilisateur par le biais de connexion décidé.
-- Si mail, l'utilisateur reçoit un mail avec un lien de connexion ou un code d'accés temporaire.
-- Si clé publique, l'admin devra confirmer a l'utilisateur qu'il a bien ajouté sa clé publique.
-- L'utilisateur peut maintenant se connecter
 
-## 9. Parcours utilisateur
-- "Un utilisateur se connecte -> arrive sur un dashboard -> voit {Module} -> clique -> accède via proxy"
-- "Un admin se connecte ->arrive sur un dashboard -> voit {Module} non lancé -> clique pour le lancer -> le module est lancé -> clique -> accède via proxy"
+## 5. Authentification et administration
 
-## 10. Régle métier
-- Seul un admin peut ajouter un module
-- Un module doit déclarer ses accés
-- Un module sans healthcheck actif est désactivé
-- Un module doit déclarer ses informations
-- Un Utilisateur doit pouvoir accéder aux modules
-- Un utilisateur n'a pas besoin de voir les informations d'état du core
-- Un Admin doit pouvoir décider du systeme de connexion quand il le souhaite
-- Un admin doit pouvoir ajouter des connexions pour les utilisateurs 
-- Le core doit pouvoir donner les logs des modules dans le front
-- Le core doit pouvoir donner accés au terminal des différents modules si l'admin veut faire une action dessus
-- L'admin doit pouvoir faire une action des les terminaux des modules
+- Connexion par identifiant/mot de passe avec émission de JWT ; inscription soumise à validation d'un administrateur.
+- Panel d'administration : logs applicatifs en direct, gestion des accès (validation/révocation des comptes), paramètres globaux de l'application.
+- Chaque module peut aussi exposer ses propres paramètres configurables (`params.json` : clés API, URLs, secrets masqués) modifiables depuis l'UI sans redémarrage.
 
+---
 
-## Compléxité 
+## 6. Télémétrie
 
-L'application ce veut simple d'utilisation mais cache une complexité technique importante. En effet, le but est de pouvoir ajouter des modules sans toucher au code du core. Pour cela, il faut que le core soit capable de gérer les modules de manière dynamique. De plus le développement d'une application mobile pour l'accompagner est complexe. Un certains équilibre entre liberté de code et intégration est nécessaire et une maturité de conception et demande est nécessaire. 
+CPU, RAM, stockage et uptime en temps réel via la librairie **OSHI**, remontés par le cœur et affichés sur le dashboard.
 
-Pour l'instant le projet est en phase de POC et nous testons différentes approches pour trouver la meilleure solution. Le mobile est lui mit de côté le temps d'avoir une plus grande maturité sur son utilité dans le projet. 
+---
+
+## 7. Modules inclus (démonstration)
+
+| Module | Rôle | Actions |
+|---|---|---|
+| **Photos** | Upload, stockage et visualisation de photos | `UPLOAD_FILE`, `GET_FILE`, `LIST`, `DELETE` |
+| **Reader** | Liseuse photo organisée en séries et chapitres, dépend du module Photos | `CREATE`, `READ`, `LIST` |
+| **Météo** | Appel OpenWeatherMap, cache des résultats en base, clé API configurable | `FETCH_EXTERNAL`, `LIST` |
+
+---
+
+## 8. Déploiement
+
+- **Image Docker tout-en-un** (frontend + backend + Postgres), publiée sur GitHub Container Registry : `ghcr.io/nokimimo/homelab-project`. Publication automatique (GitHub Actions) à chaque merge sur `master`, versionnage sémantique déduit des messages de commit.
+- **Docker Compose** (`docker-compose.yml` / `docker-compose.dev.yml`) pour un déploiement multi-conteneurs classique ou du hot-reload en développement.
+
+---
+
+## 9. À qui s'adresse ce projet ?
+
+Enthousiastes de l'auto-hébergement, développeurs, sysadmins souhaitant exposer des fonctionnalités personnalisées sans maintenir une application complète par service.
+
+### Acteurs
+
+- **Utilisateur** : accède aux modules qui lui sont ouverts.
+- **Admin** : crée/gère les modules, valide les inscriptions, consulte les logs et la télémétrie.
+
+---
+
+## 10. Roadmap (non implémenté à ce jour)
+
+- Marketplace de plugins tiers avec sandboxing (capacités déclarées, accès FS/DB arbitré par le cœur).
+- Application mobile (React Native ou Flutter --- mise de côté en attendant une maturité suffisante du reste du projet).
+- Modules supplémentaires envisagés : explorateur de base de données (requêtage SQL web), bibliothèque vidéo, synchronisation/téléchargement automatisés.
+
+> Cette section liste des pistes envisagées, pas des fonctionnalités en cours de développement actif.

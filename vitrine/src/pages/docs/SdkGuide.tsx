@@ -31,7 +31,7 @@ const TEXT: Record<
     depsBadge: 'URL à venir',
     depsNote: (
       <>
-        Le SDK n'est pas encore publié sur un repository public — l'URL
+        Le SDK n'est pas encore publié sur un repository public --- l'URL
         ci-dessous sera mise à jour à la publication. En attendant, il est
         disponible en local via{' '}
         <code>./gradlew :homelab-sdk:publishLocal</code>.
@@ -47,26 +47,26 @@ const TEXT: Record<
       [
         'com.homelab.sdk.filter',
         <>
-          FilterOperator, FilterSpec — filtres de requête (<code>EQUAL</code>,{' '}
+          FilterOperator, FilterSpec --- filtres de requête (<code>EQUAL</code>,{' '}
           <code>GREATER</code>, <code>LESS</code>, <code>GREATER_EQUAL</code>,{' '}
           <code>LESS_EQUAL</code>)
         </>,
       ],
       [
         'com.homelab.sdk.module.action',
-        'ModuleActionDeclaration, ModuleActionParameter, ModuleActionParameterType — déclaration des fonctions exposées par un module',
+        'ModuleActionDeclaration, ModuleActionParameter, ModuleActionParameterType --- déclaration des fonctions exposées par un module',
       ],
       [
         'com.homelab.sdk.module.param',
-        'ModuleParamDeclaration, ModuleParamsConfig — paramètres configurables exposés dans le dashboard',
+        'ModuleParamDeclaration, ModuleParamsConfig --- paramètres configurables exposés dans le dashboard',
       ],
       [
         'com.homelab.sdk.plugin / context',
-        'LogicPlugin, PluginContext — point d’entrée pour la logique custom d’un module',
+        'LogicPlugin, PluginContext --- point d’entrée pour la logique custom d’un module',
       ],
       [
         'com.homelab.sdk.helper',
-        'AppLogger, Formater, PathRules, FilterHelpers, ValidationRules — utilitaires partagés',
+        'AppLogger, Formater, PathRules, FilterHelpers, ValidationRules --- utilitaires partagés',
       ],
     ],
   },
@@ -83,7 +83,7 @@ const TEXT: Record<
     depsBadge: 'URL coming soon',
     depsNote: (
       <>
-        The SDK isn't published on a public repository yet — the URL below
+        The SDK isn't published on a public repository yet --- the URL below
         will be updated once it is. In the meantime, it's available locally
         via <code>./gradlew :homelab-sdk:publishLocal</code>.
       </>
@@ -98,26 +98,26 @@ const TEXT: Record<
       [
         'com.homelab.sdk.filter',
         <>
-          FilterOperator, FilterSpec — query filters (<code>EQUAL</code>,{' '}
+          FilterOperator, FilterSpec --- query filters (<code>EQUAL</code>,{' '}
           <code>GREATER</code>, <code>LESS</code>, <code>GREATER_EQUAL</code>,{' '}
           <code>LESS_EQUAL</code>)
         </>,
       ],
       [
         'com.homelab.sdk.module.action',
-        'ModuleActionDeclaration, ModuleActionParameter, ModuleActionParameterType — declares the functions a module exposes',
+        'ModuleActionDeclaration, ModuleActionParameter, ModuleActionParameterType --- declares the functions a module exposes',
       ],
       [
         'com.homelab.sdk.module.param',
-        'ModuleParamDeclaration, ModuleParamsConfig — configurable parameters exposed on the dashboard',
+        'ModuleParamDeclaration, ModuleParamsConfig --- configurable parameters exposed on the dashboard',
       ],
       [
         'com.homelab.sdk.plugin / context',
-        'LogicPlugin, PluginContext — entry point for a module’s custom logic',
+        'LogicPlugin, PluginContext --- entry point for a module’s custom logic',
       ],
       [
         'com.homelab.sdk.helper',
-        'AppLogger, Formater, PathRules, FilterHelpers, ValidationRules — shared utilities',
+        'AppLogger, Formater, PathRules, FilterHelpers, ValidationRules --- shared utilities',
       ],
     ],
   },
