@@ -2,7 +2,7 @@ name: Deploy vitrine to Cloudflare Workers
 
 on:
   push:
-    branches: [master]
+    branches: [master, pipeline]
     paths:
       - 'vitrine/**'
       - '.github/workflows/deploy-vitrine.yml'
@@ -30,9 +30,22 @@ jobs:
         working-directory: vitrine
         run: npm run build
 
-      - name: Deploy to Cloudflare Pages
+      - name: Deploy preview version
+        if: github.ref == 'refs/heads/pipeline'
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy vitrine/dist --project-name=homelab-vitrine
+          workingDirectory: vitrine
+          wranglerVersion: '4'
+          command: versions upload
+
+      - name: Deploy to production
+        if: github.ref == 'refs/heads/master'
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: vitrine
+          wranglerVersion: '4'
+          command: deploy --commit-dirty=true
