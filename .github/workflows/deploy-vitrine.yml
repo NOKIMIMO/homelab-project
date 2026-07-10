@@ -48,4 +48,4 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           workingDirectory: vitrine
           wranglerVersion: '4'
-          command: deploy --commit-dirty=true
+          command: deploy
