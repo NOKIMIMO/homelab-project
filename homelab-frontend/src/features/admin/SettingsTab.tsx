@@ -1,7 +1,13 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Save, RefreshCw, FolderOpen, Puzzle, Home } from 'lucide-react';
+import { Save, RefreshCw, FolderOpen, Puzzle, Home, KeyRound } from 'lucide-react';
 import { useAuth } from '@auth/AuthContext';
 import { getApiUrl } from '@lib/api';
+import RecoveryCodeReveal from '@ui/RecoveryCodeReveal';
+
+interface RecoveryCodeStatus {
+  exists: boolean;
+  createdAt: string | null;
+}
 
 interface AppConfig {
   appRoot: string;
@@ -33,6 +39,9 @@ export default function SettingsTab() {
   const [saving, setSaving] = useState(false);
   const [savedOk, setSavedOk] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [recoveryStatus, setRecoveryStatus] = useState<RecoveryCodeStatus | null>(null);
+  const [regenerating, setRegenerating] = useState(false);
+  const [revealedCode, setRevealedCode] = useState<string | null>(null);
 
   const headers: HeadersInit = token
     ? { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
@@ -53,6 +62,27 @@ export default function SettingsTab() {
   }, [token]);
 
   useEffect(() => { void fetchConfig(); }, [fetchConfig]);
+
+  const fetchRecoveryStatus = useCallback(async () => {
+    const res = await fetch(getApiUrl('/api/admin/recovery-code/status'), { headers });
+    if (res.ok) setRecoveryStatus(await res.json() as RecoveryCodeStatus);
+  }, [token]);
+
+  useEffect(() => { void fetchRecoveryStatus(); }, [fetchRecoveryStatus]);
+
+  const regenerateRecoveryCode = async () => {
+    setRegenerating(true);
+    try {
+      const res = await fetch(getApiUrl('/api/admin/recovery-code/regenerate'), { method: 'POST', headers });
+      if (res.ok) {
+        const data = await res.json() as { code: string };
+        setRevealedCode(data.code);
+        void fetchRecoveryStatus();
+      }
+    } finally {
+      setRegenerating(false);
+    }
+  };
 
   const saveLogLevel = async () => {
     setSaving(true);
@@ -153,6 +183,40 @@ export default function SettingsTab() {
         </div>
       </div>
 
+      {/* ── Code de récupération ── */}
+      <div className="card bg-base-300">
+        <div className="card-body gap-4">
+          <h2 className="card-title text-base flex items-center gap-2">
+            <KeyRound size={16} className="opacity-60" /> Code de récupération
+          </h2>
+          <p className="text-xs text-base-content/50 -mt-2">
+            Ce code d'urgence permet de réinitialiser tous les comptes et de recréer un compte admin
+            en cas de perte d'accès. Régénérer ce code invalide immédiatement l'ancien.
+          </p>
+
+          {recoveryStatus && (
+            <p className="text-sm">
+              {recoveryStatus.exists
+                ? <>Code configuré{recoveryStatus.createdAt && <> le <span className="font-mono">{new Date(recoveryStatus.createdAt).toLocaleString()}</span></>}.</>
+                : 'Aucun code configuré.'}
+            </p>
+          )}
+
+          <div>
+            <button
+              className="btn btn-sm btn-warning gap-2 w-fit"
+              onClick={() => void regenerateRecoveryCode()}
+              disabled={regenerating}
+            >
+              {regenerating
+                ? <span className="loading loading-spinner loading-xs" />
+                : <KeyRound size={14} />}
+              Régénérer le code
+            </button>
+          </div>
+        </div>
+      </div>
+
       {/* ── Info ── */}
       <div className="alert bg-base-300 border border-base-content/10 text-xs text-base-content/60">
         <span>
@@ -160,6 +224,10 @@ export default function SettingsTab() {
           d'environnement et nécessitent un redémarrage pour être modifiés.
         </span>
       </div>
+
+      {revealedCode && (
+        <RecoveryCodeReveal code={revealedCode} onClose={() => setRevealedCode(null)} />
+      )}
     </div>
   );
 }

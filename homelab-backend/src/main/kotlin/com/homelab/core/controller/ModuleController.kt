@@ -2,8 +2,11 @@ package com.homelab.core.controller
 
 import com.homelab.core.service.module.ModuleService
 import com.homelab.core.service.module.ModuleParamsService
+import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
+import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.*
+import org.springframework.web.multipart.MultipartFile
 import jakarta.servlet.http.HttpServletRequest
 import org.springframework.core.io.Resource
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder
@@ -80,6 +83,10 @@ fun getModuleAsset(
 
     @PostMapping("/{id}/install")
     fun installModule(@PathVariable id: String) = mapOf("success" to moduleService.installModule(id))
+
+    @PostMapping("/install", consumes = [MediaType.MULTIPART_FORM_DATA_VALUE])
+    @PreAuthorize("hasRole('ADMIN')")
+    fun installModuleZip(@RequestPart("file") file: MultipartFile) = moduleService.installModuleZip(file)
 
     //TODO: keep? not using docker anymore so....
     @GetMapping("/{id}/health")

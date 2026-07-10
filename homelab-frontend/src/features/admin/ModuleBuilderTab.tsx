@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useState } from 'react';
-import { Columns3, Pencil, Plus, RefreshCw, Trash2 } from 'lucide-react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Columns3, Pencil, Plus, RefreshCw, Trash2, Upload } from 'lucide-react';
 import { useAuth } from '@auth/AuthContext';
 import { getApiUrl } from '@lib/api';
 import type { ModuleBuilderRequest, ModuleBuilderSummary, ModuleSchemaResponse } from '@app/types';
@@ -17,8 +17,36 @@ export default function ModuleBuilderTab() {
   const [pendingDelete, setPendingDelete] = useState<ModuleBuilderSummary | null>(null);
   const [dropData, setDropData] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [installing, setInstalling] = useState(false);
+  const [installMessage, setInstallMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const headers: HeadersInit = token ? { Authorization: `Bearer ${token}` } : {};
+
+  const installModuleZip = async (file: File) => {
+    setInstalling(true);
+    setInstallMessage(null);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await fetch(getApiUrl('/api/modules/install'), {
+        method: 'POST',
+        headers,
+        body: formData,
+      });
+      const body = await res.json().catch(() => null);
+      if (!res.ok) {
+        throw new Error(body?.error ?? body?.message ?? "Échec de l'installation du module");
+      }
+      setInstallMessage({ type: 'success', text: `Module '${body?.id ?? ''}' installé avec succès.` });
+      void fetchModules();
+    } catch (err) {
+      setInstallMessage({ type: 'error', text: err instanceof Error ? err.message : "Échec de l'installation du module" });
+    } finally {
+      setInstalling(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
 
   const fetchModules = useCallback(async () => {
     setLoading(true);
@@ -77,10 +105,38 @@ export default function ModuleBuilderTab() {
             Actualiser
           </button>
         </div>
-        <button className="btn btn-sm btn-primary gap-2" onClick={() => setShowCreate(true)}>
-          <Plus size={14} /> Créer un module
-        </button>
+        <div className="flex items-center gap-2">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".zip"
+            className="hidden"
+            onChange={e => {
+              const file = e.target.files?.[0];
+              if (file) void installModuleZip(file);
+            }}
+          />
+          <button
+            className="btn btn-sm btn-outline gap-2"
+            disabled={installing}
+            onClick={() => fileInputRef.current?.click()}
+          >
+            {installing
+              ? <span className="loading loading-spinner loading-xs" />
+              : <Upload size={14} />}
+            Installer un module (.zip)
+          </button>
+          <button className="btn btn-sm btn-primary gap-2" onClick={() => setShowCreate(true)}>
+            <Plus size={14} /> Créer un module
+          </button>
+        </div>
       </div>
+
+      {installMessage && (
+        <div className={`alert ${installMessage.type === 'success' ? 'alert-success' : 'alert-error'} text-sm py-2`}>
+          <span>{installMessage.text}</span>
+        </div>
+      )}
 
       <div className="overflow-x-auto rounded-xl border border-base-content/10">
         <table className="table table-sm w-full">

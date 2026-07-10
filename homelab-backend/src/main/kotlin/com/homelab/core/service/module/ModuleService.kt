@@ -9,10 +9,12 @@ import com.homelab.core.config.ModuleConfigMemory
 import com.homelab.core.config.ObjectDefinitionMemory
 import com.homelab.sdk.helper.AppLogger
 import com.homelab.core.model.module.Module
+import com.homelab.core.model.module.ModuleConfig
 import com.homelab.core.model.module.ModuleStatus
 import com.homelab.core.model.module.UIFormat
 import com.homelab.core.parser.ModuleDataObjectParser
 import com.homelab.sdk.data.TableDefinition
+import com.homelab.core.exception.BadRequestException
 import jakarta.annotation.*
 import jakarta.servlet.http.HttpServletRequest
 import org.springframework.core.io.Resource
@@ -20,10 +22,12 @@ import org.springframework.core.io.FileSystemResource
 import org.springframework.http.MediaType
 import org.springframework.http.MediaTypeFactory
 import org.springframework.http.ResponseEntity
+import org.springframework.web.multipart.MultipartFile
 import java.io.File
 import java.util.concurrent.ConcurrentHashMap
 import org.springframework.stereotype.Service
 import java.nio.file.Files
+import java.util.zip.ZipInputStream
 
 @Service
 class ModuleService(
@@ -288,6 +292,64 @@ class ModuleService(
 //        val command = config.installCommand ?: return false
 //        return moduleNativeService.installModule(module, dir, command)
         return true
+    }
+
+    fun installModuleZip(file: MultipartFile): ModuleConfig {
+        if (file.isEmpty || file.originalFilename?.lowercase()?.endsWith(".zip") != true) {
+            throw BadRequestException("A non-empty .zip file is required")
+        }
+
+        val tempDir = Files.createTempDirectory("homelab-install-").toFile().canonicalFile
+        try {
+            extractZip(file, tempDir)
+            val moduleRoot = findManifestRoot(tempDir)
+                ?: throw BadRequestException("No manifest.json found in uploaded zip")
+
+            val existingIds = modules.keys.toSet()
+            val config = moduleConfigService.parseAndValidateManifest(moduleRoot, existingIds)
+
+            val destination = File(File(homelabConfig.modulesScanPath).canonicalFile, config.id)
+            if (destination.exists()) {
+                throw BadRequestException("Module '${config.id}' already installed")
+            }
+
+            moduleRoot.copyRecursively(destination, overwrite = false)
+            scanModules()
+            return config
+        } finally {
+            tempDir.deleteRecursively()
+        }
+    }
+
+    private fun extractZip(file: MultipartFile, tempDir: File) {
+        ZipInputStream(file.inputStream).use { zip ->
+            var entry = zip.nextEntry
+            while (entry != null) {
+                val target = File(tempDir, entry.name).canonicalFile
+                if (!target.toPath().startsWith(tempDir.toPath())) {
+                    throw BadRequestException("Invalid zip entry path: ${entry.name}")
+                }
+
+                if (entry.isDirectory) {
+                    target.mkdirs()
+                } else {
+                    target.parentFile?.mkdirs()
+                    target.outputStream().use { out -> zip.copyTo(out) }
+                }
+                zip.closeEntry()
+                entry = zip.nextEntry
+            }
+        }
+    }
+
+    // Accepts either manifest.json at the zip root, or a single top-level folder containing it
+    // (the common shape when zipping a module directory directly).
+    private fun findManifestRoot(tempDir: File): File? {
+        if (File(tempDir, "manifest.json").exists()) return tempDir
+
+        val subDirs = tempDir.listFiles { f -> f.isDirectory } ?: emptyArray()
+        val candidate = subDirs.singleOrNull { File(it, "manifest.json").exists() }
+        return candidate
     }
 
     fun healthCheck(id: String): Boolean {
