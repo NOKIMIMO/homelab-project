@@ -1,14 +1,19 @@
-// import { useEffect, useState } from 'react';
+import { useState } from 'react';
 // import BootstrapPanel from './BootstrapPanel';
 // import { fetchKeys } from './authHooks';
 import PasswordLoginForm from './PasswordLoginForm';
+import RecoveryResetForm from './RecoveryResetForm';
+import HardResetInfo from './HardResetInfo';
 
 interface LoginProps {
   onLoginSuccess: (token: string, keyName: string) => void;
   onShowBootstrap: () => void;
 }
 
+type View = 'login' | 'recovery' | 'hardReset';
+
 export default function LoginForm({ onLoginSuccess }: LoginProps) {
+  const [view, setView] = useState<View>('login');
   // const [noKeys, setNoKeys] = useState(false);
 
   // useEffect(() => {
@@ -48,7 +53,39 @@ export default function LoginForm({ onLoginSuccess }: LoginProps) {
             <p className="mt-1 text-sm text-base-content/60">Saisissez vos identifiants pour continuer</p>
           </div>
 
-          <PasswordLoginForm onLoginSuccess={onLoginSuccess} />
+          {view === 'login' && (
+            <>
+              <PasswordLoginForm onLoginSuccess={onLoginSuccess} />
+              <button
+                type="button"
+                className="btn btn-ghost btn-xs w-full mt-4 opacity-60"
+                onClick={() => setView('recovery')}
+              >
+                Code de reset perdu ?
+              </button>
+            </>
+          )}
+
+          {view === 'recovery' && (
+            <RecoveryResetForm
+              onResetSuccess={onLoginSuccess}
+              onShowHardReset={() => setView('hardReset')}
+            />
+          )}
+
+          {view === 'hardReset' && (
+            <HardResetInfo onBack={() => setView('recovery')} />
+          )}
+
+          {view === 'recovery' && (
+            <button
+              type="button"
+              className="btn btn-ghost btn-xs w-full mt-2 opacity-60"
+              onClick={() => setView('login')}
+            >
+              Retour à la connexion
+            </button>
+          )}
 
           {/* {noKeys && <BootstrapPanel onShowBootstrap={onShowBootstrap} />} */}
         </div>

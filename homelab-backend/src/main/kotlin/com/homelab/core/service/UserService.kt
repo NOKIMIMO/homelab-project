@@ -24,6 +24,8 @@ class UserService(private val repository: UserRepository) {
 
     fun deleteUser(id: Long) = repository.deleteById(id)
 
+    fun deleteAllUsers() = repository.deleteAll()
+
     fun updateUserAdmin(id: Long, isAdmin: Boolean) {
         val user = repository.findById(id).orElseThrow { IllegalArgumentException("User with id $id not found") }
         if (user.isAdmin == isAdmin) return

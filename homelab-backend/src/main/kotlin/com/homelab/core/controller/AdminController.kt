@@ -7,6 +7,7 @@ import com.homelab.core.model.auth.User
 import com.homelab.core.model.auth.UserRepository
 import com.homelab.core.service.AuthService
 import com.homelab.core.service.JwtService
+import com.homelab.core.service.RecoveryCodeService
 import com.homelab.core.service.UserService
 import com.homelab.sdk.helper.AppLogger
 import org.springframework.http.ResponseEntity
@@ -22,6 +23,7 @@ class AdminController(
     private val homelabConfig: HomelabConfig,
     private val userService: UserService,
     private val signupRequestRepository: SignupRequestRepository,
+    private val recoveryCodeService: RecoveryCodeService,
 ) {
 
     @GetMapping("/logs")
@@ -60,6 +62,12 @@ class AdminController(
             ResponseEntity.badRequest().body(mapOf("success" to false, "message" to "Invalid log level: $levelStr"))
         }
     }
+
+    @GetMapping("/recovery-code/status")
+    fun recoveryCodeStatus(): Map<String, Any?> = recoveryCodeService.status()
+
+    @PostMapping("/recovery-code/regenerate")
+    fun regenerateRecoveryCode(): Map<String, Any> = mapOf("success" to true, "code" to recoveryCodeService.generateNewCode())
 
     @GetMapping("/users") fun getUsers(): List<User> = userService.getAllUsers()
 

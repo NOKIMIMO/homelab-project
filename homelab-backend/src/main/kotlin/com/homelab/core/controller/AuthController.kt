@@ -2,6 +2,7 @@ package com.homelab.core.controller
 
 import com.homelab.core.model.auth.AddUserRequest
 import com.homelab.core.model.auth.LoginRequest
+import com.homelab.core.model.auth.RecoveryResetRequest
 import com.homelab.core.model.auth.User
 import com.homelab.core.model.auth.UserRepository
 import com.homelab.core.model.auth.SignupRequest
@@ -9,10 +10,12 @@ import com.homelab.core.model.auth.SignupRequestRepository
 import com.homelab.core.service.AppletService
 import com.homelab.core.service.AuthService
 import com.homelab.core.service.JwtService
+import com.homelab.core.service.RecoveryCodeService
 import com.homelab.core.service.UserService
 import com.homelab.sdk.helper.AppLogger
 import jakarta.servlet.http.HttpServletResponse
 import org.springframework.http.ResponseEntity
+import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.bind.annotation.*
 import java.time.LocalDateTime
 
@@ -25,7 +28,8 @@ class AuthController(
     private val userService: UserService,
     private val repository: UserRepository,
     private val signupRequestRepository: SignupRequestRepository,
-    private val jwtService: JwtService
+    private val jwtService: JwtService,
+    private val recoveryCodeService: RecoveryCodeService
 ) {
     private val log = AppLogger.loggerFor(this::class)
 
@@ -116,12 +120,12 @@ class AuthController(
 
         if (repository.count() == 0L) {
             return try {
-                val passwordHash = AuthService.encodePassword(request.password)
                 val user = userService.registerUser(request.name, request.email, request.publicKey, isAdmin = true, passwordHash = passwordHash)
                 signup.status = "APPROVED"
                 signup.processedAt = LocalDateTime.now()
                 signupRequestRepository.save(signup)
-                ResponseEntity.ok(mapOf("success" to true, "user" to user))
+                val recoveryCode = recoveryCodeService.generateNewCode()
+                ResponseEntity.ok(mapOf("success" to true, "user" to user, "recoveryCode" to recoveryCode))
             } catch (e: IllegalArgumentException) {
                 ResponseEntity.badRequest().body(mapOf("success" to false, "message" to e.message))
             }
@@ -130,6 +134,53 @@ class AuthController(
 
         signupRequestRepository.save(signup)
         return ResponseEntity.ok().build()
+    }
+
+    // Emergency access recovery: presenting a valid, unused recovery code wipes every existing
+    // user and re-bootstraps a fresh admin account in one step. Used when all admin accounts/
+    // credentials are lost. A fresh recovery code is issued immediately so the instance is
+    // never left without one.
+    @Transactional
+    @PostMapping("/reset")
+    fun resetWithRecoveryCode(
+        @RequestBody request: RecoveryResetRequest,
+        response: HttpServletResponse
+    ): ResponseEntity<Map<String, Any>> {
+        if (!recoveryCodeService.verifyAndConsume(request.code)) {
+            return ResponseEntity.status(403).body(mapOf("success" to false, "message" to "Invalid recovery code"))
+        }
+
+        if (request.email.isBlank() || (request.password.isNullOrBlank() && request.publicKey.isNullOrBlank())) {
+            return ResponseEntity.badRequest()
+                .body(mapOf("success" to false, "message" to "Email and password or publicKey are required"))
+        }
+
+        return try {
+            userService.deleteAllUsers()
+            signupRequestRepository.deleteAll()
+
+            val passwordHash = request.password?.let { AuthService.encodePassword(it) }
+            val user = userService.registerUser(request.name, request.email, request.publicKey, isAdmin = true, passwordHash = passwordHash)
+            val newRecoveryCode = recoveryCodeService.generateNewCode()
+
+            val token = jwtService.generateToken(username = user.email, isAdmin = true)
+            val cookie = jakarta.servlet.http.Cookie("homelab_token", token)
+            cookie.isHttpOnly = true
+            cookie.path = "/"
+            cookie.maxAge = 86400 * 7
+            response.addCookie(cookie)
+
+            ResponseEntity.ok(
+                mapOf(
+                    "success" to true,
+                    "token" to token,
+                    "userEmail" to user.email,
+                    "recoveryCode" to newRecoveryCode
+                )
+            )
+        } catch (e: IllegalArgumentException) {
+            ResponseEntity.badRequest().body(mapOf("success" to false, "message" to (e.message ?: "Reset failed")))
+        }
     }
 
 }

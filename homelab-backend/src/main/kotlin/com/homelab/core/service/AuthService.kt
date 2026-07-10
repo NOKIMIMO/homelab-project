@@ -30,6 +30,15 @@ class AuthService {
         fun encodePassword(password: String): String {
             return passwordEncoder.encode(password)
         }
+
+        fun matchesPassword(storedHash: String?, passwordPlain: String?): Boolean {
+            if (storedHash == null || passwordPlain == null) return false
+            return try {
+                passwordEncoder.matches(passwordPlain, storedHash)
+            } catch (_: Exception) {
+                false
+            }
+        }
     }
 
     fun verifySignature(publicKeyStr: String, signatureBase64: String, challenge: String): Boolean {
