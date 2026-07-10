@@ -9,3 +9,6 @@ graphify-out
 # specific
 modules/photo-module/public/storage
 modules/photo-module/data
+
+.claude
+graphify-out
