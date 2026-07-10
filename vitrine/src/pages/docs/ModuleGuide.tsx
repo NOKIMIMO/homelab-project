@@ -21,6 +21,10 @@ const TEXT: Record<
     dataObjectIntro: ReactNode
     typingColumns: string[]
     typingRows: (string | ReactNode)[][]
+    actionTypesTitle: string
+    actionTypesIntro: ReactNode
+    actionTypesColumns: string[]
+    actionTypesRows: (string | ReactNode)[][]
   }
 > = {
   fr: {
@@ -100,6 +104,30 @@ const TEXT: Record<
       ['date / datetime', 'DATE / TIMESTAMP'],
       ['file', 'Stockage binaire (upload)'],
     ],
+    actionTypesTitle: "Types d'actions backend",
+    actionTypesIntro: (
+      <>
+        Déclarés dans <code>logic[].type</code> de chaque fonction — un type
+        standard ne nécessite aucun code Kotlin.
+      </>
+    ),
+    actionTypesColumns: ['Type', 'Comportement'],
+    actionTypesRows: [
+      ['LIST', 'Retourne toutes les lignes de la table'],
+      ['READ', <>Retourne une ligne filtrée par les paramètres <code>EQUAL</code></>],
+      ['CREATE', 'Insère une nouvelle ligne avec les paramètres fournis'],
+      ['DELETE', <>Supprime la/les lignes filtrées par les paramètres <code>EQUAL</code></>],
+      ['UPLOAD_FILE', 'Upload un fichier binaire et crée une entrée en base'],
+      ['GET_FILE', "Retourne le fichier binaire d'une entrée"],
+      [
+        'FETCH_EXTERNAL',
+        <>
+          Appelle une API HTTP externe, parse la réponse JSON, upsert le
+          résultat en base. Lit <code>apiKey</code>/<code>baseUrl</code> depuis{' '}
+          <code>params.json</code>.
+        </>,
+      ],
+    ],
   },
   en: {
     title: 'Create a module',
@@ -177,6 +205,30 @@ const TEXT: Record<
       ['date / datetime', 'DATE / TIMESTAMP'],
       ['file', 'Binary storage (upload)'],
     ],
+    actionTypesTitle: 'Backend action types',
+    actionTypesIntro: (
+      <>
+        Declared in each function's <code>logic[].type</code> — a standard
+        type needs no Kotlin code.
+      </>
+    ),
+    actionTypesColumns: ['Type', 'Behavior'],
+    actionTypesRows: [
+      ['LIST', 'Returns every row in the table'],
+      ['READ', <>Returns a row filtered by the <code>EQUAL</code> parameters</>],
+      ['CREATE', 'Inserts a new row with the given parameters'],
+      ['DELETE', <>Deletes the row(s) filtered by the <code>EQUAL</code> parameters</>],
+      ['UPLOAD_FILE', 'Uploads a binary file and creates a database entry'],
+      ['GET_FILE', "Returns a row's binary file"],
+      [
+        'FETCH_EXTERNAL',
+        <>
+          Calls an external HTTP API, parses the JSON response, upserts the
+          result into the database. Reads <code>apiKey</code>/
+          <code>baseUrl</code> from <code>params.json</code>.
+        </>,
+      ],
+    ],
   },
 }
 
@@ -209,6 +261,11 @@ function ModuleGuide() {
       <CodeBlock lang="xml">{TASKS_XML}</CodeBlock>
 
       <FieldTable columns={t.typingColumns} rows={t.typingRows} />
+
+      <h2 className="text-2xl font-semibold mt-10 mb-2">{t.actionTypesTitle}</h2>
+      <p className="text-base-content/70 max-w-2xl">{t.actionTypesIntro}</p>
+
+      <FieldTable columns={t.actionTypesColumns} rows={t.actionTypesRows} />
     </div>
   )
 }
