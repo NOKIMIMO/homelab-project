@@ -37,7 +37,7 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           workingDirectory: vitrine
-          command: versions upload --commit-dirty=true
+          command: versions upload
 
       - name: Deploy to production
         if: github.ref == 'refs/heads/master'
