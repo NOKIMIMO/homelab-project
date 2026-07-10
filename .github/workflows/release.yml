@@ -3,6 +3,10 @@ name: Release all-in-one image
 on:
   push:
     branches: [master]
+    paths:
+      - 'homelab-backend/**'
+      - 'homelab-frontend/**'
+      - '.github/workflows/release.yml'
 
 permissions:
   contents: write
