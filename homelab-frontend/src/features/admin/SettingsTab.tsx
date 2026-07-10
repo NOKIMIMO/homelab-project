@@ -1,8 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Save, RefreshCw, FolderOpen, Puzzle, Home, KeyRound } from 'lucide-react';
+import { Save, RefreshCw, FolderOpen, Puzzle, Home, KeyRound, MessageSquareText } from 'lucide-react';
 import { useAuth } from '@auth/AuthContext';
 import { getApiUrl } from '@lib/api';
 import RecoveryCodeReveal from '@ui/RecoveryCodeReveal';
+
+const LOGIN_DESCRIPTION_MAX_LENGTH = 500;
 
 interface RecoveryCodeStatus {
   exists: boolean;
@@ -42,6 +44,10 @@ export default function SettingsTab() {
   const [recoveryStatus, setRecoveryStatus] = useState<RecoveryCodeStatus | null>(null);
   const [regenerating, setRegenerating] = useState(false);
   const [revealedCode, setRevealedCode] = useState<string | null>(null);
+  const [loginDescription, setLoginDescription] = useState('');
+  const [savedLoginDescription, setSavedLoginDescription] = useState('');
+  const [savingDescription, setSavingDescription] = useState(false);
+  const [descriptionSavedOk, setDescriptionSavedOk] = useState(false);
 
   const headers: HeadersInit = token
     ? { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
@@ -69,6 +75,35 @@ export default function SettingsTab() {
   }, [token]);
 
   useEffect(() => { void fetchRecoveryStatus(); }, [fetchRecoveryStatus]);
+
+  const fetchLoginDescription = useCallback(async () => {
+    const res = await fetch(getApiUrl('/api/auth/login-settings'));
+    if (res.ok) {
+      const data = await res.json() as { description?: string | null };
+      setLoginDescription(data.description ?? '');
+      setSavedLoginDescription(data.description ?? '');
+    }
+  }, []);
+
+  useEffect(() => { void fetchLoginDescription(); }, [fetchLoginDescription]);
+
+  const saveLoginDescription = async () => {
+    setSavingDescription(true);
+    try {
+      const res = await fetch(getApiUrl('/api/admin/login-settings'), {
+        method: 'PUT',
+        headers,
+        body: JSON.stringify({ description: loginDescription }),
+      });
+      if (res.ok) {
+        setSavedLoginDescription(loginDescription);
+        setDescriptionSavedOk(true);
+        setTimeout(() => setDescriptionSavedOk(false), 2500);
+      }
+    } finally {
+      setSavingDescription(false);
+    }
+  };
 
   const regenerateRecoveryCode = async () => {
     setRegenerating(true);
@@ -180,6 +215,44 @@ export default function SettingsTab() {
               {config.logLevel}
             </span>
           </p>
+        </div>
+      </div>
+
+      {/* ── Description page de connexion ── */}
+      <div className="card bg-base-300">
+        <div className="card-body gap-4">
+          <h2 className="card-title text-base flex items-center gap-2">
+            <MessageSquareText size={16} className="opacity-60" /> Description de la page de connexion
+          </h2>
+          <p className="text-xs text-base-content/50 -mt-2">
+            Le message affiché sur la card de connexion, visible par tous (comme la description
+            d'un serveur Minecraft).
+          </p>
+
+          <textarea
+            className="textarea textarea-bordered w-full text-sm"
+            rows={3}
+            maxLength={LOGIN_DESCRIPTION_MAX_LENGTH}
+            value={loginDescription}
+            onChange={e => setLoginDescription(e.target.value)}
+            placeholder="Votre espace personnel, hébergé chez vous."
+          />
+
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-base-content/40">
+              {loginDescription.length} / {LOGIN_DESCRIPTION_MAX_LENGTH}
+            </span>
+            <button
+              className={`btn btn-sm gap-2 min-w-28 ${descriptionSavedOk ? 'btn-success' : 'btn-primary'}`}
+              onClick={() => void saveLoginDescription()}
+              disabled={savingDescription || loginDescription === savedLoginDescription}
+            >
+              {savingDescription
+                ? <span className="loading loading-spinner loading-xs" />
+                : <Save size={14} />}
+              {descriptionSavedOk ? 'Sauvegardé !' : 'Enregistrer'}
+            </button>
+          </div>
         </div>
       </div>
 

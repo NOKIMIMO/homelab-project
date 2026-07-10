@@ -10,6 +10,7 @@ import com.homelab.core.model.auth.SignupRequestRepository
 import com.homelab.core.service.AppletService
 import com.homelab.core.service.AuthService
 import com.homelab.core.service.JwtService
+import com.homelab.core.service.LoginSettingsService
 import com.homelab.core.service.RecoveryCodeService
 import com.homelab.core.service.UserService
 import com.homelab.sdk.helper.AppLogger
@@ -29,7 +30,8 @@ class AuthController(
     private val repository: UserRepository,
     private val signupRequestRepository: SignupRequestRepository,
     private val jwtService: JwtService,
-    private val recoveryCodeService: RecoveryCodeService
+    private val recoveryCodeService: RecoveryCodeService,
+    private val loginSettingsService: LoginSettingsService
 ) {
     private val log = AppLogger.loggerFor(this::class)
 
@@ -37,6 +39,11 @@ class AuthController(
     fun getChallenge(): ResponseEntity<Map<String, String>> {
         return ResponseEntity.ok(mapOf("challenge" to authService.generateChallenge()))
     }
+
+    // Owner-configurable description shown on the login card. Public since the login page
+    // itself is unauthenticated.
+    @GetMapping("/login-settings")
+    fun getLoginSettings(): Map<String, Any?> = mapOf("description" to loginSettingsService.getDescription())
 
     //TODO: Move repository call into service
     @PostMapping("/login")

@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 // import BootstrapPanel from './BootstrapPanel';
 // import { fetchKeys } from './authHooks';
 import PasswordLoginForm from './PasswordLoginForm';
 import RecoveryResetForm from './RecoveryResetForm';
 import HardResetInfo from './HardResetInfo';
+import { getApiUrl } from '@lib/api';
 
 interface LoginProps {
   onLoginSuccess: (token: string, keyName: string) => void;
@@ -12,9 +13,23 @@ interface LoginProps {
 
 type View = 'login' | 'recovery' | 'hardReset';
 
+const DEFAULT_DESCRIPTION = "Votre espace personnel, hébergé chez vous.";
+
 export default function LoginForm({ onLoginSuccess }: LoginProps) {
   const [view, setView] = useState<View>('login');
+  const [description, setDescription] = useState(DEFAULT_DESCRIPTION);
   // const [noKeys, setNoKeys] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+    fetch(getApiUrl('/api/auth/login-settings'))
+      .then(res => (res.ok ? res.json() as Promise<{ description?: string | null }> : null))
+      .then(data => {
+        if (mounted && data?.description) setDescription(data.description);
+      })
+      .catch(() => { /* keep default description */ });
+    return () => { mounted = false; };
+  }, []);
 
   // useEffect(() => {
   //   let mounted = true;
@@ -40,9 +55,8 @@ export default function LoginForm({ onLoginSuccess }: LoginProps) {
             </div> */}
             
             <h1 className="text-3xl font-black leading-tight md:text-4xl">Bienvenue sur votre Homelab</h1>
-            <p className="mt-3 max-w-md text-sm text-base-content/70">
-               Informations diverses du owner (TODO:)
-               {/* ptetre laisser la possibilité de mettre une mot de bienvenue configurable par owner?  */}
+            <p className="mt-3 max-w-md text-sm text-base-content/70 whitespace-pre-line">
+              {description}
             </p>
           </div>
         </div>
