@@ -44,12 +44,6 @@ class UserService(private val repository: UserRepository) {
 
     fun findByEmail(email: String): User? = repository.findByEmail(email).orElse(null)
 
-    fun updateUserPermissions(id: Long, permissions: Set<String>) {
-        val user = repository.findById(id).orElseThrow { NotFoundException("User with id $id not found") }
-        user.permissions = permissions.toMutableSet()
-        repository.save(user)
-    }
-
     // Generates a one-time temporary password for a user whose reset request was approved.
     // Returned in plaintext once; only its hash is persisted. mustResetPassword forces the
     // next successful login to invalidate it immediately (see AuthController.login).

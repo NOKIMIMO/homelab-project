@@ -11,7 +11,11 @@ interface User {
   isAdmin: boolean;
   createdAt: string;
   publicKey: string | null;
-  permissions: string[];
+}
+
+interface ModuleSettings {
+  writeAdminOnly: boolean;
+  deleteAdminOnly: boolean;
 }
 
 interface SignupRequest {
@@ -43,12 +47,10 @@ export default function AccessTab() {
   const [users, setUsers] = useState<User[]>([]);
   const [requests, setRequests] = useState<SignupRequest[]>([]);
   const [passwordResetRequests, setPasswordResetRequests] = useState<PasswordResetRequest[]>([]);
-  const [availablePermissions, setAvailablePermissions] = useState<Record<string, string[]>>({});
+  const [moduleSettings, setModuleSettings] = useState<Record<string, ModuleSettings>>({});
   const [loading, setLoading] = useState(false);
   const [actionId, setActionId] = useState<number | null>(null);
-  const [editingUser, setEditingUser] = useState<User | null>(null);
-  const [draftPermissions, setDraftPermissions] = useState<Set<string>>(new Set());
-  const [savingPermissions, setSavingPermissions] = useState(false);
+  const [savingModuleId, setSavingModuleId] = useState<string | null>(null);
   const [revealedPassword, setRevealedPassword] = useState<string | null>(null);
 
   const headers: HeadersInit = token
@@ -58,15 +60,15 @@ export default function AccessTab() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const [usersRes, requestsRes, permissionsRes, resetRequestsRes] = await Promise.all([
+      const [usersRes, requestsRes, moduleSettingsRes, resetRequestsRes] = await Promise.all([
         fetch(getApiUrl('/api/admin/users'), { headers }),
         fetch(getApiUrl('/api/admin/signup-requests'), { headers }),
-        fetch(getApiUrl('/api/admin/permissions'), { headers }),
+        fetch(getApiUrl('/api/admin/module-settings'), { headers }),
         fetch(getApiUrl('/api/admin/password-reset-requests'), { headers }),
       ]);
       if (usersRes.ok) setUsers(await usersRes.json() as User[]);
       if (requestsRes.ok) setRequests(await requestsRes.json() as SignupRequest[]);
-      if (permissionsRes.ok) setAvailablePermissions(await permissionsRes.json() as Record<string, string[]>);
+      if (moduleSettingsRes.ok) setModuleSettings(await moduleSettingsRes.json() as Record<string, ModuleSettings>);
       if (resetRequestsRes.ok) setPasswordResetRequests(await resetRequestsRes.json() as PasswordResetRequest[]);
     } finally {
       setLoading(false);
@@ -109,38 +111,23 @@ export default function AccessTab() {
     }
   };
 
-  const openPermissions = (u: User) => {
-    setEditingUser(u);
-    setDraftPermissions(new Set(u.permissions));
-  };
-
-  const togglePermission = (permission: string) => {
-    setDraftPermissions(prev => {
-      const next = new Set(prev);
-      if (next.has(permission)) next.delete(permission);
-      else next.add(permission);
-      return next;
-    });
-  };
-
-  const savePermissions = async () => {
-    if (!editingUser) return;
-    setSavingPermissions(true);
+  const toggleModuleSetting = async (moduleId: string, key: keyof ModuleSettings) => {
+    const current = moduleSettings[moduleId] ?? { writeAdminOnly: false, deleteAdminOnly: false };
+    const next = { ...current, [key]: !current[key] };
+    setSavingModuleId(moduleId);
     try {
-      const permissions = Array.from(draftPermissions);
-      const res = await fetch(getApiUrl(`/api/admin/users/${editingUser.id}/permissions`), {
+      const res = await fetch(getApiUrl(`/api/admin/module-settings/${moduleId}`), {
         method: 'PUT',
         headers: { ...headers, 'Content-Type': 'application/json' },
-        body: JSON.stringify(permissions),
+        body: JSON.stringify(next),
       });
       if (!res.ok) {
-        alert("Échec de l'enregistrement des permissions.");
+        alert("Échec de l'enregistrement des réglages du module.");
         return;
       }
-      setUsers(prev => prev.map(u => u.id === editingUser.id ? { ...u, permissions } : u));
-      setEditingUser(null);
+      setModuleSettings(prev => ({ ...prev, [moduleId]: next }));
     } finally {
-      setSavingPermissions(false);
+      setSavingModuleId(null);
     }
   };
 
@@ -225,7 +212,6 @@ export default function AccessTab() {
                 <th>Nom</th>
                 <th>Email</th>
                 <th>Admin</th>
-                <th>Permissions</th>
                 <th>Créé le</th>
                 <th></th>
               </tr>
@@ -233,7 +219,7 @@ export default function AccessTab() {
             <tbody>
               {users.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="text-center text-base-content/40 italic py-8">
+                  <td colSpan={6} className="text-center text-base-content/40 italic py-8">
                     Aucun utilisateur
                   </td>
                 </tr>
@@ -255,16 +241,6 @@ export default function AccessTab() {
                         onChange={() => switchAdminStatus(u.id, u.isAdmin, u.email)}
                       />
                     </td>
-                    <td>
-                      {u.isAdmin ? (
-                        <span className="text-xs opacity-40 italic">admin (tout accès)</span>
-                      ) : (
-                        <button className="btn btn-xs btn-outline gap-1" onClick={() => openPermissions(u)}>
-                          <ShieldCheck size={12} />
-                          {u.permissions.length > 0 ? `${u.permissions.length} accordée(s)` : 'Gérer'}
-                        </button>
-                      )}
-                    </td>
                     <td className="text-xs opacity-60">
                       {new Date(u.createdAt).toLocaleDateString('fr-FR')}
                     </td>
@@ -280,6 +256,62 @@ export default function AccessTab() {
                           ? <span className="loading loading-spinner loading-xs" />
                           : <Trash2 size={12} />}
                       </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      {/* ── Modules ── */}
+      <section>
+        <h2 className="text-lg font-bold mb-1 flex items-center gap-2">
+          <ShieldCheck size={18} className="opacity-70" />
+          Modules
+        </h2>
+        <p className="text-xs opacity-60 mb-3">
+          Par défaut, tout utilisateur authentifié peut créer/modifier et supprimer via un module.
+          Activez un réglage ci-dessous pour réserver cette action aux administrateurs.
+        </p>
+        <div className="overflow-x-auto rounded-xl border border-base-content/10">
+          <table className="table table-sm w-full">
+            <thead>
+              <tr className="bg-base-300 text-xs uppercase tracking-wide">
+                <th>Module</th>
+                <th>Création / Modification : admin uniquement</th>
+                <th>Suppression : admin uniquement</th>
+              </tr>
+            </thead>
+            <tbody>
+              {Object.keys(moduleSettings).length === 0 ? (
+                <tr>
+                  <td colSpan={3} className="text-center text-base-content/40 italic py-8">
+                    Aucun module
+                  </td>
+                </tr>
+              ) : (
+                Object.entries(moduleSettings).map(([moduleId, settings]) => (
+                  <tr key={moduleId} className="hover">
+                    <td className="font-mono text-xs">{moduleId}</td>
+                    <td>
+                      <input
+                        type="checkbox"
+                        className={`toggle toggle-sm toggle-warning ${savingModuleId === moduleId ? "opacity-50" : ""}`}
+                        checked={settings.writeAdminOnly}
+                        disabled={savingModuleId === moduleId}
+                        onChange={() => toggleModuleSetting(moduleId, 'writeAdminOnly')}
+                      />
+                    </td>
+                    <td>
+                      <input
+                        type="checkbox"
+                        className={`toggle toggle-sm toggle-warning ${savingModuleId === moduleId ? "opacity-50" : ""}`}
+                        checked={settings.deleteAdminOnly}
+                        disabled={savingModuleId === moduleId}
+                        onChange={() => toggleModuleSetting(moduleId, 'deleteAdminOnly')}
+                      />
                     </td>
                   </tr>
                 ))
@@ -479,52 +511,6 @@ export default function AccessTab() {
         />
       )}
 
-      {/* ── Modal permissions ── */}
-      {editingUser && (
-        <div className="modal modal-open">
-          <div className="modal-box">
-            <h3 className="font-bold text-lg mb-1">Permissions de {editingUser.name ?? editingUser.email}</h3>
-            <p className="text-xs opacity-60 mb-4">
-              Seules les permissions déclarées par un module sont applicables ; un module qui n'en déclare aucune reste accessible à tous.
-            </p>
-            <div className="space-y-4 max-h-96 overflow-y-auto">
-              {Object.entries(availablePermissions).filter(([, perms]) => perms.length > 0).length === 0 ? (
-                <p className="text-sm opacity-40 italic">Aucun module ne déclare de permission pour l'instant.</p>
-              ) : (
-                Object.entries(availablePermissions)
-                  .filter(([, perms]) => perms.length > 0)
-                  .map(([moduleId, perms]) => (
-                    <div key={moduleId}>
-                      <p className="text-xs font-semibold uppercase tracking-wide opacity-60 mb-1">{moduleId}</p>
-                      <div className="flex flex-wrap gap-2">
-                        {perms.map(p => (
-                          <label key={p} className="label cursor-pointer gap-2 bg-base-300 rounded-lg px-3 py-1">
-                            <input
-                              type="checkbox"
-                              className="checkbox checkbox-xs"
-                              checked={draftPermissions.has(p)}
-                              onChange={() => togglePermission(p)}
-                            />
-                            <span className="font-mono text-xs">{p}</span>
-                          </label>
-                        ))}
-                      </div>
-                    </div>
-                  ))
-              )}
-            </div>
-            <div className="modal-action">
-              <button className="btn btn-sm btn-ghost" onClick={() => setEditingUser(null)} disabled={savingPermissions}>
-                Annuler
-              </button>
-              <button className="btn btn-sm btn-primary" onClick={savePermissions} disabled={savingPermissions}>
-                {savingPermissions ? <span className="loading loading-spinner loading-xs" /> : 'Enregistrer'}
-              </button>
-            </div>
-          </div>
-          <div className="modal-backdrop" onClick={() => !savingPermissions && setEditingUser(null)} />
-        </div>
-      )}
     </div>
   );
 }
