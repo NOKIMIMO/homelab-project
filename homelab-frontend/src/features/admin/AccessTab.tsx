@@ -128,11 +128,15 @@ export default function AccessTab() {
     setSavingPermissions(true);
     try {
       const permissions = Array.from(draftPermissions);
-      await fetch(getApiUrl(`/api/admin/users/${editingUser.id}/permissions`), {
+      const res = await fetch(getApiUrl(`/api/admin/users/${editingUser.id}/permissions`), {
         method: 'PUT',
         headers: { ...headers, 'Content-Type': 'application/json' },
         body: JSON.stringify(permissions),
       });
+      if (!res.ok) {
+        alert("Échec de l'enregistrement des permissions.");
+        return;
+      }
       setUsers(prev => prev.map(u => u.id === editingUser.id ? { ...u, permissions } : u));
       setEditingUser(null);
     } finally {
@@ -160,7 +164,17 @@ export default function AccessTab() {
         method: 'PUT',
         headers,
       });
-      const data = await res.json() as { success: boolean; temporaryPassword?: string; message?: string };
+      if (!res.ok) {
+        alert("Échec de l'approbation de la demande.");
+        return;
+      }
+      let data: { success: boolean; temporaryPassword?: string; message?: string };
+      try {
+        data = await res.json() as { success: boolean; temporaryPassword?: string; message?: string };
+      } catch {
+        alert("Réponse invalide du serveur.");
+        return;
+      }
       if (data.success && data.temporaryPassword) {
         setRevealedPassword(data.temporaryPassword);
       } else if (data.message) {
