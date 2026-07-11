@@ -2,41 +2,46 @@ package com.homelab.core.service
 
 import com.homelab.core.model.auth.User
 import com.homelab.core.model.module.ModuleConfig
+import com.homelab.core.model.module.ModuleSettings
+import com.homelab.core.model.module.ModuleSettingsRepository
 import com.homelab.sdk.module.action.ModuleActionDeclaration
 import org.springframework.stereotype.Service
+import java.time.LocalDateTime
 
 @Service
-class PermissionService {
+class PermissionService(private val repository: ModuleSettingsRepository) {
 
     private val writeTypes = setOf("CREATE", "UPDATE", "PUT", "UPLOAD_FILE")
     private val deleteTypes = setOf("DELETE")
-    private val readTypes = setOf("READ", "LIST", "GET_FILE", "FETCH_EXTERNAL", "FETCH_EXTERNAL_GENERIC")
 
     private fun verbFor(actionType: String): String? = when (actionType) {
         in writeTypes -> "write"
         in deleteTypes -> "delete"
-        in readTypes -> "read"
         else -> null
     }
 
     /**
-     * Only permissions the module itself declares are enforced - undeclared verbs stay open,
-     * matching today's behavior for modules that don't declare any permissions at all.
+     * Reads are open to any authenticated user. Writes and deletes are open by
+     * default, unless an admin has flipped the module's write/delete toggle.
      */
-    fun requiredPermissions(module: ModuleConfig, decl: ModuleActionDeclaration): Set<String> {
-        val declared = module.permissions.toSet()
-        if (declared.isEmpty()) return emptySet()
-        return decl.logic
-            .mapNotNull { verbFor(it.type) }
-            .map { "$it:${module.id}" }
-            .filter { it in declared }
-            .toSet()
-    }
-
     fun canInvoke(user: User, module: ModuleConfig, decl: ModuleActionDeclaration): Boolean {
         if (user.isAdmin) return true
-        val required = requiredPermissions(module, decl)
-        if (required.isEmpty()) return true
-        return user.permissions.containsAll(required)
+        val verbs = decl.logic.mapNotNull { verbFor(it.type) }.toSet()
+        if (verbs.isEmpty()) return true
+        val settings = repository.findByModuleId(module.id)
+        if ("write" in verbs && settings?.writeAdminOnly == true) return false
+        if ("delete" in verbs && settings?.deleteAdminOnly == true) return false
+        return true
+    }
+
+    fun getSettings(moduleId: String): ModuleSettings =
+        repository.findByModuleId(moduleId) ?: ModuleSettings(moduleId = moduleId)
+
+    fun updateSettings(moduleId: String, writeAdminOnly: Boolean, deleteAdminOnly: Boolean): ModuleSettings {
+        val current = repository.findByModuleId(moduleId) ?: ModuleSettings(moduleId = moduleId)
+        current.writeAdminOnly = writeAdminOnly
+        current.deleteAdminOnly = deleteAdminOnly
+        current.updatedAt = LocalDateTime.now()
+        return repository.save(current)
     }
 }

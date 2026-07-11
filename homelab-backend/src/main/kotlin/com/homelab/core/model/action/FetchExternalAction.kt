@@ -7,10 +7,8 @@ import com.homelab.sdk.action.Action
 import com.homelab.sdk.data.GenericTableLayer
 import com.homelab.sdk.helper.AppLogger
 import com.homelab.sdk.module.action.ModuleActionDeclaration
-import java.net.URI
 import java.net.URLEncoder
 import java.net.http.HttpClient
-import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 
 class FetchExternalAction(private val globalParametersService: GlobalParametersService) : Action {
@@ -36,13 +34,11 @@ class FetchExternalAction(private val globalParametersService: GlobalParametersS
 
         val encodedCity = URLEncoder.encode(city, "UTF-8")
         val url = "$baseUrl?q=$encodedCity&appid=$apiKey&units=$units"
-        log.info("[$moduleId] Fetching external data for city='$city'")
+        val method = mergedParams["method"] as? String
+        log.info("[$moduleId] Fetching external data for city='$city' (method=${method ?: "GET"})")
 
         return try {
-            val request = HttpRequest.newBuilder()
-                .uri(URI.create(url))
-                .GET()
-                .build()
+            val request = HttpRequestHelper.build(url, method)
             val response = httpClient.send(request, HttpResponse.BodyHandlers.ofString())
 
             if (response.statusCode() != 200) {

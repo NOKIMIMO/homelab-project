@@ -1,5 +1,6 @@
 package com.homelab.core.controller
 
+import com.homelab.core.api.dto.ModuleSettingsDto
 import com.homelab.core.api.dto.PasswordResetRequestDto
 import com.homelab.core.api.dto.SignupRequestDto
 import com.homelab.core.api.dto.UserDto
@@ -11,6 +12,7 @@ import com.homelab.core.model.auth.UserRepository
 import com.homelab.core.service.AuthService
 import com.homelab.core.service.JwtService
 import com.homelab.core.service.LoginSettingsService
+import com.homelab.core.service.PermissionService
 import com.homelab.core.service.RecoveryCodeService
 import com.homelab.core.service.UserService
 import com.homelab.core.service.module.ModuleConfigService
@@ -32,6 +34,7 @@ class AdminController(
     private val recoveryCodeService: RecoveryCodeService,
     private val loginSettingsService: LoginSettingsService,
     private val moduleConfigService: ModuleConfigService,
+    private val permissionService: PermissionService,
 ) {
 
     @GetMapping("/logs")
@@ -94,16 +97,14 @@ class AdminController(
         return ResponseEntity.ok().build()
     }
 
-    @GetMapping("/permissions")
-    fun getAvailablePermissions(): Map<String, List<String>> =
+    @GetMapping("/module-settings")
+    fun getModuleSettings(): Map<String, ModuleSettingsDto> =
         moduleConfigService.scanModuleConfigs(homelabConfig.modulesScanPath)
-            .associate { it.config.id to it.config.permissions }
+            .associate { it.config.id to permissionService.getSettings(it.config.id).toDto() }
 
-    @PutMapping("/users/{id}/permissions")
-    fun setUserPermissions(@PathVariable id: Long, @RequestBody permissions: List<String>): ResponseEntity<Void> {
-        userService.updateUserPermissions(id, permissions.toSet())
-        return ResponseEntity.ok().build()
-    }
+    @PutMapping("/module-settings/{moduleId}")
+    fun setModuleSettings(@PathVariable moduleId: String, @RequestBody body: ModuleSettingsDto): ModuleSettingsDto =
+        permissionService.updateSettings(moduleId, body.writeAdminOnly, body.deleteAdminOnly).toDto()
 
     @GetMapping("/signup-requests")
     fun getSignupRequests(): List<SignupRequestDto> = signupRequestRepository.findAll().map { it.toDto() }

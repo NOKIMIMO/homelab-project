@@ -3,8 +3,10 @@ package com.homelab.core.controller
 import com.homelab.core.api.dto.modulebuilder.AddColumnRequest
 import com.homelab.core.api.dto.modulebuilder.ModuleBuilderRequest
 import com.homelab.core.service.module.ModuleBuilderService
+import org.springframework.http.MediaType
 import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.*
+import org.springframework.web.multipart.MultipartFile
 
 @RestController
 @RequestMapping("/api/admin/module-builder")
@@ -31,6 +33,24 @@ class ModuleBuilderController(
         @PathVariable id: String,
         @RequestBody request: ModuleBuilderRequest
     ) = moduleBuilderService.updateModule(id, request)
+
+    @PostMapping("/{id}/icon", consumes = [MediaType.MULTIPART_FORM_DATA_VALUE])
+    fun uploadIcon(
+        @PathVariable id: String,
+        @RequestPart("file") file: MultipartFile
+    ) = moduleBuilderService.uploadIcon(id, file)
+
+    @PostMapping("/{id}/ui-page", consumes = [MediaType.MULTIPART_FORM_DATA_VALUE])
+    fun uploadUiPage(
+        @PathVariable id: String,
+        @RequestPart("file") file: MultipartFile
+    ) = moduleBuilderService.uploadUiPage(id, file)
+
+    @PostMapping("/{id}/ui-build", consumes = [MediaType.MULTIPART_FORM_DATA_VALUE])
+    fun uploadUiBuild(
+        @PathVariable id: String,
+        @RequestPart("file") file: MultipartFile
+    ) = moduleBuilderService.uploadUiBuild(id, file)
 
     @PostMapping("/{id}/tables/{table}/columns")
     fun addColumn(

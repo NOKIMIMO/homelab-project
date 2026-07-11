@@ -53,9 +53,36 @@ export interface ExternalFetchSpec {
   functionName: string;
   description?: string;
   urlTemplate: string;
+  method: string;
   queryParams: string[];
   responseMapping: Record<string, string>;
   upsertKey?: string | null;
+}
+
+export interface DependencySpec {
+  moduleId: string;
+  version: string;
+}
+
+export type ModuleActionParameterType = 'EQUAL' | 'GREATER' | 'LESS' | 'GREATER_EQUAL' | 'LESS_EQUAL' | 'NONE';
+
+export interface LogicStepSpec {
+  actionType: string;
+  params: Record<string, string>;
+}
+
+export interface CustomFunctionParamSpec {
+  name: string;
+  type: ModuleActionParameterType;
+  description: string;
+  optional: boolean;
+}
+
+export interface CustomFunctionSpec {
+  name: string;
+  description: string;
+  parameters: CustomFunctionParamSpec[];
+  logic: LogicStepSpec[];
 }
 
 export interface ModuleParamSpec {
@@ -73,6 +100,7 @@ export interface TableSpec {
   relations: RelationSpec[];
   uniqueTogether: string[][];
   externalFetches: ExternalFetchSpec[];
+  customFunctions: CustomFunctionSpec[];
   // Only sent on an update request: the table's name before this edit.
   previousName?: string;
 }
@@ -83,6 +111,14 @@ export interface ModuleBuilderRequest {
   description?: string;
   tables: TableSpec[];
   params: ModuleParamSpec[];
+  dependencies: DependencySpec[];
+  // Persisted icon filename, set only via the dedicated icon-upload endpoint.
+  icon?: string | null;
+  // 'JSON' or 'STANDALONE', set only via the dedicated UI-page/UI-build upload endpoints.
+  uiMode?: string;
+  // True once a UI page/build has been uploaded by hand; once set, saving the form no longer
+  // regenerates the auto UI page.
+  uiCustomized?: boolean;
 }
 
 export interface ModuleBuilderSummary {

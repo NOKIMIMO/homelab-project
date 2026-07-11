@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate, Outlet } from 'react-router';
-import { BarChart, Camera, Box, Menu, Settings, ShieldCheck } from 'lucide-react';
+import { BarChart, Camera, Box, Menu, Settings, ShieldCheck, UserCircle } from 'lucide-react';
 import { useAuth } from '@auth/AuthContext';
 import type { AppOutletContext, Module } from '@app/types';
 import './index.css';
@@ -11,7 +11,7 @@ export type { AppOutletContext, Module };
 function AppLayout() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { isAdmin ,logout } = useAuth();
+  const { userName, isAdmin, logout } = useAuth();
   const [modules, setModules] = useState<Module[]>([]);
   const [isModulesRefreshing, setIsModulesRefreshing] = useState(false);
 
@@ -129,6 +129,13 @@ function AppLayout() {
             ))}
           </ul>
           <div className="mt-auto px-2 space-y-2">
+            <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-base-100">
+              <UserCircle size={20} className="opacity-60 shrink-0" />
+              <div className="min-w-0">
+                <p className="text-xs font-medium truncate">{userName ?? 'Utilisateur'}</p>
+                <p className="text-[11px] opacity-50">{isAdmin ? 'Administrateur' : 'Utilisateur'}</p>
+              </div>
+            </div>
             <button
               className={`btn bg-base-100 btn-sm w-full gap-2 ${location.pathname === '/settings' ? 'btn-primary' : 'btn-outline'}`}
               onClick={() => navigate('/settings')}

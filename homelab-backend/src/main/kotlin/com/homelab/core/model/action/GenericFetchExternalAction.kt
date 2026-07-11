@@ -7,10 +7,8 @@ import com.homelab.sdk.action.Action
 import com.homelab.sdk.data.GenericTableLayer
 import com.homelab.sdk.helper.AppLogger
 import com.homelab.sdk.module.action.ModuleActionDeclaration
-import java.net.URI
 import java.net.URLEncoder
 import java.net.http.HttpClient
-import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 
 /**
@@ -20,8 +18,11 @@ import java.net.http.HttpResponse
  * routes for arbitrary external APIs without writing Kotlin. Configuration:
  * - `urlTemplate`: string with `{name}` placeholders, resolved from the call's params first,
  *   then from this module's params.json values (eg. an `{apiKey}` stored as a secret param).
- * - `responseMapping`: target column name -> dotted JSON path into the response body
- *   (supports `field[index]` for arrays, eg. `weather[0].description`).
+ * - `method` (optional): HTTP method, defaults to GET.
+ * - `responseMapping` (optional): target column name -> dotted JSON path into the response body
+ *   (supports `field[index]` for arrays, eg. `weather[0].description`). When absent, this action
+ *   runs in raw-passthrough mode: fetch + parse only, returning the JSON body as-is without
+ *   creating a row, so a following logic step (eg. MAP_JSON) can consume it via `_previousResult`.
  * - `upsertKey` (optional): column name used to update-or-create instead of always inserting.
  */
 class GenericFetchExternalAction(private val globalParametersService: GlobalParametersService) : Action {
@@ -43,10 +44,12 @@ class GenericFetchExternalAction(private val globalParametersService: GlobalPara
         val urlTemplate = config["urlTemplate"] as? String
             ?: return mapOf("error" to "'urlTemplate' non configuré")
 
+        // Absent responseMapping ⇒ raw-passthrough mode: fetch + parse only, return the body as-is
+        // without creating a row, so a following MAP_JSON step can map it via `_previousResult`.
         val responseMapping = config["responseMapping"] as? Map<String, String>
-            ?: return mapOf("error" to "'responseMapping' non configuré")
 
         val upsertKey = config["upsertKey"] as? String
+        val method = config["method"] as? String
 
         val moduleParams = globalParametersService.getAllParams(moduleId)
 
@@ -59,7 +62,7 @@ class GenericFetchExternalAction(private val globalParametersService: GlobalPara
         log.info("[$moduleId] Fetching external data for function '${declaration.name}'")
 
         return try {
-            val request = HttpRequest.newBuilder().uri(URI.create(url)).GET().build()
+            val request = HttpRequestHelper.build(url, method)
             val response = httpClient.send(request, HttpResponse.BodyHandlers.ofString())
 
             if (response.statusCode() != 200) {
@@ -69,7 +72,11 @@ class GenericFetchExternalAction(private val globalParametersService: GlobalPara
             }
 
             val json = mapper.readValue<Map<String, Any>>(response.body())
-            val record: Map<String, String?> = responseMapping.mapValues { (_, path) -> resolvePath(json, path)?.toString() }
+            if (responseMapping == null) {
+                return json
+            }
+
+            val record: Map<String, String?> = responseMapping.mapValues { (_, path) -> JsonPathResolver.resolve(json, path)?.toString() }
 
             if (upsertKey != null) {
                 val keyValue = record[upsertKey]
@@ -87,21 +94,5 @@ class GenericFetchExternalAction(private val globalParametersService: GlobalPara
             log.error("[$moduleId] External fetch failed for function '${declaration.name}': ${e.message}", e)
             mapOf("error" to (e.message ?: "Erreur inconnue"))
         }
-    }
-
-    private fun resolvePath(json: Any?, path: String): Any? {
-        var current: Any? = json
-        for (segment in path.split(".")) {
-            if (current == null) return null
-            val arrayMatch = Regex("^(\\w+)\\[(\\d+)]$").find(segment)
-            current = if (arrayMatch != null) {
-                val (key, indexStr) = arrayMatch.destructured
-                val list = (current as? Map<*, *>)?.get(key) as? List<*>
-                list?.getOrNull(indexStr.toInt())
-            } else {
-                (current as? Map<*, *>)?.get(segment)
-            }
-        }
-        return current
     }
 }

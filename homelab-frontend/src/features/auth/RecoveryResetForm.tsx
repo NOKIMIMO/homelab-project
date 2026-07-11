@@ -130,7 +130,8 @@ export default function RecoveryResetForm({ onResetSuccess, onShowHardReset }: R
       </form>
 
       <button type="button" className="btn btn-ghost btn-sm w-full" onClick={onShowHardReset}>
-        Code de reset aussi perdu ?
+        Code de recupération perdu ? 
+        <br/>Informations sur la réinitialisation d'urgence
       </button>
 
       {revealedCode && (

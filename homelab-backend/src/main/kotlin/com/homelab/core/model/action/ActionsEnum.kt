@@ -5,6 +5,7 @@ enum class ActionsEnum {
     GET_FILE,
     FETCH_EXTERNAL,
     FETCH_EXTERNAL_GENERIC,
+    MAP_JSON,
 
 //    CRUD actions
 //    maybe make them become default to some types?
