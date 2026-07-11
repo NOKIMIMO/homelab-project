@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Plus, Trash2, X, Save } from 'lucide-react';
 import { useAuth } from '@auth/AuthContext';
 import { getApiUrl } from '@lib/api';
@@ -6,7 +6,13 @@ import type {
   Cardinality,
   ColumnSpec,
   ColumnType,
+  CustomFunctionParamSpec,
+  CustomFunctionSpec,
+  DependencySpec,
   ExternalFetchSpec,
+  LogicStepSpec,
+  Module,
+  ModuleActionParameterType,
   ModuleBuilderRequest,
   ModuleParamSpec,
   RelationSpec,
@@ -21,6 +27,8 @@ const CARDINALITIES: { value: Cardinality; label: string }[] = [
   { value: 'MANY_TO_MANY', label: 'Plusieurs vers plusieurs' },
 ];
 const PARAM_TYPES: ModuleParamSpec['type'][] = ['string', 'secret', 'boolean', 'number'];
+const HTTP_METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'];
+const ACTION_PARAM_TYPES: ModuleActionParameterType[] = ['NONE', 'EQUAL', 'GREATER', 'LESS', 'GREATER_EQUAL', 'LESS_EQUAL'];
 
 const emptyColumn = (): ColumnSpec => ({ name: '', type: 'string', nullable: true, unique: false });
 const emptyRelation = (defaultTarget: string): RelationSpec => ({
@@ -33,11 +41,21 @@ const emptyFetch = (): ExternalFetchSpec => ({
   functionName: '',
   description: '',
   urlTemplate: '',
+  method: 'GET',
   queryParams: [],
   responseMapping: {},
   upsertKey: '',
 });
 const emptyParam = (): ModuleParamSpec => ({ key: '', label: '', type: 'string', defaultValue: '', description: '' });
+const emptyDependency = (defaultTarget: string): DependencySpec => ({ moduleId: defaultTarget, version: '' });
+const emptyLogicStep = (defaultActionType: string): LogicStepSpec => ({ actionType: defaultActionType, params: {} });
+const emptyCustomFunctionParam = (): CustomFunctionParamSpec => ({ name: '', type: 'NONE', description: '', optional: true });
+const emptyCustomFunction = (defaultActionType: string): CustomFunctionSpec => ({
+  name: '',
+  description: '',
+  parameters: [],
+  logic: [emptyLogicStep(defaultActionType)],
+});
 const emptyTable = (): TableSpec => ({
   name: '',
   columns: [emptyColumn()],
@@ -45,6 +63,7 @@ const emptyTable = (): TableSpec => ({
   relations: [],
   uniqueTogether: [],
   externalFetches: [],
+  customFunctions: [],
 });
 
 // Stamps each table/column with its current name as previousName, frozen at load time, so the
@@ -73,15 +92,77 @@ export default function CreateModuleForm({ onClose, onCreated, initialSpec }: Pr
     initialSpec ? stampPreviousNames(initialSpec.tables) : [emptyTable()]
   );
   const [params, setParams] = useState<ModuleParamSpec[]>(initialSpec?.params ?? []);
+  const [dependencies, setDependencies] = useState<DependencySpec[]>(initialSpec?.dependencies ?? []);
+  const [icon, setIcon] = useState<string | null>(initialSpec?.icon ?? null);
+  // Never edited from this form -- only the dedicated UI-page/UI-build upload buttons in
+  // ModuleBuilderTab set these; carried through unchanged so a regular save doesn't clobber them.
+  const uiMode = initialSpec?.uiMode ?? 'JSON';
+  const uiCustomized = initialSpec?.uiCustomized ?? false;
+  const [iconFile, setIconFile] = useState<File | null>(null);
+  const [iconPreviewUrl, setIconPreviewUrl] = useState<string | null>(
+    isEditing && initialSpec ? getApiUrl(`/api/modules/${initialSpec.id}/UI/icon`) : null
+  );
+  const [writeAdminOnly, setWriteAdminOnly] = useState(false);
+  const [deleteAdminOnly, setDeleteAdminOnly] = useState(false);
+  const [existingModules, setExistingModules] = useState<Module[]>([]);
+  const [availableActionTypes, setAvailableActionTypes] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   const headers: HeadersInit = token
     ? { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
     : { 'Content-Type': 'application/json' };
+  const authHeaders: HeadersInit = token ? { Authorization: `Bearer ${token}` } : {};
+
+  const stagedIconUrlRef = useRef<string | null>(null);
+  useEffect(() => {
+    return () => {
+      if (stagedIconUrlRef.current) URL.revokeObjectURL(stagedIconUrlRef.current);
+    };
+  }, []);
+
+  useEffect(() => {
+    void (async () => {
+      const [modulesRes, actionsRes] = await Promise.all([
+        fetch(getApiUrl('/api/modules'), { headers: authHeaders }),
+        fetch(getApiUrl('/api/modules/actions'), { headers: authHeaders }),
+      ]);
+      if (modulesRes.ok) setExistingModules(await modulesRes.json() as Module[]);
+      if (actionsRes.ok) setAvailableActionTypes(await actionsRes.json() as string[]);
+    })();
+  }, [token]);
+
+  useEffect(() => {
+    if (!isEditing || !initialSpec) return;
+    void (async () => {
+      const res = await fetch(getApiUrl('/api/admin/module-settings'), { headers: authHeaders });
+      if (!res.ok) return;
+      const all = await res.json() as Record<string, { writeAdminOnly: boolean; deleteAdminOnly: boolean }>;
+      const mine = all[initialSpec.id];
+      if (mine) {
+        setWriteAdminOnly(mine.writeAdminOnly);
+        setDeleteAdminOnly(mine.deleteAdminOnly);
+      }
+    })();
+  }, [isEditing, initialSpec, token]);
 
   const otherTableNames = (idx: number) =>
     tables.filter((_, i) => i !== idx).map(t => t.name).filter(Boolean);
+
+  const otherModules = existingModules.filter(m => m.id !== id.trim());
+
+  const updateDependency = (idx: number, patch: Partial<DependencySpec>) =>
+    setDependencies(prev => prev.map((d, i) => (i === idx ? { ...d, ...patch } : d)));
+  const addDependency = () => setDependencies(prev => [...prev, emptyDependency(otherModules[0]?.id ?? '')]);
+  const removeDependency = (idx: number) => setDependencies(prev => prev.filter((_, i) => i !== idx));
+
+  const onIconFileChange = (file: File | null) => {
+    setIconFile(file);
+    if (stagedIconUrlRef.current) URL.revokeObjectURL(stagedIconUrlRef.current);
+    const nextUrl = file ? URL.createObjectURL(file) : null;
+    stagedIconUrlRef.current = nextUrl;
+    setIconPreviewUrl(nextUrl ?? (isEditing && initialSpec ? getApiUrl(`/api/modules/${initialSpec.id}/UI/icon`) : null));
+  };
 
   const updateTable = (idx: number, patch: Partial<TableSpec>) => {
     setTables(prev => prev.map((t, i) => (i === idx ? { ...t, ...patch } : t)));
@@ -159,6 +240,59 @@ export default function CreateModuleForm({ onClose, onCreated, initialSpec }: Pr
   const addParam = () => setParams(prev => [...prev, emptyParam()]);
   const removeParam = (idx: number) => setParams(prev => prev.filter((_, i) => i !== idx));
 
+  const updateFn = (tIdx: number, fnIdx: number, patch: Partial<CustomFunctionSpec>) => {
+    setTables(prev => prev.map((t, i) => {
+      if (i !== tIdx) return t;
+      return { ...t, customFunctions: t.customFunctions.map((f, j) => (j === fnIdx ? { ...f, ...patch } : f)) };
+    }));
+  };
+  const addFn = (tIdx: number) =>
+    updateTable(tIdx, { customFunctions: [...tables[tIdx].customFunctions, emptyCustomFunction(availableActionTypes[0] ?? '')] });
+  const removeFn = (tIdx: number, fnIdx: number) =>
+    updateTable(tIdx, { customFunctions: tables[tIdx].customFunctions.filter((_, j) => j !== fnIdx) });
+
+  const updateFnParam = (tIdx: number, fnIdx: number, pIdx: number, patch: Partial<CustomFunctionParamSpec>) => {
+    const fn = tables[tIdx].customFunctions[fnIdx];
+    updateFn(tIdx, fnIdx, { parameters: fn.parameters.map((p, j) => (j === pIdx ? { ...p, ...patch } : p)) });
+  };
+  const addFnParam = (tIdx: number, fnIdx: number) => {
+    const fn = tables[tIdx].customFunctions[fnIdx];
+    updateFn(tIdx, fnIdx, { parameters: [...fn.parameters, emptyCustomFunctionParam()] });
+  };
+  const removeFnParam = (tIdx: number, fnIdx: number, pIdx: number) => {
+    const fn = tables[tIdx].customFunctions[fnIdx];
+    updateFn(tIdx, fnIdx, { parameters: fn.parameters.filter((_, j) => j !== pIdx) });
+  };
+
+  const updateStep = (tIdx: number, fnIdx: number, sIdx: number, patch: Partial<LogicStepSpec>) => {
+    const fn = tables[tIdx].customFunctions[fnIdx];
+    updateFn(tIdx, fnIdx, { logic: fn.logic.map((s, j) => (j === sIdx ? { ...s, ...patch } : s)) });
+  };
+  const addStep = (tIdx: number, fnIdx: number) => {
+    const fn = tables[tIdx].customFunctions[fnIdx];
+    updateFn(tIdx, fnIdx, { logic: [...fn.logic, emptyLogicStep(availableActionTypes[0] ?? '')] });
+  };
+  const removeStep = (tIdx: number, fnIdx: number, sIdx: number) => {
+    const fn = tables[tIdx].customFunctions[fnIdx];
+    updateFn(tIdx, fnIdx, { logic: fn.logic.filter((_, j) => j !== sIdx) });
+  };
+
+  const stepParamRow = (tIdx: number, fnIdx: number, sIdx: number, rowIdx: number, key: string, value: string) => {
+    const step = tables[tIdx].customFunctions[fnIdx].logic[sIdx];
+    const entries = Object.entries(step.params);
+    entries[rowIdx] = [key, value];
+    updateStep(tIdx, fnIdx, sIdx, { params: Object.fromEntries(entries) });
+  };
+  const addStepParamRow = (tIdx: number, fnIdx: number, sIdx: number) => {
+    const step = tables[tIdx].customFunctions[fnIdx].logic[sIdx];
+    updateStep(tIdx, fnIdx, sIdx, { params: { ...step.params, '': '' } });
+  };
+  const removeStepParamRow = (tIdx: number, fnIdx: number, sIdx: number, key: string) => {
+    const step = tables[tIdx].customFunctions[fnIdx].logic[sIdx];
+    const entries = Object.entries(step.params).filter(([k]) => k !== key);
+    updateStep(tIdx, fnIdx, sIdx, { params: Object.fromEntries(entries) });
+  };
+
   const handleSubmit = async () => {
     setError(null);
     setSubmitting(true);
@@ -182,12 +316,28 @@ export default function CreateModuleForm({ onClose, onCreated, initialSpec }: Pr
               ),
               upsertKey: f.upsertKey?.trim() || undefined,
             })),
+          customFunctions: t.customFunctions
+            .filter(f => f.name.trim() && f.logic.length > 0)
+            .map(f => ({
+              ...f,
+              name: f.name.trim(),
+              parameters: f.parameters.filter(p => p.name.trim()).map(p => ({ ...p, name: p.name.trim() })),
+              logic: f.logic.map(s => ({
+                ...s,
+                params: Object.fromEntries(Object.entries(s.params).filter(([k]) => k.trim())),
+              })),
+            })),
         })),
         params: params.filter(p => p.key.trim() && p.label.trim()).map(p => ({ ...p, key: p.key.trim() })),
+        dependencies: dependencies.filter(d => d.moduleId.trim()).map(d => ({ ...d, version: d.version.trim() })),
+        icon,
+        uiMode,
+        uiCustomized,
       };
 
+      const moduleId = id.trim();
       const res = await fetch(
-        isEditing ? getApiUrl(`/api/admin/module-builder/${id.trim()}`) : getApiUrl('/api/admin/module-builder'),
+        isEditing ? getApiUrl(`/api/admin/module-builder/${moduleId}`) : getApiUrl('/api/admin/module-builder'),
         {
           method: isEditing ? 'PUT' : 'POST',
           headers,
@@ -198,6 +348,31 @@ export default function CreateModuleForm({ onClose, onCreated, initialSpec }: Pr
       if (!res.ok) {
         const errBody = await res.json().catch(() => null) as { error?: string } | null;
         setError(errBody?.error ?? `Échec de ${isEditing ? "la modification" : "la création"} (${res.status})`);
+        return;
+      }
+
+      if (iconFile) {
+        const formData = new FormData();
+        formData.append('file', iconFile);
+        const iconRes = await fetch(getApiUrl(`/api/admin/module-builder/${moduleId}/icon`), {
+          method: 'POST',
+          headers: authHeaders,
+          body: formData,
+        });
+        if (!iconRes.ok) {
+          const errBody = await iconRes.json().catch(() => null) as { error?: string } | null;
+          setError(errBody?.error ?? "Module enregistré, mais l'envoi de l'icône a échoué");
+          return;
+        }
+      }
+
+      const settingsRes = await fetch(getApiUrl(`/api/admin/module-settings/${moduleId}`), {
+        method: 'PUT',
+        headers,
+        body: JSON.stringify({ writeAdminOnly, deleteAdminOnly }),
+      });
+      if (!settingsRes.ok) {
+        setError("Module enregistré, mais l'enregistrement des accès a échoué");
         return;
       }
 
@@ -252,6 +427,79 @@ export default function CreateModuleForm({ onClose, onCreated, initialSpec }: Pr
             </div>
           </div>
 
+          {/* Icon */}
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-base-200 flex items-center justify-center overflow-hidden shrink-0">
+              {iconPreviewUrl ? (
+                <img src={iconPreviewUrl} alt="" className="w-full h-full object-cover" />
+              ) : (
+                <span className="text-[10px] opacity-40 text-center px-1">Icône</span>
+              )}
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-sm font-semibold">Icône du module</label>
+              <input
+                type="file"
+                accept="image/*"
+                className="file-input file-input-bordered file-input-xs"
+                onChange={e => onIconFileChange(e.target.files?.[0] ?? null)}
+              />
+            </div>
+          </div>
+
+          {/* Dependencies */}
+          <div className="space-y-2">
+            <p className="text-xs font-semibold opacity-60">Dépendances (modules existants)</p>
+            {dependencies.map((dep, dIdx) => (
+              <div key={dIdx} className="flex items-center gap-2">
+                <select
+                  className="select select-bordered select-xs flex-1"
+                  value={dep.moduleId}
+                  onChange={e => updateDependency(dIdx, { moduleId: e.target.value })}
+                >
+                  {otherModules.map(m => <option key={m.id} value={m.id}>{m.name} ({m.id})</option>)}
+                </select>
+                <input
+                  className="input input-bordered input-xs flex-1 font-mono"
+                  placeholder="^1.0.0 ou *"
+                  value={dep.version}
+                  onChange={e => updateDependency(dIdx, { version: e.target.value })}
+                />
+                <button className="btn btn-xs btn-ghost btn-error" onClick={() => removeDependency(dIdx)}>
+                  <Trash2 size={12} />
+                </button>
+              </div>
+            ))}
+            {otherModules.length > 0 && (
+              <button className="btn btn-xs btn-outline gap-1" onClick={addDependency}>
+                <Plus size={12} /> Dépendance
+              </button>
+            )}
+          </div>
+
+          {/* Access */}
+          <div className="space-y-2">
+            <p className="text-xs font-semibold opacity-60">Accès</p>
+            <label className="flex items-center gap-2 text-xs">
+              <input
+                type="checkbox"
+                className="checkbox checkbox-xs"
+                checked={writeAdminOnly}
+                onChange={e => setWriteAdminOnly(e.target.checked)}
+              />
+              Création/Modification réservée aux administrateurs
+            </label>
+            <label className="flex items-center gap-2 text-xs">
+              <input
+                type="checkbox"
+                className="checkbox checkbox-xs"
+                checked={deleteAdminOnly}
+                onChange={e => setDeleteAdminOnly(e.target.checked)}
+              />
+              Suppression réservée aux administrateurs
+            </label>
+          </div>
+
           {/* Module-level parameters (params.json) */}
           <div className="space-y-2">
             <p className="text-xs font-semibold opacity-60">Paramètres du module (clé API, URL de base, ...)</p>
@@ -295,6 +543,12 @@ export default function CreateModuleForm({ onClose, onCreated, initialSpec }: Pr
           {isEditing && (
             <p className="text-[11px] opacity-50">
               Renommer une table/colonne est appliqué en place. Retyper une colonne tente une conversion des données existantes (peut échouer si incompatible). Supprimer une table ou une colonne existante n'est pas supporté ici.
+            </p>
+          )}
+
+          {isEditing && uiCustomized && (
+            <p className="text-[11px] text-info">
+              Ce module a une page UI personnalisée (fichier ou build envoyé manuellement) : elle ne sera pas régénérée par cet enregistrement.
             </p>
           )}
 
@@ -455,12 +709,21 @@ export default function CreateModuleForm({ onClose, onCreated, initialSpec }: Pr
                         </button>
                       </div>
 
-                      <input
-                        className="input input-bordered input-xs w-full font-mono"
-                        placeholder="https://api.exemple.com/v1?q={query}&appid={apiKey}"
-                        value={fetch.urlTemplate}
-                        onChange={e => updateFetch(tIdx, fIdx, { urlTemplate: e.target.value })}
-                      />
+                      <div className="flex items-center gap-2">
+                        <select
+                          className="select select-bordered select-xs"
+                          value={fetch.method}
+                          onChange={e => updateFetch(tIdx, fIdx, { method: e.target.value })}
+                        >
+                          {HTTP_METHODS.map(m => <option key={m} value={m}>{m}</option>)}
+                        </select>
+                        <input
+                          className="input input-bordered input-xs flex-1 font-mono"
+                          placeholder="https://api.exemple.com/v1?q={query}&appid={apiKey}"
+                          value={fetch.urlTemplate}
+                          onChange={e => updateFetch(tIdx, fIdx, { urlTemplate: e.target.value })}
+                        />
+                      </div>
                       <p className="text-[11px] opacity-50">
                         {'{nom}'} dans l'URL est remplacé par un paramètre d'appel ou une valeur des paramètres du module.
                       </p>
@@ -509,6 +772,125 @@ export default function CreateModuleForm({ onClose, onCreated, initialSpec }: Pr
                   ))}
                   <button className="btn btn-xs btn-outline gap-1" onClick={() => addFetch(tIdx)}>
                     <Plus size={12} /> Fonction API externe
+                  </button>
+                </div>
+
+                {/* Custom functions: a named, ordered sequence of actions from the core/plugin registry */}
+                <div className="space-y-2">
+                  <p className="text-xs font-semibold opacity-60">Fonctions personnalisées</p>
+                  {table.customFunctions.map((fn, fnIdx) => (
+                    <div key={fnIdx} className="border border-base-content/10 rounded-lg p-3 space-y-2">
+                      <div className="flex items-center gap-2">
+                        <input
+                          className="input input-bordered input-xs flex-1 font-mono"
+                          placeholder="nomDeLaFonction"
+                          value={fn.name}
+                          onChange={e => updateFn(tIdx, fnIdx, { name: e.target.value })}
+                        />
+                        <input
+                          className="input input-bordered input-xs flex-[2]"
+                          placeholder="Description"
+                          value={fn.description}
+                          onChange={e => updateFn(tIdx, fnIdx, { description: e.target.value })}
+                        />
+                        <button className="btn btn-xs btn-ghost btn-error" onClick={() => removeFn(tIdx, fnIdx)}>
+                          <Trash2 size={12} />
+                        </button>
+                      </div>
+
+                      {/* Declared input parameters */}
+                      <div className="space-y-1">
+                        <p className="text-[11px] opacity-50">Paramètres déclarés (fournis par l'appelant)</p>
+                        {fn.parameters.map((p, pIdx) => (
+                          <div key={pIdx} className="flex items-center gap-2">
+                            <input
+                              className="input input-bordered input-xs flex-1 font-mono"
+                              placeholder="nom"
+                              value={p.name}
+                              onChange={e => updateFnParam(tIdx, fnIdx, pIdx, { name: e.target.value })}
+                            />
+                            <select
+                              className="select select-bordered select-xs"
+                              value={p.type}
+                              onChange={e => updateFnParam(tIdx, fnIdx, pIdx, { type: e.target.value as ModuleActionParameterType })}
+                            >
+                              {ACTION_PARAM_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                            </select>
+                            <label className="flex items-center gap-1 text-xs whitespace-nowrap">
+                              <input
+                                type="checkbox"
+                                className="checkbox checkbox-xs"
+                                checked={!p.optional}
+                                onChange={e => updateFnParam(tIdx, fnIdx, pIdx, { optional: !e.target.checked })}
+                              />
+                              requis
+                            </label>
+                            <button className="btn btn-xs btn-ghost btn-error" onClick={() => removeFnParam(tIdx, fnIdx, pIdx)}>
+                              <Trash2 size={12} />
+                            </button>
+                          </div>
+                        ))}
+                        <button className="btn btn-xs btn-outline gap-1" onClick={() => addFnParam(tIdx, fnIdx)}>
+                          <Plus size={12} /> Paramètre
+                        </button>
+                      </div>
+
+                      {/* Ordered sequence of action steps */}
+                      <div className="space-y-1">
+                        <p className="text-[11px] opacity-50">Séquence d'actions (exécutées dans l'ordre)</p>
+                        {fn.logic.map((step, sIdx) => (
+                          <div key={sIdx} className="border border-base-content/10 rounded-lg p-2 space-y-1">
+                            <div className="flex items-center gap-2">
+                              <span className="text-[11px] opacity-40 w-4">{sIdx + 1}.</span>
+                              <select
+                                className="select select-bordered select-xs flex-1"
+                                value={step.actionType}
+                                onChange={e => updateStep(tIdx, fnIdx, sIdx, { actionType: e.target.value })}
+                              >
+                                {availableActionTypes.map(t => <option key={t} value={t}>{t}</option>)}
+                              </select>
+                              <button className="btn btn-xs btn-ghost btn-error" onClick={() => removeStep(tIdx, fnIdx, sIdx)}>
+                                <Trash2 size={12} />
+                              </button>
+                            </div>
+                            {Object.entries(step.params).map(([key, value], rowIdx) => (
+                              <div key={rowIdx} className="flex items-center gap-2 pl-6">
+                                <input
+                                  className="input input-bordered input-xs flex-1 font-mono"
+                                  placeholder="clé"
+                                  value={key}
+                                  onChange={e => stepParamRow(tIdx, fnIdx, sIdx, rowIdx, e.target.value, value)}
+                                />
+                                <input
+                                  className="input input-bordered input-xs flex-1 font-mono"
+                                  placeholder="valeur"
+                                  value={value}
+                                  onChange={e => stepParamRow(tIdx, fnIdx, sIdx, rowIdx, key, e.target.value)}
+                                />
+                                <button
+                                  className="btn btn-xs btn-ghost btn-error"
+                                  onClick={() => removeStepParamRow(tIdx, fnIdx, sIdx, key)}
+                                >
+                                  <Trash2 size={12} />
+                                </button>
+                              </div>
+                            ))}
+                            <button
+                              className="btn btn-xs btn-outline gap-1 ml-6"
+                              onClick={() => addStepParamRow(tIdx, fnIdx, sIdx)}
+                            >
+                              <Plus size={12} /> Param fixe
+                            </button>
+                          </div>
+                        ))}
+                        <button className="btn btn-xs btn-outline gap-1" onClick={() => addStep(tIdx, fnIdx)}>
+                          <Plus size={12} /> Étape
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                  <button className="btn btn-xs btn-outline gap-1" onClick={() => addFn(tIdx)}>
+                    <Plus size={12} /> Fonction personnalisée
                   </button>
                 </div>
               </div>

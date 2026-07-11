@@ -25,11 +25,6 @@ class User(
     @Column(nullable = true, length = 2048)
     var publicKey: String? = null,
 
-    @ElementCollection(fetch = FetchType.EAGER)
-    @CollectionTable(name = "user_permissions", joinColumns = [JoinColumn(name = "user_id")])
-    @Column(name = "permission")
-    var permissions: MutableSet<String> = mutableSetOf(),
-
     // Set when an admin approves a password reset request: the current passwordHash is a
     // one-time temporary password that must be replaced via PUT /api/auth/password before
     // a second password login is accepted.

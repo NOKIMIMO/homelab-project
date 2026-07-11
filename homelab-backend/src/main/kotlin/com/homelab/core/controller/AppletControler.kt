@@ -60,7 +60,6 @@ class AppletControler(
 		@RequestBody(required = false) body: Map<String, Any>?,
 		@RequestParam(required = false) formParams: Map<String, String>?
 	): ResponseEntity<Any> {
-		log.info("Simple JSON call")
 		val mergedParams = mutableMapOf<String, Any>()
 		body?.let { mergedParams.putAll(it) }
 		formParams?.let { mergedParams.putAll(it) }
@@ -77,7 +76,6 @@ class AppletControler(
 		@RequestParam(required = false) formParams: Map<String, String>?,
 		@RequestPart(required = false, name = "file") file: MultipartFile?
 	): ResponseEntity<Any> {
-		log.info("MultiPart File call")
 		val mergedParams = mutableMapOf<String, Any>()
 		params?.let { mergedParams.putAll(it) }
 		formParams?.let { mergedParams.putAll(it) }
@@ -113,7 +111,7 @@ class AppletControler(
 		}
 
 		val resolvedLogic = decl.logic.map { logic ->
-			mapOf("type" to logic.type)
+			mapOf("type" to logic.type, "params" to (logic.params ?: emptyMap<String, Any>()))
 		}
 		log.debug("Resolved logic: $resolvedLogic")
 		val serviceResult: Map<String, Any?>

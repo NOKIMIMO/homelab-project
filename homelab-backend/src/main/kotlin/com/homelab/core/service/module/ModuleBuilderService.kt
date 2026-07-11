@@ -1,6 +1,7 @@
 package com.homelab.core.service.module
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.homelab.core.action.ActionFactory
 import com.homelab.core.api.dto.modulebuilder.AddColumnRequest
 import com.homelab.core.api.dto.modulebuilder.ColumnSpec
 import com.homelab.core.api.dto.modulebuilder.ExternalFetchSpec
@@ -22,8 +23,11 @@ import com.homelab.sdk.data.TableDefinition
 import com.homelab.sdk.helper.AppLogger
 import com.homelab.sdk.module.action.ModuleActionParameterType
 import org.springframework.stereotype.Service
+import org.springframework.web.multipart.MultipartFile
 import java.io.File
 import java.io.StringWriter
+import java.nio.file.Files
+import java.util.zip.ZipInputStream
 import javax.xml.parsers.DocumentBuilderFactory
 import javax.xml.transform.OutputKeys
 import javax.xml.transform.TransformerFactory
@@ -36,15 +40,25 @@ class ModuleBuilderService(
     private val moduleService: ModuleService,
     private val moduleDatabaseService: ModuleDatabaseService,
     private val moduleConfigMemory: ModuleConfigMemory,
-    private val objectMapper: ObjectMapper
+    private val objectMapper: ObjectMapper,
+    private val actionFactory: ActionFactory
 ) {
     private val log = AppLogger.loggerFor(ModuleBuilderService::class)
 
     companion object {
         const val GENERATED_BY_MARKER = "module-builder"
         private const val BUILDER_SPEC_FILE = "builder.json"
+        private const val DEFAULT_ICON_FILE = "module.svg"
         private val RESERVED_COLUMN_NAMES = setOf("id", "created_at", "updated_at", "file", "file_name")
         private val IDENTIFIER_REGEX = Regex("[a-z][a-z0-9_]*")
+        private val ALLOWED_ICON_EXTENSIONS = setOf("png", "jpg", "jpeg", "svg", "webp", "gif")
+        private const val MAX_ICON_SIZE_BYTES = 2 * 1024 * 1024L
+        private val DEFAULT_ICON_SVG = """
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <rect x="3" y="3" width="18" height="18" rx="3"/>
+              <path d="M3 9h18M9 21V9"/>
+            </svg>
+        """.trimIndent()
     }
 
     // -------------------------------------------------------------------
@@ -104,6 +118,10 @@ class ModuleBuilderService(
         try {
             for (table in request.tables) {
                 File(moduleDir, "${table.name}.xml").writeText(buildTableXml(table))
+            }
+
+            if (request.icon == null) {
+                File(moduleDir, DEFAULT_ICON_FILE).writeText(DEFAULT_ICON_SVG)
             }
 
             objectMapper.writerWithDefaultPrettyPrinter()
@@ -230,8 +248,10 @@ class ModuleBuilderService(
             objectMapper.writerWithDefaultPrettyPrinter()
                 .writeValue(File(directory, "manifest.json"), buildManifest(request))
 
-            objectMapper.writerWithDefaultPrettyPrinter()
-                .writeValue(File(directory, uiPageFileName(moduleId)), buildUiPage(request))
+            if (!request.uiCustomized) {
+                objectMapper.writerWithDefaultPrettyPrinter()
+                    .writeValue(File(directory, uiPageFileName(moduleId)), buildUiPage(request))
+            }
 
             val paramsFile = File(directory, "params.json")
             if (request.params.isNotEmpty()) {
@@ -306,13 +326,124 @@ class ModuleBuilderService(
             )
             objectMapper.writerWithDefaultPrettyPrinter()
                 .writeValue(File(directory, "manifest.json"), buildManifest(updatedRequest))
-            objectMapper.writerWithDefaultPrettyPrinter()
-                .writeValue(File(directory, uiPageFileName(moduleId)), buildUiPage(updatedRequest))
+            if (!updatedRequest.uiCustomized) {
+                objectMapper.writerWithDefaultPrettyPrinter()
+                    .writeValue(File(directory, uiPageFileName(moduleId)), buildUiPage(updatedRequest))
+            }
             objectMapper.writerWithDefaultPrettyPrinter().writeValue(specFile, updatedRequest)
             moduleService.scanModules()
         }
 
         return getSchema(moduleId)
+    }
+
+    fun uploadIcon(moduleId: String, file: MultipartFile): Map<String, String> {
+        val directory = requireBuilderModuleDirectory(moduleId)
+
+        if (file.isEmpty) throw BadRequestException("Icon file is empty")
+        if (file.size > MAX_ICON_SIZE_BYTES) throw BadRequestException("Icon file exceeds the 2MB limit")
+
+        val extension = file.originalFilename?.substringAfterLast('.', "")?.lowercase().orEmpty()
+        if (extension !in ALLOWED_ICON_EXTENSIONS) {
+            throw BadRequestException("Icon must be one of: ${ALLOWED_ICON_EXTENSIONS.joinToString()}")
+        }
+
+        directory.listFiles { f -> f.isFile && f.name.startsWith("icon.") }?.forEach { it.delete() }
+        val iconFileName = "icon.$extension"
+        file.transferTo(File(directory, iconFileName))
+
+        updatePersistedSpec(directory) { it.copy(icon = iconFileName) }
+        moduleService.scanModules()
+        return mapOf("icon" to iconFileName)
+    }
+
+    fun uploadUiPage(moduleId: String, file: MultipartFile): Map<String, String> {
+        val directory = requireBuilderModuleDirectory(moduleId)
+
+        if (file.isEmpty) throw BadRequestException("UI file is empty")
+        if (file.originalFilename?.lowercase()?.endsWith(".json") != true) {
+            throw BadRequestException("UI file must be a .json file")
+        }
+
+        val pageJson = try {
+            objectMapper.readTree(file.inputStream)
+        } catch (e: Exception) {
+            throw BadRequestException("Invalid JSON: ${e.message}")
+        }
+        val page = pageJson["page"]
+        if (page == null || !page.has("id") || !page.has("components")) {
+            throw BadRequestException("UI file must contain a 'page' object with 'id' and 'components'")
+        }
+
+        val pageFileName = uiPageFileName(moduleId)
+        objectMapper.writerWithDefaultPrettyPrinter().writeValue(File(directory, pageFileName), pageJson)
+
+        updatePersistedSpec(directory) { it.copy(uiMode = "JSON", uiCustomized = true) }
+        moduleService.scanModules()
+        return mapOf("page" to pageFileName)
+    }
+
+    fun uploadUiBuild(moduleId: String, file: MultipartFile): Map<String, String> {
+        val directory = requireBuilderModuleDirectory(moduleId)
+
+        if (file.isEmpty || file.originalFilename?.lowercase()?.endsWith(".zip") != true) {
+            throw BadRequestException("A non-empty .zip file is required")
+        }
+
+        val tempDir = Files.createTempDirectory("homelab-ui-build-").toFile().canonicalFile
+        try {
+            extractZipTo(file, tempDir)
+            val buildRoot = findIndexHtmlRoot(tempDir)
+                ?: throw BadRequestException("No index.html found in uploaded zip")
+
+            val distDir = File(directory, "dist")
+            distDir.deleteRecursively()
+            buildRoot.copyRecursively(distDir, overwrite = true)
+        } finally {
+            tempDir.deleteRecursively()
+        }
+
+        updatePersistedSpec(directory) { it.copy(uiMode = "STANDALONE", uiCustomized = true) }
+        moduleService.scanModules()
+        return mapOf("uiMode" to "STANDALONE")
+    }
+
+    private fun updatePersistedSpec(directory: File, transform: (ModuleBuilderRequest) -> ModuleBuilderRequest) {
+        val specFile = File(directory, BUILDER_SPEC_FILE)
+        if (!specFile.exists()) return
+        val currentSpec = objectMapper.readValue(specFile, ModuleBuilderRequest::class.java)
+        val updatedRequest = transform(currentSpec)
+        objectMapper.writerWithDefaultPrettyPrinter()
+            .writeValue(File(directory, "manifest.json"), buildManifest(updatedRequest))
+        objectMapper.writerWithDefaultPrettyPrinter().writeValue(specFile, updatedRequest)
+    }
+
+    private fun extractZipTo(file: MultipartFile, targetDir: File) {
+        ZipInputStream(file.inputStream).use { zip ->
+            var entry = zip.nextEntry
+            while (entry != null) {
+                val target = File(targetDir, entry.name).canonicalFile
+                if (!target.toPath().startsWith(targetDir.toPath())) {
+                    throw BadRequestException("Invalid zip entry path: ${entry.name}")
+                }
+                if (entry.isDirectory) {
+                    target.mkdirs()
+                } else {
+                    target.parentFile?.mkdirs()
+                    target.outputStream().use { out -> zip.copyTo(out) }
+                }
+                zip.closeEntry()
+                entry = zip.nextEntry
+            }
+        }
+    }
+
+    // Accepts either index.html at the zip root, or a single top-level folder containing it
+    // (the common shape when zipping a build output directory directly).
+    private fun findIndexHtmlRoot(tempDir: File): File? {
+        if (File(tempDir, "index.html").exists()) return tempDir
+        val subDirs = tempDir.listFiles { f -> f.isDirectory } ?: emptyArray()
+        return subDirs.singleOrNull { File(it, "index.html").exists() }
     }
 
     fun deleteModule(moduleId: String, dropData: Boolean) {
@@ -402,6 +533,26 @@ class ModuleBuilderService(
                     throw BadRequestException("External fetch '${fetch.functionName}' needs at least one responseMapping entry")
                 }
             }
+
+            val availableActionTypes = actionFactory.getAvailableActionTypes()
+            for (fn in table.customFunctions) {
+                if (fn.name.isBlank()) {
+                    throw BadRequestException("Custom function name must not be empty (table '$tableName')")
+                }
+                if (!generatedNames.add(fn.name)) {
+                    throw BadRequestException("Function name '${fn.name}' collides with another function on table '$tableName'")
+                }
+                if (fn.logic.isEmpty()) {
+                    throw BadRequestException("Custom function '${fn.name}' needs at least one action step")
+                }
+                for (step in fn.logic) {
+                    if (step.actionType !in availableActionTypes) {
+                        throw BadRequestException(
+                            "Custom function '${fn.name}' uses unknown action type '${step.actionType}'"
+                        )
+                    }
+                }
+            }
         }
 
         for (table in request.tables) {
@@ -418,6 +569,19 @@ class ModuleBuilderService(
         for (param in request.params) {
             if (param.key.isBlank()) throw BadRequestException("Module parameter key must not be empty")
             if (!paramKeys.add(param.key)) throw BadRequestException("Duplicate module parameter key '${param.key}'")
+        }
+
+        val depModuleIds = mutableSetOf<String>()
+        for (dep in request.dependencies) {
+            if (dep.moduleId == moduleId) {
+                throw BadRequestException("Module '$moduleId' cannot depend on itself")
+            }
+            if (!depModuleIds.add(dep.moduleId)) {
+                throw BadRequestException("Duplicate dependency on module '${dep.moduleId}'")
+            }
+            if (!File(homelabConfig.modulesScanPath, dep.moduleId).exists()) {
+                throw BadRequestException("Dependency module '${dep.moduleId}' does not exist")
+            }
         }
     }
 
@@ -547,11 +711,22 @@ class ModuleBuilderService(
                         "type" to "FETCH_EXTERNAL_GENERIC",
                         "params" to mapOf(
                             "urlTemplate" to fetch.urlTemplate,
+                            "method" to fetch.method,
                             "responseMapping" to fetch.responseMapping,
                             "upsertKey" to fetch.upsertKey
                         )
                     )
                 ),
+                "actUponObject" to xmlFile
+            )
+        }
+
+        for (fn in table.customFunctions) {
+            functions += mapOf(
+                "name" to fn.name,
+                "description" to fn.description.ifBlank { "Fonction personnalisée." },
+                "parameters" to fn.parameters.map { functionParam(it.name, it.type, it.description, it.optional) },
+                "logic" to fn.logic.map { mapOf("type" to it.actionType, "params" to it.params) },
                 "actUponObject" to xmlFile
             )
         }
@@ -571,14 +746,15 @@ class ModuleBuilderService(
             "id" to request.id,
             "name" to request.name,
             "version" to "1.0.0",
-            "icon" to "module.svg",
+            "icon" to (request.icon ?: DEFAULT_ICON_FILE),
             "description" to request.description,
             "generatedBy" to GENERATED_BY_MARKER,
             "actions" to actions,
-            "uIFormat" to "JSON",
+            "uIFormat" to request.uiMode,
             "page" to uiPageFileName(request.id),
             "dataObjects" to request.tables.map { "${it.name}.xml" },
-            "dependencies" to null,
+            "dependencies" to request.dependencies.ifEmpty { null }
+                ?.map { mapOf("moduleId" to it.moduleId, "version" to it.version) },
             "permissions" to listOf("read:${request.id}", "write:${request.id}", "delete:${request.id}")
         )
     }
