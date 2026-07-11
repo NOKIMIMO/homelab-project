@@ -58,6 +58,9 @@ class AppletService(
         val sourceDef = ModuleDataObjectParser.parseFromXml(sourceFile.readText(), sourceModule)
         log.debug("Parsed source definition for action ${decl.name}: $sourceDef")
         val actionReturn = mutableMapOf<String, Any?>()
+        // Threaded forward across steps (Laravel-pipeline style) so a step like MAP_JSON can
+        // consume the previous step's result via the reserved "_previousResult" param.
+        var previousResult: Any? = null
         for (actionDecl in resolvedLogic) {
             val actionType = actionDecl["type"] as String
             val action: Action? = actionFactory.resolve(actionType)
@@ -170,6 +173,16 @@ class AppletService(
                 }
             }
 
+            // Static params the module author configured on this logic step (eg. a builder-authored
+            // custom function) win over caller-supplied values on key conflicts.
+            val stepParams = (actionDecl["params"] as? Map<*, *>)
+                ?.mapNotNull { (k, v) -> if (k is String && v != null) k to v else null }
+                ?.toMap() ?: emptyMap()
+            if (stepParams.isNotEmpty()) {
+                paramsForAction = paramsForAction + stepParams
+            }
+            previousResult?.let { paramsForAction = paramsForAction + ("_previousResult" to it) }
+
             val genericForAction = GenericTableLayer(
                 objectDefForAction,
                 moduleDatabaseService = moduleDatabaseService,
@@ -189,6 +202,7 @@ class AppletService(
             }
 
             actionReturn[actionType] = returnValue
+            previousResult = returnValue
         }
         return mapOf("success" to true, "data" to actionReturn)
     }

@@ -13,6 +13,7 @@ import {
   ReaderCarousel,
   ImageViewer,
   TextInput,
+  CodeBlock,
 } from './../index';
 
 import {
@@ -54,6 +55,7 @@ const componentMap = {
   ReaderCarousel,
   ImageViewer,
   TextInput,
+  CodeBlock,
 } satisfies Record<RendererComponentType, React.ElementType>;
 
 // ---------------------------------------------------------------------------

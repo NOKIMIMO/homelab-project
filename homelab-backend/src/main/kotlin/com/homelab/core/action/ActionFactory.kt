@@ -1,5 +1,6 @@
 package com.homelab.core.action
 
+import com.homelab.core.config.HomelabConfig
 import com.homelab.core.model.action.*
 import com.homelab.core.plugin.PluginRegistry
 import com.homelab.core.service.GlobalParametersService
@@ -10,7 +11,8 @@ import org.springframework.stereotype.Service
 @Service
 class ActionFactory(
     private val pluginRegistry: PluginRegistry,
-    private val globalParametersService: GlobalParametersService
+    private val globalParametersService: GlobalParametersService,
+    private val homelabConfig: HomelabConfig
 ) {
     private val builtins: Map<String, Action> = mapOf(
         ActionsEnum.UPLOAD_FILE.name to UploadFileAction(),
@@ -21,7 +23,8 @@ class ActionFactory(
         ActionsEnum.READ.name to ReadAction(),
         ActionsEnum.UPDATE.name to UpdateAction(),
         ActionsEnum.FETCH_EXTERNAL.name to FetchExternalAction(globalParametersService),
-        ActionsEnum.FETCH_EXTERNAL_GENERIC.name to GenericFetchExternalAction(globalParametersService)
+        ActionsEnum.FETCH_EXTERNAL_GENERIC.name to GenericFetchExternalAction(globalParametersService),
+        ActionsEnum.MAP_JSON.name to MapJsonAction(homelabConfig)
     )
 
     fun resolve(typeName: String): Action? {
