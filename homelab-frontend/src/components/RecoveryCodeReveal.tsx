@@ -4,9 +4,18 @@ import { Check, Copy, ShieldAlert } from 'lucide-react';
 interface RecoveryCodeRevealProps {
   code: string;
   onClose: () => void;
+  label?: string;
+  description?: string;
+  confirmLabel?: string;
 }
 
-export default function RecoveryCodeReveal({ code, onClose }: RecoveryCodeRevealProps) {
+export default function RecoveryCodeReveal({
+  code,
+  onClose,
+  label = 'Code de récupération',
+  description = 'Conservez ce code en lieu sûr (gestionnaire de mots de passe, papier hors-ligne). Il ne sera plus jamais affiché.',
+  confirmLabel = "J'ai sauvegardé ce code",
+}: RecoveryCodeRevealProps) {
   const [copied, setCopied] = useState(false);
 
   const copyCode = async () => {
@@ -19,10 +28,10 @@ export default function RecoveryCodeReveal({ code, onClose }: RecoveryCodeReveal
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
       <div className="bg-base-300 rounded-2xl shadow-2xl w-full max-w-md p-6 space-y-4">
         <div className="badge badge-warning gap-2">
-          <ShieldAlert size={14} /> Code de récupération
+          <ShieldAlert size={14} /> {label}
         </div>
         <p className="text-sm text-base-content/70">
-          Conservez ce code en lieu sûr (gestionnaire de mots de passe, papier hors-ligne). Il ne sera plus jamais affiché.
+          {description}
         </p>
         <div className="flex items-center gap-2">
           <code className="flex-1 bg-base-200 rounded-lg px-3 py-2 font-mono text-sm break-all">{code}</code>
@@ -32,7 +41,7 @@ export default function RecoveryCodeReveal({ code, onClose }: RecoveryCodeReveal
         </div>
         <div className="flex justify-end pt-2">
           <button className="btn btn-sm btn-primary" onClick={onClose}>
-            J'ai sauvegardé ce code
+            {confirmLabel}
           </button>
         </div>
       </div>

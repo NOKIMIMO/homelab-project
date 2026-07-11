@@ -14,9 +14,9 @@ export default function LoginPage() {
     return state?.from?.pathname || '/';
   }, [location.state]);
 
-  const handleLoginSuccess = (token: string, keyName: string) => {
+  const handleLoginSuccess = (token: string, keyName: string, mustResetPassword?: boolean) => {
     auth.login(token, keyName);
-    navigate(redirectPath, { replace: true });
+    navigate(mustResetPassword ? '/settings' : redirectPath, { replace: true });
   };
 
   if (showBootstrap) {
