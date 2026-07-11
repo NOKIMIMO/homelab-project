@@ -2,6 +2,7 @@ import { createRoot } from 'react-dom/client';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import { AuthProvider } from '@auth/AuthProvider';
 import RequireAuth from '@auth/RequireAuth';
+import AccountPage from '@pages/AccountPage';
 import DashboardPage from '@pages/DashboardPage';
 import LoginPage from '@pages/LoginPage';
 import ModulePage from '@pages/ModulePage';
@@ -28,6 +29,7 @@ const router = createBrowserRouter([
       { index: true, element: <DashboardPage /> },
       { path: 'plugins/:moduleId', element: <ModulePage /> },
       { path: 'admin', element: <RequireAdmin><AdminPage /></RequireAdmin> },
+      { path: 'settings', element: <AccountPage /> },
     ]
   },
   { path: '/403', element: <Error403Page /> },

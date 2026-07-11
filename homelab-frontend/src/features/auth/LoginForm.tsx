@@ -2,16 +2,17 @@ import { useEffect, useState } from 'react';
 // import BootstrapPanel from './BootstrapPanel';
 // import { fetchKeys } from './authHooks';
 import PasswordLoginForm from './PasswordLoginForm';
+import ForgotPasswordForm from './ForgotPasswordForm';
 import RecoveryResetForm from './RecoveryResetForm';
 import HardResetInfo from './HardResetInfo';
 import { getApiUrl } from '@lib/api';
 
 interface LoginProps {
-  onLoginSuccess: (token: string, keyName: string) => void;
+  onLoginSuccess: (token: string, keyName: string, mustResetPassword?: boolean) => void;
   onShowBootstrap: () => void;
 }
 
-type View = 'login' | 'recovery' | 'hardReset';
+type View = 'login' | 'forgotPassword' | 'recovery' | 'hardReset';
 
 const DEFAULT_DESCRIPTION = "Votre espace personnel, hébergé chez vous.";
 
@@ -73,11 +74,22 @@ export default function LoginForm({ onLoginSuccess }: LoginProps) {
               <button
                 type="button"
                 className="btn btn-ghost btn-xs w-full mt-4 opacity-60"
+                onClick={() => setView('forgotPassword')}
+              >
+                Mot de passe oublié ?
+              </button>
+              <button
+                type="button"
+                className="btn btn-ghost btn-xs w-full opacity-60"
                 onClick={() => setView('recovery')}
               >
                 Code de reset perdu ?
               </button>
             </>
+          )}
+
+          {view === 'forgotPassword' && (
+            <ForgotPasswordForm onBack={() => setView('login')} />
           )}
 
           {view === 'recovery' && (
