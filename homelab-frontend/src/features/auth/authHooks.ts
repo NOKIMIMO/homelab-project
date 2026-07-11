@@ -5,6 +5,12 @@ export interface LoginResult {
   token?: string;
   keyName?: string;
   message?: string;
+  mustResetPassword?: boolean;
+}
+
+export interface SimpleResult {
+  success: boolean;
+  message?: string;
 }
 
 export async function fetchKeys(): Promise<string[]> {
@@ -61,4 +67,23 @@ export async function registerUser(email: string, password: string): Promise<Log
   });
   const data = (await res.json()) as LoginResult;
   return data;
+}
+
+export async function requestPasswordReset(email: string): Promise<SimpleResult> {
+  const res = await fetch(getApiUrl('/api/auth/password-reset-requests'), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email }),
+  });
+  if (!res.ok) {
+    let message = 'Échec de la demande';
+    try {
+      const data = await res.json() as SimpleResult;
+      message = data.message || message;
+    } catch {
+      // non-JSON error body (e.g. proxy error page): keep the generic message
+    }
+    return { success: false, message };
+  }
+  return (await res.json()) as SimpleResult;
 }
