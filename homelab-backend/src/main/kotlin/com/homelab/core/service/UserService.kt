@@ -1,5 +1,6 @@
 package com.homelab.core.service
 
+import com.homelab.core.exception.NotFoundException
 import com.homelab.core.model.auth.User
 import com.homelab.core.model.auth.UserRepository
 import org.springframework.stereotype.Service
@@ -44,7 +45,7 @@ class UserService(private val repository: UserRepository) {
     fun findByEmail(email: String): User? = repository.findByEmail(email).orElse(null)
 
     fun updateUserPermissions(id: Long, permissions: Set<String>) {
-        val user = repository.findById(id).orElseThrow { IllegalArgumentException("User with id $id not found") }
+        val user = repository.findById(id).orElseThrow { NotFoundException("User with id $id not found") }
         user.permissions = permissions.toMutableSet()
         repository.save(user)
     }
@@ -53,7 +54,7 @@ class UserService(private val repository: UserRepository) {
     // Returned in plaintext once; only its hash is persisted. mustResetPassword forces the
     // next successful login to invalidate it immediately (see AuthController.login).
     fun issueTemporaryPassword(id: Long): String {
-        val user = repository.findById(id).orElseThrow { IllegalArgumentException("User with id $id not found") }
+        val user = repository.findById(id).orElseThrow { NotFoundException("User with id $id not found") }
         val tempPassword = (1..3).joinToString("-") {
             (1..4).map { TEMP_PASSWORD_ALPHABET[secureRandom.nextInt(TEMP_PASSWORD_ALPHABET.length)] }.joinToString("")
         }
@@ -64,7 +65,7 @@ class UserService(private val repository: UserRepository) {
     }
 
     fun updatePassword(id: Long, newPasswordHash: String) {
-        val user = repository.findById(id).orElseThrow { IllegalArgumentException("User with id $id not found") }
+        val user = repository.findById(id).orElseThrow { NotFoundException("User with id $id not found") }
         user.passwordHash = newPasswordHash
         user.mustResetPassword = false
         repository.save(user)

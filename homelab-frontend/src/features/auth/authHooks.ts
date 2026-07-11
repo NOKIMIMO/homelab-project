@@ -75,6 +75,15 @@ export async function requestPasswordReset(email: string): Promise<SimpleResult>
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email }),
   });
-  const data = (await res.json()) as SimpleResult;
-  return data;
+  if (!res.ok) {
+    let message = 'Échec de la demande';
+    try {
+      const data = await res.json() as SimpleResult;
+      message = data.message || message;
+    } catch {
+      // non-JSON error body (e.g. proxy error page): keep the generic message
+    }
+    return { success: false, message };
+  }
+  return (await res.json()) as SimpleResult;
 }
