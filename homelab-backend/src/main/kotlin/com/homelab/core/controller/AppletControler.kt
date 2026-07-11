@@ -1,9 +1,12 @@
 package com.homelab.core.controller
 
 import com.homelab.core.config.HomelabConfig
+import com.homelab.core.exception.ForbiddenException
 import com.homelab.core.model.module.ModuleConfig
 import com.homelab.sdk.module.action.ModuleActionDeclaration
 import com.homelab.core.service.AppletService
+import com.homelab.core.service.PermissionService
+import com.homelab.core.service.UserService
 import com.homelab.core.service.module.ModuleConfigService
 import com.homelab.core.service.module.ModuleService
 import org.springframework.core.io.FileSystemResource
@@ -12,6 +15,7 @@ import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import com.homelab.sdk.helper.AppLogger
+import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.web.bind.annotation.*
 import org.springframework.web.multipart.MultipartFile
 import java.nio.file.Path
@@ -23,7 +27,9 @@ class AppletControler(
 	private val moduleConfigService: ModuleConfigService,
 	private val homelabConfig: HomelabConfig,
 	private val appletService: AppletService,
-	private val moduleService: ModuleService
+	private val moduleService: ModuleService,
+	private val userService: UserService,
+	private val permissionService: PermissionService
 ) {
 
 	private val log = AppLogger.loggerFor(AppletControler::class)
@@ -98,6 +104,13 @@ class AppletControler(
 		}
 		val decl = findFunction(found.config, functionName) ?:
 			return ResponseEntity.status(HttpStatus.NOT_FOUND).body(mapOf("error" to "Function not found"))
+
+		val email = SecurityContextHolder.getContext().authentication?.name
+			?: throw ForbiddenException("Not authenticated")
+		val user = userService.findByEmail(email) ?: throw ForbiddenException("Not authenticated")
+		if (!permissionService.canInvoke(user, found.config, decl)) {
+			throw ForbiddenException("Missing required permission to invoke $functionName on module $id")
+		}
 
 		val resolvedLogic = decl.logic.map { logic ->
 			mapOf("type" to logic.type)

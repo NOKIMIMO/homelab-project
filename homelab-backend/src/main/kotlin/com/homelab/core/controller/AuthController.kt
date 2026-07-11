@@ -1,8 +1,12 @@
 package com.homelab.core.controller
 
+import com.homelab.core.api.dto.toDto
 import com.homelab.core.model.auth.AddUserRequest
 import com.homelab.core.model.auth.LoginRequest
+import com.homelab.core.model.auth.PasswordResetRequest
+import com.homelab.core.model.auth.PasswordResetRequestRepository
 import com.homelab.core.model.auth.RecoveryResetRequest
+import com.homelab.core.model.auth.UpdatePasswordRequest
 import com.homelab.core.model.auth.User
 import com.homelab.core.model.auth.UserRepository
 import com.homelab.core.model.auth.SignupRequest
@@ -16,6 +20,7 @@ import com.homelab.core.service.UserService
 import com.homelab.sdk.helper.AppLogger
 import jakarta.servlet.http.HttpServletResponse
 import org.springframework.http.ResponseEntity
+import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.bind.annotation.*
 import java.time.LocalDateTime
@@ -29,6 +34,7 @@ class AuthController(
     private val userService: UserService,
     private val repository: UserRepository,
     private val signupRequestRepository: SignupRequestRepository,
+    private val passwordResetRequestRepository: PasswordResetRequestRepository,
     private val jwtService: JwtService,
     private val recoveryCodeService: RecoveryCodeService,
     private val loginSettingsService: LoginSettingsService
@@ -38,6 +44,17 @@ class AuthController(
     @GetMapping("/challenge")
     fun getChallenge(): ResponseEntity<Map<String, String>> {
         return ResponseEntity.ok(mapOf("challenge" to authService.generateChallenge()))
+    }
+
+    // Lets the currently logged-in user fetch their own account state (e.g. mustResetPassword)
+    // without needing admin rights.
+    @GetMapping("/me")
+    fun getCurrentUser(): ResponseEntity<Any> {
+        val email = SecurityContextHolder.getContext().authentication?.name
+            ?: return ResponseEntity.status(401).body(mapOf("success" to false, "message" to "Not authenticated"))
+        val user = repository.findByEmail(email).orElse(null)
+            ?: return ResponseEntity.status(401).body(mapOf("success" to false, "message" to "Not authenticated"))
+        return ResponseEntity.ok(user.toDto())
     }
 
     // Owner-configurable description shown on the login card. Public since the login page
@@ -59,6 +76,15 @@ class AuthController(
             if (userOpt.isPresent) {
                 val user = userOpt.get()
                 if (authService.verifyPassword(user.passwordHash, request.password)) {
+                    val mustResetPassword = user.mustResetPassword
+                    if (mustResetPassword) {
+                        // Single-use: the temporary password issued on reset approval is
+                        // invalidated as soon as it's used once. The user must call
+                        // PUT /api/auth/password (with this session's token) before another
+                        // password login will work.
+                        user.passwordHash = null
+                        repository.save(user)
+                    }
                     val token = jwtService.generateToken(
                         username = user.email,
                         isAdmin = user.isAdmin
@@ -68,7 +94,12 @@ class AuthController(
                     cookie.path = "/"
                     cookie.maxAge = 86400 * 7 // 24h * 7
                     response.addCookie(cookie)
-                    return ResponseEntity.ok(mapOf("success" to true, "token" to token, "userEmail" to user.email))
+                    return ResponseEntity.ok(mapOf(
+                        "success" to true,
+                        "token" to token,
+                        "userEmail" to user.email,
+                        "mustResetPassword" to mustResetPassword
+                    ))
                 }
             }
             return ResponseEntity.status(401).body(mapOf("success" to false, "message" to "Invalid credentials"))
@@ -132,7 +163,7 @@ class AuthController(
                 signup.processedAt = LocalDateTime.now()
                 signupRequestRepository.save(signup)
                 val recoveryCode = recoveryCodeService.generateNewCode()
-                ResponseEntity.ok(mapOf("success" to true, "user" to user, "recoveryCode" to recoveryCode))
+                ResponseEntity.ok(mapOf("success" to true, "user" to user.toDto(), "recoveryCode" to recoveryCode))
             } catch (e: IllegalArgumentException) {
                 ResponseEntity.badRequest().body(mapOf("success" to false, "message" to e.message))
             }
@@ -141,6 +172,47 @@ class AuthController(
 
         signupRequestRepository.save(signup)
         return ResponseEntity.ok().build()
+    }
+
+    // Small reset: a logged-out user asks for their password back. An admin reviews and
+    // approves the request from the backend, which issues a one-time temporary password
+    // (see AdminController.approvePasswordResetRequest). Distinct from the "big reset"
+    // recovery-code flow below, which wipes every user.
+    @PostMapping("/password-reset-requests")
+    fun requestPasswordReset(@RequestBody body: Map<String, String>): ResponseEntity<Any> {
+        val email = body["email"]?.trim()
+        if (email.isNullOrBlank()) {
+            return ResponseEntity.badRequest().body(mapOf("success" to false, "message" to "Email is required"))
+        }
+        if (!repository.findByEmail(email).isPresent) {
+            return ResponseEntity.badRequest().body(mapOf("success" to false, "message" to "No account with this email"))
+        }
+        if (passwordResetRequestRepository.existsByEmailAndStatus(email, "PENDING")) {
+            return ResponseEntity.badRequest().body(mapOf("success" to false, "message" to "A reset request is already pending"))
+        }
+        passwordResetRequestRepository.save(PasswordResetRequest(email = email))
+        return ResponseEntity.ok(mapOf("success" to true))
+    }
+
+    // Self-service password change. Requires proof of the current password, except right
+    // after a one-time temporary password login (mustResetPassword), where the login itself
+    // already proved identity.
+    @PutMapping("/password")
+    fun updatePassword(@RequestBody request: UpdatePasswordRequest): ResponseEntity<Any> {
+        val email = SecurityContextHolder.getContext().authentication?.name
+            ?: return ResponseEntity.status(401).body(mapOf("success" to false, "message" to "Not authenticated"))
+        val user = repository.findByEmail(email).orElse(null)
+            ?: return ResponseEntity.status(401).body(mapOf("success" to false, "message" to "Not authenticated"))
+
+        if (request.newPassword.isBlank() || request.newPassword.length < 8) {
+            return ResponseEntity.badRequest().body(mapOf("success" to false, "message" to "Password must be at least 8 characters"))
+        }
+        if (!user.mustResetPassword && !authService.verifyPassword(user.passwordHash, request.currentPassword)) {
+            return ResponseEntity.status(403).body(mapOf("success" to false, "message" to "Current password is incorrect"))
+        }
+
+        userService.updatePassword(user.id!!, AuthService.encodePassword(request.newPassword))
+        return ResponseEntity.ok(mapOf("success" to true))
     }
 
     // Emergency access recovery: presenting a valid, unused recovery code wipes every existing

@@ -6,7 +6,7 @@ const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
 
 interface PasswordLoginFormProps {
-  onLoginSuccess: (token: string, keyName: string) => void;
+  onLoginSuccess: (token: string, keyName: string, mustResetPassword?: boolean) => void;
 }
 
 export default function PasswordLoginForm({ onLoginSuccess }: PasswordLoginFormProps) {
@@ -69,7 +69,7 @@ export default function PasswordLoginForm({ onLoginSuccess }: PasswordLoginFormP
       const result = await loginWithPassword(email, password);
 
       if (result.success && result.token) {
-        onLoginSuccess(result.token, result.keyName || email);
+        onLoginSuccess(result.token, result.keyName || email, result.mustResetPassword);
         return;
       }
 

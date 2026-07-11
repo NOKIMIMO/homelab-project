@@ -1,15 +1,19 @@
 package com.homelab.core.controller
 
+import com.homelab.core.api.dto.PasswordResetRequestDto
+import com.homelab.core.api.dto.SignupRequestDto
+import com.homelab.core.api.dto.UserDto
+import com.homelab.core.api.dto.toDto
 import com.homelab.core.config.HomelabConfig
-import com.homelab.core.model.auth.SignupRequest
+import com.homelab.core.model.auth.PasswordResetRequestRepository
 import com.homelab.core.model.auth.SignupRequestRepository
-import com.homelab.core.model.auth.User
 import com.homelab.core.model.auth.UserRepository
 import com.homelab.core.service.AuthService
 import com.homelab.core.service.JwtService
 import com.homelab.core.service.LoginSettingsService
 import com.homelab.core.service.RecoveryCodeService
 import com.homelab.core.service.UserService
+import com.homelab.core.service.module.ModuleConfigService
 import com.homelab.sdk.helper.AppLogger
 import org.springframework.http.ResponseEntity
 import org.springframework.security.access.prepost.PreAuthorize
@@ -24,8 +28,10 @@ class AdminController(
     private val homelabConfig: HomelabConfig,
     private val userService: UserService,
     private val signupRequestRepository: SignupRequestRepository,
+    private val passwordResetRequestRepository: PasswordResetRequestRepository,
     private val recoveryCodeService: RecoveryCodeService,
     private val loginSettingsService: LoginSettingsService,
+    private val moduleConfigService: ModuleConfigService,
 ) {
 
     @GetMapping("/logs")
@@ -75,7 +81,7 @@ class AdminController(
     @PostMapping("/recovery-code/regenerate")
     fun regenerateRecoveryCode(): Map<String, Any> = mapOf("success" to true, "code" to recoveryCodeService.generateNewCode())
 
-    @GetMapping("/users") fun getUsers(): List<User> = userService.getAllUsers()
+    @GetMapping("/users") fun getUsers(): List<UserDto> = userService.getAllUsers().map { it.toDto() }
 
     @DeleteMapping("/users/{id}")
     fun deleteUser(@PathVariable id: Long): ResponseEntity<Void> {
@@ -88,8 +94,19 @@ class AdminController(
         return ResponseEntity.ok().build()
     }
 
+    @GetMapping("/permissions")
+    fun getAvailablePermissions(): Map<String, List<String>> =
+        moduleConfigService.scanModuleConfigs(homelabConfig.modulesScanPath)
+            .associate { it.config.id to it.config.permissions }
+
+    @PutMapping("/users/{id}/permissions")
+    fun setUserPermissions(@PathVariable id: Long, @RequestBody permissions: List<String>): ResponseEntity<Void> {
+        userService.updateUserPermissions(id, permissions.toSet())
+        return ResponseEntity.ok().build()
+    }
+
     @GetMapping("/signup-requests")
-    fun getSignupRequests(): List<SignupRequest> = signupRequestRepository.findAll()
+    fun getSignupRequests(): List<SignupRequestDto> = signupRequestRepository.findAll().map { it.toDto() }
 
     @PutMapping("/signup-requests/{id}/approve")
     fun approveSignupRequest(@PathVariable id: Long): ResponseEntity<Any> {
@@ -104,7 +121,7 @@ class AdminController(
             req.status = "APPROVED"
             req.processedAt = LocalDateTime.now()
             signupRequestRepository.save(req)
-            ResponseEntity.ok(mapOf("success" to true, "user" to user))
+            ResponseEntity.ok(mapOf("success" to true, "user" to user.toDto()))
         } catch (e: IllegalArgumentException) {
             ResponseEntity.badRequest().body(mapOf("success" to false, "message" to e.message))
         }
@@ -121,6 +138,41 @@ class AdminController(
         req.status = "REJECTED"
         req.processedAt = LocalDateTime.now()
         signupRequestRepository.save(req)
+        return ResponseEntity.ok(mapOf("success" to true))
+    }
+
+    @GetMapping("/password-reset-requests")
+    fun getPasswordResetRequests(): List<PasswordResetRequestDto> =
+        passwordResetRequestRepository.findAll().map { it.toDto() }
+
+    @PutMapping("/password-reset-requests/{id}/approve")
+    fun approvePasswordResetRequest(@PathVariable id: Long): ResponseEntity<Any> {
+        val opt = passwordResetRequestRepository.findById(id)
+        if (!opt.isPresent) return ResponseEntity.notFound().build()
+        val req = opt.get()
+        if (req.status != "PENDING") {
+            return ResponseEntity.badRequest().body(mapOf("success" to false, "message" to "Request already processed"))
+        }
+        val user = userService.findByEmail(req.email)
+            ?: return ResponseEntity.badRequest().body(mapOf("success" to false, "message" to "User no longer exists"))
+        val temporaryPassword = userService.issueTemporaryPassword(user.id!!)
+        req.status = "APPROVED"
+        req.processedAt = LocalDateTime.now()
+        passwordResetRequestRepository.save(req)
+        return ResponseEntity.ok(mapOf("success" to true, "temporaryPassword" to temporaryPassword))
+    }
+
+    @PutMapping("/password-reset-requests/{id}/reject")
+    fun rejectPasswordResetRequest(@PathVariable id: Long): ResponseEntity<Any> {
+        val opt = passwordResetRequestRepository.findById(id)
+        if (!opt.isPresent) return ResponseEntity.notFound().build()
+        val req = opt.get()
+        if (req.status != "PENDING") {
+            return ResponseEntity.badRequest().body(mapOf("success" to false, "message" to "Request already processed"))
+        }
+        req.status = "REJECTED"
+        req.processedAt = LocalDateTime.now()
+        passwordResetRequestRepository.save(req)
         return ResponseEntity.ok(mapOf("success" to true))
     }
 }
