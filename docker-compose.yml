@@ -43,6 +43,29 @@ services:
     networks:
       - homelab-network
 
+  # Self-hosted push relay for mobile alert notifications (UnifiedPush distributor target).
+  # No auth token configured: the per-device endpoint URL (a random slug ntfy generates on
+  # registration) is itself the capability/secret, so only the mobile device that registered
+  # it can be pushed to as long as that URL isn't leaked. If this is exposed on a public
+  # hostname, harden with NTFY_AUTH_DEFAULT_ACCESS=deny-all + NTFY_ENABLE_SIGNUP=false.
+  homelab-ntfy:
+    image: binwiederhier/ntfy
+    container_name: homelab-ntfy
+    command:
+      - serve
+    environment:
+      - TZ=UTC
+      - NTFY_CACHE_FILE=/var/cache/ntfy/cache.db
+      - NTFY_BEHIND_PROXY=true
+    volumes:
+      - ntfy-cache:/var/cache/ntfy
+      - ntfy-data:/etc/ntfy
+    ports:
+      - "8081:80"
+    restart: unless-stopped
+    networks:
+      - homelab-network
+
 networks:
   homelab-network:
     name: homelab-network
@@ -51,3 +74,5 @@ networks:
 
 volumes:
   db-data:
+  ntfy-cache:
+  ntfy-data:
