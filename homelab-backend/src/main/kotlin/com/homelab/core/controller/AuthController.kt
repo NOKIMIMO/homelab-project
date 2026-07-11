@@ -184,14 +184,16 @@ class AuthController(
         if (email.isNullOrBlank()) {
             return ResponseEntity.badRequest().body(mapOf("success" to false, "message" to "Email is required"))
         }
-        if (!repository.findByEmail(email).isPresent) {
-            return ResponseEntity.badRequest().body(mapOf("success" to false, "message" to "No account with this email"))
+        // Always respond with the same generic success message whether or not the account
+        // exists, or already has a pending request, so this endpoint can't be used to
+        // enumerate registered emails. The request is only actually recorded when valid.
+        if (repository.findByEmail(email).isPresent && !passwordResetRequestRepository.existsByEmailAndStatus(email, "PENDING")) {
+            passwordResetRequestRepository.save(PasswordResetRequest(email = email))
         }
-        if (passwordResetRequestRepository.existsByEmailAndStatus(email, "PENDING")) {
-            return ResponseEntity.badRequest().body(mapOf("success" to false, "message" to "A reset request is already pending"))
-        }
-        passwordResetRequestRepository.save(PasswordResetRequest(email = email))
-        return ResponseEntity.ok(mapOf("success" to true))
+        return ResponseEntity.ok(mapOf(
+            "success" to true,
+            "message" to "If an account exists for this email, a reset request has been submitted for admin approval."
+        ))
     }
 
     // Self-service password change. Requires proof of the current password, except right
