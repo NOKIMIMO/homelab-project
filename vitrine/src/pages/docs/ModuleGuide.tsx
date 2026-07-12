@@ -2,7 +2,13 @@ import type { ReactNode } from 'react'
 import { Link } from 'react-router'
 import CodeBlock from '../../components/CodeBlock'
 import FieldTable from '../../components/FieldTable'
-import { BUILDER_REQUEST, MANIFEST_MANUAL, TASKS_XML } from '../../data/snippets'
+import {
+  BUILDER_REQUEST,
+  CUSTOM_FUNCTION_CHAIN_EXAMPLE,
+  MANIFEST_MANUAL,
+  MAP_JSON_MAPPING_FILE,
+  TASKS_XML,
+} from '../../data/snippets'
 import { useLanguage, type Lang } from '../../i18n/LanguageContext'
 
 const TEXT: Record<
@@ -14,6 +20,7 @@ const TEXT: Record<
     endpointsColumns: string[]
     endpointsRows: (string | ReactNode)[][]
     afterRequest: ReactNode
+    builderExtrasIntro: ReactNode
     section2Title: string
     section2Intro: ReactNode
     manifestColumns: string[]
@@ -25,6 +32,10 @@ const TEXT: Record<
     actionTypesIntro: ReactNode
     actionTypesColumns: string[]
     actionTypesRows: (string | ReactNode)[][]
+    customFunctionsTitle: string
+    customFunctionsIntro: ReactNode
+    customFunctionsChainNote: ReactNode
+    mappingFileIntro: ReactNode
   }
 > = {
   fr: {
@@ -46,7 +57,27 @@ const TEXT: Record<
       ['POST', '/api/admin/module-builder', 'Crée un module --- génère manifest.json, .xml et la page UI'],
       ['PUT', '/api/admin/module-builder/{id}', 'Met à jour un module existant'],
       ['POST', '/api/admin/module-builder/{id}/tables/{table}/columns', 'Ajoute une colonne à une table'],
+      ['POST', '/api/admin/module-builder/{id}/icon', 'Envoie une icône personnalisée (png/jpg/svg/webp/gif, ≤2 Mo)'],
+      [
+        'POST',
+        '/api/admin/module-builder/{id}/ui-page',
+        <>
+          Remplace la page UI auto-générée par un fichier JSON écrit à la
+          main --- ne sera plus régénérée automatiquement ensuite
+        </>,
+      ],
+      [
+        'POST',
+        '/api/admin/module-builder/{id}/ui-build',
+        <>
+          Installe un frontend complet déjà construit (<code>.zip</code>,
+          extrait dans <code>dist/</code>) --- bascule le module en{' '}
+          <code>uIFormat: "STANDALONE"</code>
+        </>,
+      ],
       ['DELETE', '/api/admin/module-builder/{id}?dropData=false', 'Supprime le module'],
+      ['PUT', '/api/admin/module-settings/{id}', <>Réserve l'écriture et/ou la suppression du module aux administrateurs (par défaut : ouvert à tout utilisateur authentifié)</>],
+      ['POST', '/api/modules/scan', 'Recharge tous les modules depuis le disque (bouton « Rescanner »)'],
     ],
     afterRequest: (
       <>
@@ -58,6 +89,14 @@ const TEXT: Record<
           Cardinalité ORM
         </Link>
         .
+      </>
+    ),
+    builderExtrasIntro: (
+      <>
+        Le formulaire du créateur de module couvre aussi, sans appel API
+        manuel : dépendances (choix parmi les modules déjà installés),
+        upload d'icône, et les deux réglages d'accès écriture/suppression
+        décrits ci-dessus.
       </>
     ),
     section2Title: '2. Format manuel --- pour un contrôle total',
@@ -87,8 +126,17 @@ const TEXT: Record<
           cœur)
         </>,
       ],
-      ['dependencies', 'non', <><code>[{'{ moduleId, version }'}]</code> --- modules requis</>],
-      ['permissions', 'non', 'Permissions déclarées, ex. read:module, write:module'],
+      ['dependencies', 'non', <><code>[{'{ moduleId, version }'}]</code> --- modules requis, doivent déjà exister sur l'instance</>],
+      [
+        'permissions',
+        'non',
+        <>
+          Liste informative <code>read/write/delete:&lt;id&gt;</code> ---{' '}
+          <strong>non appliquée</strong> par le moteur d'autorisation. Le
+          contrôle d'accès réel se fait via <code>PUT /api/admin/module-settings/{'{id}'}</code>{' '}
+          (écriture/suppression réservées aux admins ou non).
+        </>,
+      ],
     ],
     dataObjectIntro: (
       <>
@@ -116,18 +164,75 @@ const TEXT: Record<
       ['LIST', 'Retourne toutes les lignes de la table'],
       ['READ', <>Retourne une ligne filtrée par les paramètres <code>EQUAL</code></>],
       ['CREATE', 'Insère une nouvelle ligne avec les paramètres fournis'],
+      ['UPDATE', <>Met à jour la/les lignes filtrées par les paramètres <code>EQUAL</code> avec le reste des paramètres</>],
       ['DELETE', <>Supprime la/les lignes filtrées par les paramètres <code>EQUAL</code></>],
       ['UPLOAD_FILE', 'Upload un fichier binaire et crée une entrée en base'],
       ['GET_FILE', "Retourne le fichier binaire d'une entrée"],
       [
         'FETCH_EXTERNAL',
         <>
-          Appelle une API HTTP externe, parse la réponse JSON, upsert le
-          résultat en base. Lit <code>apiKey</code>/<code>baseUrl</code> depuis{' '}
-          <code>params.json</code>.
+          Appelle l'API OpenWeatherMap (logique codée en dur, cf. module{' '}
+          <code>weather</code>), parse la réponse, upsert le résultat en
+          base. Lit <code>apiKey</code>/<code>baseUrl</code>/<code>units</code> depuis{' '}
+          <code>params.json</code>, méthode HTTP configurable via{' '}
+          <code>params.method</code> (défaut <code>GET</code>).
+        </>,
+      ],
+      [
+        'FETCH_EXTERNAL_GENERIC',
+        <>
+          Équivalent générique et réutilisable pour n'importe quelle API :{' '}
+          <code>urlTemplate</code> (placeholders <code>{'{nom}'}</code>),{' '}
+          <code>method</code>, <code>responseMapping</code> (colonne → chemin
+          JSON) et <code>upsertKey</code> optionnel. Sans{' '}
+          <code>responseMapping</code>, retourne le JSON brut sans écrire en
+          base --- utile enchaîné avec <code>MAP_JSON</code> ci-dessous.
+        </>,
+      ],
+      [
+        'MAP_JSON',
+        <>
+          Mappe le résultat de l'étape <em>précédente</em> vers des colonnes,
+          via un fichier dédié <code>&lt;nomFonction&gt;.mapping.json</code>{' '}
+          (même forme que <code>responseMapping</code>/<code>upsertKey</code>{' '}
+          ci-dessus). Voir « Fonctions personnalisées » plus bas.
+        </>,
+      ],
+      [
+        <em key="plugin">custom (plugin)</em>,
+        <>
+          Types additionnels enregistrés par un plugin ---{' '}
+          <Link to="/docs/plugin" className="link link-primary">
+            voir Écrire un plugin
+          </Link>
+          .
         </>,
       ],
     ],
+    customFunctionsTitle: 'Fonctions personnalisées : enchaîner des actions',
+    customFunctionsIntro: (
+      <>
+        Depuis le créateur de module, une table peut déclarer des « Fonctions
+        personnalisées » : une séquence ordonnée d'étapes, chacune choisissant
+        un type d'action parmi ceux réellement disponibles (builtins +
+        plugins, <code>GET /api/modules/actions</code>), avec ses propres
+        paramètres fixes.
+      </>
+    ),
+    customFunctionsChainNote: (
+      <>
+        Chaque étape reçoit le résultat de la précédente via le paramètre
+        réservé <code>_previousResult</code> (façon pipeline Laravel) --- ce
+        qui permet par exemple d'enchaîner un appel externe brut (sans{' '}
+        <code>responseMapping</code>) avec <code>MAP_JSON</code> :
+      </>
+    ),
+    mappingFileIntro: (
+      <>
+        Avec le fichier de mapping dédié <code>callApi.mapping.json</code>{' '}
+        dans le dossier du module :
+      </>
+    ),
   },
   en: {
     title: 'Create a module',
@@ -148,7 +253,27 @@ const TEXT: Record<
       ['POST', '/api/admin/module-builder', 'Creates a module --- generates manifest.json, .xml and the UI page'],
       ['PUT', '/api/admin/module-builder/{id}', 'Updates an existing module'],
       ['POST', '/api/admin/module-builder/{id}/tables/{table}/columns', 'Adds a column to a table'],
+      ['POST', '/api/admin/module-builder/{id}/icon', 'Uploads a custom icon (png/jpg/svg/webp/gif, ≤2MB)'],
+      [
+        'POST',
+        '/api/admin/module-builder/{id}/ui-page',
+        <>
+          Replaces the auto-generated UI page with a hand-written JSON file ---
+          it won't be regenerated automatically afterwards
+        </>,
+      ],
+      [
+        'POST',
+        '/api/admin/module-builder/{id}/ui-build',
+        <>
+          Installs a complete pre-built frontend (<code>.zip</code>, extracted
+          into <code>dist/</code>) --- switches the module to{' '}
+          <code>uIFormat: "STANDALONE"</code>
+        </>,
+      ],
       ['DELETE', '/api/admin/module-builder/{id}?dropData=false', 'Deletes the module'],
+      ['PUT', '/api/admin/module-settings/{id}', <>Restricts writes and/or deletes on the module to admins (default: open to any authenticated user)</>],
+      ['POST', '/api/modules/scan', 'Reloads every module from disk (the "Rescan" button)'],
     ],
     afterRequest: (
       <>
@@ -160,6 +285,13 @@ const TEXT: Record<
           ORM cardinality
         </Link>{' '}
         section.
+      </>
+    ),
+    builderExtrasIntro: (
+      <>
+        The module-builder form also covers, without a manual API call:
+        dependencies (picked from already-installed modules), icon upload,
+        and the two write/delete access toggles described above.
       </>
     ),
     section2Title: '2. Manual format --- for full control',
@@ -188,8 +320,17 @@ const TEXT: Record<
           the core)
         </>,
       ],
-      ['dependencies', 'no', <><code>[{'{ moduleId, version }'}]</code> --- required modules</>],
-      ['permissions', 'no', 'Declared permissions, e.g. read:module, write:module'],
+      ['dependencies', 'no', <><code>[{'{ moduleId, version }'}]</code> --- required modules, must already exist on the instance</>],
+      [
+        'permissions',
+        'no',
+        <>
+          Informative <code>read/write/delete:&lt;id&gt;</code> list ---{' '}
+          <strong>not enforced</strong> by the authorization engine. Real
+          access control is via <code>PUT /api/admin/module-settings/{'{id}'}</code>{' '}
+          (writes/deletes restricted to admins or not).
+        </>,
+      ],
     ],
     dataObjectIntro: (
       <>
@@ -217,18 +358,75 @@ const TEXT: Record<
       ['LIST', 'Returns every row in the table'],
       ['READ', <>Returns a row filtered by the <code>EQUAL</code> parameters</>],
       ['CREATE', 'Inserts a new row with the given parameters'],
+      ['UPDATE', <>Updates the row(s) filtered by the <code>EQUAL</code> parameters with the rest of the parameters</>],
       ['DELETE', <>Deletes the row(s) filtered by the <code>EQUAL</code> parameters</>],
       ['UPLOAD_FILE', 'Uploads a binary file and creates a database entry'],
       ['GET_FILE', "Returns a row's binary file"],
       [
         'FETCH_EXTERNAL',
         <>
-          Calls an external HTTP API, parses the JSON response, upserts the
+          Calls the OpenWeatherMap API (hardcoded logic, see the{' '}
+          <code>weather</code> module), parses the response, upserts the
           result into the database. Reads <code>apiKey</code>/
-          <code>baseUrl</code> from <code>params.json</code>.
+          <code>baseUrl</code>/<code>units</code> from <code>params.json</code>,
+          HTTP method configurable via <code>params.method</code> (default{' '}
+          <code>GET</code>).
+        </>,
+      ],
+      [
+        'FETCH_EXTERNAL_GENERIC',
+        <>
+          Generic, reusable equivalent for any API: <code>urlTemplate</code>{' '}
+          (<code>{'{name}'}</code> placeholders), <code>method</code>,{' '}
+          <code>responseMapping</code> (column → JSON path) and an optional{' '}
+          <code>upsertKey</code>. Without <code>responseMapping</code>,
+          returns the raw JSON without writing to the database --- useful
+          chained with <code>MAP_JSON</code> below.
+        </>,
+      ],
+      [
+        'MAP_JSON',
+        <>
+          Maps the <em>previous</em> step's result into columns, via a
+          dedicated <code>&lt;functionName&gt;.mapping.json</code> file (same
+          shape as <code>responseMapping</code>/<code>upsertKey</code> above).
+          See "Custom functions" below.
+        </>,
+      ],
+      [
+        <em key="plugin">custom (plugin)</em>,
+        <>
+          Additional types registered by a plugin ---{' '}
+          <Link to="/docs/plugin" className="link link-primary">
+            see Write a plugin
+          </Link>
+          .
         </>,
       ],
     ],
+    customFunctionsTitle: 'Custom functions: chaining actions',
+    customFunctionsIntro: (
+      <>
+        From the module builder, a table can declare "Custom functions": an
+        ordered sequence of steps, each picking an action type from those
+        actually available (builtins + plugins, <code>GET /api/modules/actions</code>),
+        with its own static parameters.
+      </>
+    ),
+    customFunctionsChainNote: (
+      <>
+        Each step receives the previous one's result via the reserved{' '}
+        <code>_previousResult</code> parameter (Laravel-pipeline style) ---
+        which lets you e.g. chain a raw external call (no{' '}
+        <code>responseMapping</code>) with <code>MAP_JSON</code>:
+      </>
+    ),
+    mappingFileIntro: (
+      <>
+        With the dedicated mapping file <code>callApi.mapping.json</code> in
+        the module's folder:
+      </>
+    ),
   },
 }
 
@@ -248,6 +446,7 @@ function ModuleGuide() {
       <CodeBlock lang="http">{BUILDER_REQUEST}</CodeBlock>
 
       <p className="text-base-content/70 max-w-2xl">{t.afterRequest}</p>
+      <p className="text-base-content/70 max-w-2xl mt-2">{t.builderExtrasIntro}</p>
 
       <h2 className="text-2xl font-semibold mt-10 mb-2">{t.section2Title}</h2>
       <p className="text-base-content/70 max-w-2xl">{t.section2Intro}</p>
@@ -266,6 +465,16 @@ function ModuleGuide() {
       <p className="text-base-content/70 max-w-2xl">{t.actionTypesIntro}</p>
 
       <FieldTable columns={t.actionTypesColumns} rows={t.actionTypesRows} />
+
+      <h2 className="text-2xl font-semibold mt-10 mb-2">{t.customFunctionsTitle}</h2>
+      <p className="text-base-content/70 max-w-2xl">{t.customFunctionsIntro}</p>
+      <p className="text-base-content/70 max-w-2xl mt-2">{t.customFunctionsChainNote}</p>
+
+      <CodeBlock lang="json">{CUSTOM_FUNCTION_CHAIN_EXAMPLE}</CodeBlock>
+
+      <p className="text-base-content/70 max-w-2xl">{t.mappingFileIntro}</p>
+
+      <CodeBlock lang="json">{MAP_JSON_MAPPING_FILE}</CodeBlock>
     </div>
   )
 }
