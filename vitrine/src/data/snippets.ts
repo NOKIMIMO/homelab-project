@@ -328,35 +328,13 @@ interface Action {
         key: Pair<String, ModuleActionParameterType>, value: Any?)
 }`
 
-export const PLUGIN_GRADLE = `plugins {
-    kotlin("jvm") version "2.3.20"
-}
+export const PLUGIN_SDK_DEPENDENCY_MAVEN = `<dependency>
+  <groupId>com.homelab</groupId>
+  <artifactId>homelab-sdk</artifactId>
+  <version>0.0.5</version>
+</dependency>`
 
-group = "com.homelab"
-version = "1.0"
-
-repositories {
-    mavenCentral()
-    maven {
-        name = "GitHubPackages"
-        url = uri("https://maven.pkg.github.com/NOKIMIMO/homelab-project")
-        credentials {
-            // ~/.gradle/gradle.properties : gpr.user / gpr.token (PAT, scope read:packages)
-            username = providers.gradleProperty("gpr.user")
-                .orElse(providers.environmentVariable("GITHUB_ACTOR")).orNull
-            password = providers.gradleProperty("gpr.token")
-                .orElse(providers.environmentVariable("GITHUB_TOKEN")).orNull
-        }
-    }
-}
-
-dependencies {
-    implementation("com.homelab:homelab-sdk:0.0.3")
-}
-
-kotlin {
-    jvmToolchain(21)
-}`
+export const PLUGIN_SDK_DEPENDENCY_GRADLE = `implementation("com.homelab:homelab-sdk:0.0.5")`
 
 export const PLUGIN_KOTLIN_EXAMPLE = `// FileMovePlugin.kt
 package com.homelab.plugin.filemove
