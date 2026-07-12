@@ -23,6 +23,7 @@ const TEXT: Record<
     buildTitle: string
     step1Title: string
     step1Intro: ReactNode
+    step1Note: ReactNode
     step2Title: string
     step2Intro: ReactNode
     serviceFileNote: ReactNode
@@ -81,10 +82,31 @@ const TEXT: Record<
     step1Intro: (
       <>
         Un module Gradle Kotlin séparé (pas inclus dans le build multi-projet
-        du backend), qui dépend de <code>homelab-sdk</code> via{' '}
-        <code>mavenLocal()</code> --- publiez d'abord le SDK avec{' '}
-        <code>./gradlew :homelab-sdk:publishLocal</code> depuis{' '}
-        <code>homelab-backend/</code>.
+        du backend), qui dépend de <code>homelab-sdk</code> publié sur{' '}
+        <strong>GitHub Packages</strong> (dépôt{' '}
+        <code>NOKIMIMO/homelab-project</code>) --- publiez-y le SDK avec{' '}
+        <code>./gradlew :homelab-sdk:publishGithub</code> depuis{' '}
+        <code>homelab-backend/</code> (nécessite un token GitHub avec le
+        scope <code>write:packages</code>, voir ci-dessous). Pour un
+        aller-retour rapide en local uniquement, <code>publishLocal</code>{' '}
+        (→ <code>mavenLocal()</code>) reste disponible.
+      </>
+    ),
+    step1Note: (
+      <>
+        <strong>Piège GitHub Packages</strong> : même un dépôt public exige un
+        token pour <em>lire</em> un paquet Maven (pas seulement pour publier).
+        Créez un PAT classique (scopes <code>read:packages</code>, et{' '}
+        <code>write:packages</code> côté <code>homelab-sdk</code> pour
+        publier), puis renseignez-le --- jamais dans le repo --- dans{' '}
+        <code>~/.gradle/gradle.properties</code> :
+        <br />
+        <code>gpr.user=&lt;user_github&gt;</code>
+        <br />
+        <code>gpr.token=&lt;pat&gt;</code>
+        <br />
+        (ou les variables d'environnement <code>GITHUB_ACTOR</code>/
+        <code>GITHUB_TOKEN</code>).
       </>
     ),
     step2Title: '2. Enregistrement ServiceLoader (META-INF)',
@@ -176,10 +198,31 @@ const TEXT: Record<
     step1Intro: (
       <>
         A separate Kotlin Gradle module (not part of the backend's
-        multi-project build), depending on <code>homelab-sdk</code> via{' '}
-        <code>mavenLocal()</code> --- publish the SDK first with{' '}
-        <code>./gradlew :homelab-sdk:publishLocal</code> from{' '}
-        <code>homelab-backend/</code>.
+        multi-project build), depending on <code>homelab-sdk</code>{' '}
+        published to <strong>GitHub Packages</strong> (repo{' '}
+        <code>NOKIMIMO/homelab-project</code>) --- publish it there with{' '}
+        <code>./gradlew :homelab-sdk:publishGithub</code> from{' '}
+        <code>homelab-backend/</code> (needs a GitHub token with the{' '}
+        <code>write:packages</code> scope, see below). For a quick local-only
+        round trip, <code>publishLocal</code> (→ <code>mavenLocal()</code>)
+        is still available.
+      </>
+    ),
+    step1Note: (
+      <>
+        <strong>GitHub Packages gotcha</strong>: even a public repo requires a
+        token to <em>read</em> a Maven package (not just to publish). Create a
+        classic PAT (<code>read:packages</code> scope, plus{' '}
+        <code>write:packages</code> on the <code>homelab-sdk</code> side to
+        publish), then set it --- never commit it to the repo --- in{' '}
+        <code>~/.gradle/gradle.properties</code>:
+        <br />
+        <code>gpr.user=&lt;github_user&gt;</code>
+        <br />
+        <code>gpr.token=&lt;pat&gt;</code>
+        <br />
+        (or the <code>GITHUB_ACTOR</code>/<code>GITHUB_TOKEN</code>{' '}
+        environment variables).
       </>
     ),
     step2Title: '2. ServiceLoader registration (META-INF)',
@@ -253,6 +296,10 @@ function PluginGuide() {
       <h3 className="text-lg font-semibold mt-6 mb-2">{t.step1Title}</h3>
       <p className="text-base-content/70 max-w-2xl">{t.step1Intro}</p>
       <CodeBlock lang="kotlin">{PLUGIN_GRADLE}</CodeBlock>
+
+      <div className="alert alert-warning text-sm my-4 max-w-2xl">
+        <span>{t.step1Note}</span>
+      </div>
 
       <h3 className="text-lg font-semibold mt-6 mb-2">{t.step2Title}</h3>
       <p className="text-base-content/70 max-w-2xl">{t.step2Intro}</p>

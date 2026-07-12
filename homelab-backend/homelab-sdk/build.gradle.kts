@@ -27,7 +27,20 @@ publishing {
             pom {
                 name.set("homelab-sdk")
                 description.set("Homelab SDK interfaces for plugin development")
-                url.set("https://example.local/homelab-sdk")
+                url.set("https://github.com/NOKIMIMO/homelab-project")
+            }
+        }
+    }
+
+    repositories {
+        maven {
+            name = "GitHubPackages"
+            url = uri("https://maven.pkg.github.com/NOKIMIMO/homelab-project")
+            credentials {
+                username = providers.gradleProperty("gpr.user")
+                    .orElse(providers.environmentVariable("GITHUB_ACTOR")).orNull
+                password = providers.gradleProperty("gpr.token")
+                    .orElse(providers.environmentVariable("GITHUB_TOKEN")).orNull
             }
         }
     }
@@ -35,6 +48,10 @@ publishing {
 
 tasks.register("publishLocal") {
     dependsOn("publishToMavenLocal")
+}
+
+tasks.register("publishGithub") {
+    dependsOn("publishMavenJavaPublicationToGitHubPackagesRepository")
 }
 
 kotlin {
