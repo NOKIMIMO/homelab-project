@@ -103,7 +103,7 @@ class PluginRegistry(private val homelabConfig: HomelabConfig) {
                                     override fun declaration(): ModuleActionDeclaration = declaration
 
                                     override fun log(level: String, msg: String) {
-                                        log.info("[PLUGIN][$level] $msg")
+                                        AppLogger.info(tag = "PluginRegistry", msg = "[PLUGIN][$level] $msg", moduleId = moduleId)
                                     }
                                 }
 

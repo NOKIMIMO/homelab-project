@@ -40,11 +40,13 @@ class AdminController(
     @GetMapping("/logs")
     fun getLogs(
         @RequestParam(required = false) level: String?,
+        @RequestParam(required = false) moduleId: String?,
         @RequestParam(required = false, defaultValue = "300") limit: Int
     ): List<AppLogger.LogEntry> {
-        val logs = AppLogger.getLogs()
-        return (if (level != null) logs.filter { it.level == level } else logs)
-            .takeLast(limit)
+        var logs = AppLogger.getLogs()
+        if (level != null) logs = logs.filter { it.level == level }
+        if (moduleId != null) logs = logs.filter { it.moduleId == moduleId }
+        return logs.takeLast(limit)
     }
 
     @DeleteMapping("/logs")
