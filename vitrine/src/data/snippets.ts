@@ -337,7 +337,17 @@ version = "1.0"
 
 repositories {
     mavenCentral()
-    mavenLocal() // résout homelab-sdk publié en local
+    maven {
+        name = "GitHubPackages"
+        url = uri("https://maven.pkg.github.com/NOKIMIMO/homelab-project")
+        credentials {
+            // ~/.gradle/gradle.properties : gpr.user / gpr.token (PAT, scope read:packages)
+            username = providers.gradleProperty("gpr.user")
+                .orElse(providers.environmentVariable("GITHUB_ACTOR")).orNull
+            password = providers.gradleProperty("gpr.token")
+                .orElse(providers.environmentVariable("GITHUB_TOKEN")).orNull
+        }
+    }
 }
 
 dependencies {
