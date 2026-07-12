@@ -1,5 +1,5 @@
 import { NavLink, Outlet } from 'react-router'
-import { Menu, Home, Terminal, Boxes, GitBranch, LayoutTemplate, Package, Languages } from 'lucide-react'
+import { Menu, Home, Terminal, Boxes, GitBranch, LayoutTemplate, Package, Puzzle, Languages } from 'lucide-react'
 import { useLanguage, type Lang } from '../i18n/LanguageContext'
 
 const TEXT: Record<Lang, {
@@ -10,6 +10,7 @@ const TEXT: Record<Lang, {
   orm: string
   ui: string
   sdk: string
+  plugin: string
   docsGroup: string
 }> = {
   fr: {
@@ -20,6 +21,7 @@ const TEXT: Record<Lang, {
     orm: 'Cardinalité ORM',
     ui: 'Interface en JSON',
     sdk: 'SDK',
+    plugin: 'Écrire un plugin',
     docsGroup: 'Documentation',
   },
   en: {
@@ -30,6 +32,7 @@ const TEXT: Record<Lang, {
     orm: 'ORM cardinality',
     ui: 'JSON-driven UI',
     sdk: 'SDK',
+    plugin: 'Write a plugin',
     docsGroup: 'Documentation',
   },
 }
@@ -67,6 +70,7 @@ function SidebarContent() {
     { to: '/docs/orm', label: t.orm, icon: GitBranch },
     { to: '/docs/ui', label: t.ui, icon: LayoutTemplate, badge: 'WIP' },
     { to: '/docs/sdk', label: t.sdk, icon: Package },
+    { to: '/docs/plugin', label: t.plugin, icon: Puzzle },
   ]
 
   return (
