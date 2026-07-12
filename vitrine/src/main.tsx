@@ -10,6 +10,7 @@ import ModuleGuide from './pages/docs/ModuleGuide'
 import OrmGuide from './pages/docs/OrmGuide'
 import UiGuide from './pages/docs/UiGuide'
 import SdkGuide from './pages/docs/SdkGuide'
+import PluginGuide from './pages/docs/PluginGuide'
 
 const router = createBrowserRouter([
   {
@@ -22,6 +23,7 @@ const router = createBrowserRouter([
       { path: 'docs/orm', element: <OrmGuide /> },
       { path: 'docs/ui', element: <UiGuide /> },
       { path: 'docs/sdk', element: <SdkGuide /> },
+      { path: 'docs/plugin', element: <PluginGuide /> },
     ],
   },
 ])

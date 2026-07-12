@@ -2,7 +2,7 @@ import type { ReactNode } from 'react'
 import Badge from '../../components/Badge'
 import CodeBlock from '../../components/CodeBlock'
 import FieldTable from '../../components/FieldTable'
-import { UI_JSON_EXAMPLE } from '../../data/snippets'
+import { CODEBLOCK_UI_EXAMPLE, UI_JSON_EXAMPLE } from '../../data/snippets'
 import { useLanguage, type Lang } from '../../i18n/LanguageContext'
 
 const TEXT: Record<
@@ -17,6 +17,7 @@ const TEXT: Record<
     componentsColumns: string[]
     componentsRows: (string | ReactNode)[][]
     actionsNote: ReactNode
+    codeBlockIntro: ReactNode
   }
 > = {
   fr: {
@@ -49,12 +50,28 @@ const TEXT: Record<
       ['Modal', 'Fenêtre conditionnelle (visible: "{{expr}}")'],
       ['ImageViewer', 'Affichage d’image depuis un binding GET_FILE'],
       ['ElementList', 'Grille avec aperçu (preview) par élément'],
+      [
+        'CodeBlock',
+        <>
+          Affiche du texte/JSON récupéré via <code>source</code> avec
+          coloration syntaxique (<code>props.lang</code>, défaut{' '}
+          <code>"json"</code>) --- pratique pour visualiser la réponse brute
+          d'un appel API externe
+        </>,
+      ],
     ],
     actionsNote: (
       <>
         Une <code>action</code> peut être un tableau pour chaîner plusieurs
         appels (ex. supprimer puis rafraîchir la liste), et accepte un bloc{' '}
         <code>then.setState</code> pour écrire le résultat dans le state.
+      </>
+    ),
+    codeBlockIntro: (
+      <>
+        Comme <code>ImageViewer</code>, <code>CodeBlock</code> reçoit
+        automatiquement <code>sourceData</code>/<code>loading</code>/
+        <code>error</code> depuis son <code>source</code> :
       </>
     ),
   },
@@ -88,12 +105,27 @@ const TEXT: Record<
       ['Modal', 'Conditional window (visible: "{{expr}}")'],
       ['ImageViewer', 'Image display from a GET_FILE binding'],
       ['ElementList', 'Grid with a preview per item'],
+      [
+        'CodeBlock',
+        <>
+          Displays text/JSON fetched via <code>source</code> with syntax
+          highlighting (<code>props.lang</code>, default <code>"json"</code>)
+          --- handy for viewing an external API call's raw response
+        </>,
+      ],
     ],
     actionsNote: (
       <>
         An <code>action</code> can be an array to chain several calls (e.g.
         delete then refresh the list), and accepts a <code>then.setState</code>{' '}
         block to write the result into the state.
+      </>
+    ),
+    codeBlockIntro: (
+      <>
+        Like <code>ImageViewer</code>, <code>CodeBlock</code> automatically
+        receives <code>sourceData</code>/<code>loading</code>/
+        <code>error</code> from its <code>source</code>:
       </>
     ),
   },
@@ -119,6 +151,10 @@ function UiGuide() {
       <p className="text-base-content/70 max-w-2xl">{t.actionsNote}</p>
 
       <CodeBlock lang="json">{UI_JSON_EXAMPLE}</CodeBlock>
+
+      <p className="text-base-content/70 max-w-2xl mt-6">{t.codeBlockIntro}</p>
+
+      <CodeBlock lang="json">{CODEBLOCK_UI_EXAMPLE}</CodeBlock>
     </div>
   )
 }
