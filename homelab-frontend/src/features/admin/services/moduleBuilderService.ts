@@ -78,3 +78,22 @@ export function uploadModuleUiPage(moduleId: string, file: File, headers: Header
 export function uploadModuleUiBuild(moduleId: string, file: File, headers: HeadersInit): Promise<{ id?: string }> {
   return uploadFormData(`/api/admin/module-builder/${moduleId}/ui-build`, file, headers, "Échec de l'envoi du build", false);
 }
+
+// The export endpoint requires the Authorization header, so a plain <a href> download won't
+// carry the JWT — fetch as a blob and trigger the download via a temporary object URL instead.
+export async function exportModuleZip(moduleId: string, headers: HeadersInit): Promise<void> {
+  const res = await fetch(getApiUrl(`/api/modules/${moduleId}/export`), { headers });
+  if (!res.ok) {
+    const body = await res.json().catch(() => null) as { error?: string; message?: string } | null;
+    throw new Error(body?.error ?? body?.message ?? "Échec de l'export du module");
+  }
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `${moduleId}.zip`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}

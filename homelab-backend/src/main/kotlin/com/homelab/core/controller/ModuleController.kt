@@ -88,6 +88,16 @@ fun getModuleAsset(
     @PreAuthorize("hasRole('ADMIN')")
     fun installModuleZip(@RequestPart("file") file: MultipartFile) = moduleService.installModuleZip(file)
 
+    @GetMapping("/{id}/export")
+    @PreAuthorize("hasRole('ADMIN')")
+    fun exportModule(@PathVariable id: String): ResponseEntity<Resource> {
+        val zip = moduleService.exportModuleZip(id)
+        return ResponseEntity.ok()
+            .contentType(MediaType.parseMediaType("application/zip"))
+            .header("Content-Disposition", "attachment; filename=\"$id.zip\"")
+            .body(zip)
+    }
+
     //TODO: keep? not using docker anymore so....
     @GetMapping("/{id}/health")
     fun healthCheck(@PathVariable id: String) = mapOf("status" to if (moduleService.healthCheck(id)) "UP" else "DOWN")
