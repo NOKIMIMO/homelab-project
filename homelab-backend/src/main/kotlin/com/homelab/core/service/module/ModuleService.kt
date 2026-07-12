@@ -15,19 +15,24 @@ import com.homelab.core.model.module.UIFormat
 import com.homelab.core.parser.ModuleDataObjectParser
 import com.homelab.sdk.data.TableDefinition
 import com.homelab.core.exception.BadRequestException
+import com.homelab.core.exception.NotFoundException
 import jakarta.annotation.*
 import jakarta.servlet.http.HttpServletRequest
 import org.springframework.core.io.Resource
 import org.springframework.core.io.FileSystemResource
+import org.springframework.core.io.ByteArrayResource
 import org.springframework.http.MediaType
 import org.springframework.http.MediaTypeFactory
 import org.springframework.http.ResponseEntity
 import org.springframework.web.multipart.MultipartFile
+import java.io.ByteArrayOutputStream
 import java.io.File
 import java.util.concurrent.ConcurrentHashMap
 import org.springframework.stereotype.Service
 import java.nio.file.Files
 import java.util.zip.ZipInputStream
+import java.util.zip.ZipOutputStream
+import java.util.zip.ZipEntry
 
 @Service
 class ModuleService(
@@ -319,6 +324,29 @@ class ModuleService(
         } finally {
             tempDir.deleteRecursively()
         }
+    }
+
+    // Files that may hold secret param values (e.g. API keys) and must never leave the server.
+    private val exportExcludedFileNames = setOf("params.values.json", "params.values.bck.json")
+
+    fun exportModuleZip(id: String): ByteArrayResource {
+        val moduleDir = File(File(homelabConfig.modulesScanPath).canonicalFile, id)
+        if (!moduleDir.exists() || !moduleDir.isDirectory) {
+            throw NotFoundException("Module '$id' not found")
+        }
+
+        val buffer = ByteArrayOutputStream()
+        ZipOutputStream(buffer).use { zip ->
+            moduleDir.walkTopDown()
+                .filter { it.isFile && it.name !in exportExcludedFileNames }
+                .forEach { file ->
+                    val entryName = moduleDir.toPath().relativize(file.toPath()).joinToString("/")
+                    zip.putNextEntry(ZipEntry(entryName))
+                    file.inputStream().use { it.copyTo(zip) }
+                    zip.closeEntry()
+                }
+        }
+        return ByteArrayResource(buffer.toByteArray())
     }
 
     private fun extractZip(file: MultipartFile, tempDir: File) {
