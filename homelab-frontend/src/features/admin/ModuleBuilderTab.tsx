@@ -10,6 +10,7 @@ import {
   fetchModuleSummaries, fetchModuleFullSpec, fetchModuleSchema, deleteModule,
   installModuleZip as installModuleZipRequest, uploadModuleUiPage as uploadModuleUiPageRequest,
   uploadModuleUiBuild as uploadModuleUiBuildRequest, rescanModules as rescanModulesRequest,
+  exportModuleZip as exportModuleZipRequest,
 } from './services/moduleBuilderService';
 
 export default function ModuleBuilderTab() {
@@ -106,6 +107,18 @@ export default function ModuleBuilderTab() {
     }
   };
 
+  const exportModule = async (mod: ModuleBuilderSummary) => {
+    setBusyId(mod.id);
+    setInstallMessage(null);
+    try {
+      await exportModuleZipRequest(mod.id, headers);
+    } catch (err) {
+      setInstallMessage({ type: 'error', text: err instanceof Error ? err.message : "Échec de l'export du module" });
+    } finally {
+      setBusyId(null);
+    }
+  };
+
   const openAddColumn = async (mod: ModuleBuilderSummary) => {
     setBusyId(mod.id);
     try {
@@ -175,6 +188,7 @@ export default function ModuleBuilderTab() {
         onEdit={openEdit}
         onAddColumn={openAddColumn}
         onDeleteRequest={setPendingDelete}
+        onExport={mod => void exportModule(mod)}
       />
 
       {showCreate && (

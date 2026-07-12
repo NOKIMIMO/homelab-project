@@ -1,5 +1,5 @@
 import type { RefObject } from 'react';
-import { Columns3, FileJson, PackageOpen, Pencil, Trash2 } from 'lucide-react';
+import { Columns3, Download, FileJson, PackageOpen, Pencil, Trash2 } from 'lucide-react';
 import type { ModuleBuilderSummary } from '@app/types';
 
 interface Props {
@@ -13,12 +13,13 @@ interface Props {
   onEdit: (mod: ModuleBuilderSummary) => void;
   onAddColumn: (mod: ModuleBuilderSummary) => void;
   onDeleteRequest: (mod: ModuleBuilderSummary) => void;
+  onExport: (mod: ModuleBuilderSummary) => void;
 }
 
 export default function ModulesTable({
   modules, busyId, editLoadingId,
   uiFileInputRef, buildFileInputRef, uiUploadTarget, buildUploadTarget,
-  onEdit, onAddColumn, onDeleteRequest,
+  onEdit, onAddColumn, onDeleteRequest, onExport,
 }: Props) {
   return (
     <div className="overflow-x-auto rounded-xl border border-base-content/10">
@@ -51,6 +52,14 @@ export default function ModulesTable({
                   </span>
                 </td>
                 <td className="flex items-center gap-2 justify-end">
+                  <button
+                    className="btn btn-xs btn-outline gap-1"
+                    disabled={busyId === mod.id}
+                    title="Exporter le module en .zip"
+                    onClick={() => onExport(mod)}
+                  >
+                    <Download size={12} /> Exporter
+                  </button>
                   {mod.custom ? (
                     <>
                       <button
