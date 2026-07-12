@@ -79,7 +79,7 @@ export default function ModulesToolbar({
           {installing
             ? <span className="loading loading-spinner loading-xs" />
             : <Upload size={14} />}
-          Installer un module (.zip)
+          Importer un module (.zip)
         </button>
         <button className="btn btn-sm btn-primary gap-2" onClick={onCreate}>
           <Plus size={14} /> Créer un module
