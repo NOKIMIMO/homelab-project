@@ -1,38 +1,15 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Save, RefreshCw, FolderOpen, Puzzle, Home, KeyRound, MessageSquareText } from 'lucide-react';
 import { useAuth } from '@auth/AuthContext';
-import { getApiUrl } from '@lib/api';
 import RecoveryCodeReveal from '@ui/RecoveryCodeReveal';
-
-const LOGIN_DESCRIPTION_MAX_LENGTH = 500;
-
-interface RecoveryCodeStatus {
-  exists: boolean;
-  createdAt: string | null;
-}
-
-interface AppConfig {
-  appRoot: string;
-  modulesScanPath: string;
-  pluginsScanPath: string;
-  logLevel: string;
-}
-
-const LOG_LEVELS = ['DEBUG', 'INFO', 'WARN', 'ERROR', 'ERROR_DETAILED'] as const;
-
-const LEVEL_COLOR: Record<string, string> = {
-  DEBUG:          'text-base-content/60',
-  INFO:           'text-info',
-  WARN:           'text-warning',
-  ERROR:          'text-error',
-  ERROR_DETAILED: 'text-error',
-};
-
-const PATH_ENTRIES = [
-  { key: 'appRoot',          label: 'App Root',          env: 'HOMELAB_APP_ROOT',              icon: Home },
-  { key: 'modulesScanPath',  label: 'Modules Scan Path', env: 'HOMELAB_MODULES_SCAN_PATH',     icon: FolderOpen },
-  { key: 'pluginsScanPath',  label: 'Plugins Scan Path', env: 'HOMELAB_PLUGINS_SCAN_PATH',     icon: Puzzle },
-] as const;
+import RuntimeConfigCard from './settings/RuntimeConfigCard';
+import LogLevelCard from './settings/LogLevelCard';
+import LoginDescriptionCard from './settings/LoginDescriptionCard';
+import RecoveryCodeCard from './settings/RecoveryCodeCard';
+import {
+  fetchAppConfig, updateLogLevel, fetchRecoveryCodeStatus, regenerateRecoveryCode as regenerateRecoveryCodeRequest,
+  fetchLoginDescription, updateLoginDescription,
+  type AppConfig, type RecoveryCodeStatus,
+} from './services/appSettingsService';
 
 export default function SettingsTab() {
   const { token } = useAuth();
@@ -56,9 +33,8 @@ export default function SettingsTab() {
   const fetchConfig = useCallback(async () => {
     setRefreshing(true);
     try {
-      const res = await fetch(getApiUrl('/api/admin/config'), { headers });
-      if (res.ok) {
-        const data = await res.json() as AppConfig;
+      const data = await fetchAppConfig(headers);
+      if (data) {
         setConfig(data);
         setSelectedLevel(data.logLevel);
       }
@@ -70,31 +46,26 @@ export default function SettingsTab() {
   useEffect(() => { void fetchConfig(); }, [fetchConfig]);
 
   const fetchRecoveryStatus = useCallback(async () => {
-    const res = await fetch(getApiUrl('/api/admin/recovery-code/status'), { headers });
-    if (res.ok) setRecoveryStatus(await res.json() as RecoveryCodeStatus);
+    const status = await fetchRecoveryCodeStatus(headers);
+    if (status) setRecoveryStatus(status);
   }, [token]);
 
   useEffect(() => { void fetchRecoveryStatus(); }, [fetchRecoveryStatus]);
 
-  const fetchLoginDescription = useCallback(async () => {
-    const res = await fetch(getApiUrl('/api/auth/login-settings'));
-    if (res.ok) {
-      const data = await res.json() as { description?: string | null };
-      setLoginDescription(data.description ?? '');
-      setSavedLoginDescription(data.description ?? '');
+  const loadLoginDescription = useCallback(async () => {
+    const description = await fetchLoginDescription();
+    if (description !== null) {
+      setLoginDescription(description);
+      setSavedLoginDescription(description);
     }
   }, []);
 
-  useEffect(() => { void fetchLoginDescription(); }, [fetchLoginDescription]);
+  useEffect(() => { void loadLoginDescription(); }, [loadLoginDescription]);
 
   const saveLoginDescription = async () => {
     setSavingDescription(true);
     try {
-      const res = await fetch(getApiUrl('/api/admin/login-settings'), {
-        method: 'PUT',
-        headers,
-        body: JSON.stringify({ description: loginDescription }),
-      });
+      const res = await updateLoginDescription(loginDescription, headers);
       if (res.ok) {
         setSavedLoginDescription(loginDescription);
         setDescriptionSavedOk(true);
@@ -108,7 +79,7 @@ export default function SettingsTab() {
   const regenerateRecoveryCode = async () => {
     setRegenerating(true);
     try {
-      const res = await fetch(getApiUrl('/api/admin/recovery-code/regenerate'), { method: 'POST', headers });
+      const res = await regenerateRecoveryCodeRequest(headers);
       if (res.ok) {
         const data = await res.json() as { code: string };
         setRevealedCode(data.code);
@@ -122,11 +93,7 @@ export default function SettingsTab() {
   const saveLogLevel = async () => {
     setSaving(true);
     try {
-      const res = await fetch(getApiUrl('/api/admin/config/log-level'), {
-        method: 'PUT',
-        headers,
-        body: JSON.stringify({ level: selectedLevel }),
-      });
+      const res = await updateLogLevel(selectedLevel, headers);
       if (res.ok) {
         setSavedOk(true);
         setTimeout(() => setSavedOk(false), 2500);
@@ -143,154 +110,34 @@ export default function SettingsTab() {
     </div>
   );
 
-  const levelChanged = selectedLevel !== config.logLevel;
-
   return (
     <div className="h-full overflow-y-auto space-y-6 max-w-2xl pr-1">
+      <RuntimeConfigCard config={config} refreshing={refreshing} onRefresh={fetchConfig} />
 
-      {/* ── Chemins runtime ── */}
-      <div className="card bg-base-300">
-        <div className="card-body gap-4">
-          <div className="flex items-center justify-between">
-            <h2 className="card-title text-base">Configuration Runtime</h2>
-            <button
-              className="btn btn-xs btn-ghost gap-1"
-              onClick={fetchConfig}
-              disabled={refreshing}
-            >
-              <RefreshCw size={12} className={refreshing ? 'animate-spin' : ''} />
-            </button>
-          </div>
+      <LogLevelCard
+        currentLevel={config.logLevel}
+        selectedLevel={selectedLevel}
+        saving={saving}
+        savedOk={savedOk}
+        onChange={setSelectedLevel}
+        onSave={() => void saveLogLevel()}
+      />
 
-          {PATH_ENTRIES.map(({ key, label, env, icon: Icon }) => (
-            <div key={key} className="flex flex-col gap-1">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-semibold flex items-center gap-1.5">
-                  <Icon size={14} className="opacity-60" />
-                  {label}
-                </span>
-                <span className="text-xs text-base-content/40 font-mono">{env}</span>
-              </div>
-              <div className="bg-base-200 rounded-lg px-3 py-2 font-mono text-sm text-base-content/70 break-all">
-                {config[key as keyof AppConfig]}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
+      <LoginDescriptionCard
+        description={loginDescription}
+        savedDescription={savedLoginDescription}
+        saving={savingDescription}
+        savedOk={descriptionSavedOk}
+        onChange={setLoginDescription}
+        onSave={() => void saveLoginDescription()}
+      />
 
-      {/* ── Niveau de log ── */}
-      <div className="card bg-base-300">
-        <div className="card-body gap-4">
-          <h2 className="card-title text-base">Niveau de Log</h2>
-          <p className="text-xs text-base-content/50 -mt-2">
-            Modifie la verbosité en temps réel, sans redémarrage.
-          </p>
+      <RecoveryCodeCard
+        status={recoveryStatus}
+        regenerating={regenerating}
+        onRegenerate={() => void regenerateRecoveryCode()}
+      />
 
-          <div className="flex items-center gap-3">
-            <select
-              className="select select-bordered select-sm flex-1"
-              value={selectedLevel}
-              onChange={e => setSelectedLevel(e.target.value)}
-            >
-              {LOG_LEVELS.map(l => (
-                <option key={l} value={l}>{l}</option>
-              ))}
-            </select>
-            <button
-              className={`btn btn-sm gap-2 min-w-28 ${savedOk ? 'btn-success' : 'btn-primary'}`}
-              onClick={saveLogLevel}
-              disabled={saving || !levelChanged}
-            >
-              {saving
-                ? <span className="loading loading-spinner loading-xs" />
-                : <Save size={14} />}
-              {savedOk ? 'Sauvegardé !' : 'Appliquer'}
-            </button>
-          </div>
-
-          <p className="text-xs text-base-content/50">
-            Niveau actuel :&nbsp;
-            <span className={`font-mono font-bold ${LEVEL_COLOR[config.logLevel] ?? ''}`}>
-              {config.logLevel}
-            </span>
-          </p>
-        </div>
-      </div>
-
-      {/* ── Description page de connexion ── */}
-      <div className="card bg-base-300">
-        <div className="card-body gap-4">
-          <h2 className="card-title text-base flex items-center gap-2">
-            <MessageSquareText size={16} className="opacity-60" /> Description de la page de connexion
-          </h2>
-          <p className="text-xs text-base-content/50 -mt-2">
-            Le message affiché sur la card de connexion, visible par tous (comme la description
-            d'un serveur Minecraft).
-          </p>
-
-          <textarea
-            className="textarea textarea-bordered w-full text-sm"
-            rows={3}
-            maxLength={LOGIN_DESCRIPTION_MAX_LENGTH}
-            value={loginDescription}
-            onChange={e => setLoginDescription(e.target.value)}
-            placeholder="Votre espace personnel, hébergé chez vous."
-          />
-
-          <div className="flex items-center justify-between">
-            <span className="text-xs text-base-content/40">
-              {loginDescription.length} / {LOGIN_DESCRIPTION_MAX_LENGTH}
-            </span>
-            <button
-              className={`btn btn-sm gap-2 min-w-28 ${descriptionSavedOk ? 'btn-success' : 'btn-primary'}`}
-              onClick={() => void saveLoginDescription()}
-              disabled={savingDescription || loginDescription === savedLoginDescription}
-            >
-              {savingDescription
-                ? <span className="loading loading-spinner loading-xs" />
-                : <Save size={14} />}
-              {descriptionSavedOk ? 'Sauvegardé !' : 'Enregistrer'}
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* ── Code de récupération ── */}
-      <div className="card bg-base-300">
-        <div className="card-body gap-4">
-          <h2 className="card-title text-base flex items-center gap-2">
-            <KeyRound size={16} className="opacity-60" /> Code de récupération
-          </h2>
-          <p className="text-xs text-base-content/50 -mt-2">
-            Ce code d'urgence permet de réinitialiser tous les comptes et de recréer un compte admin
-            en cas de perte d'accès. Régénérer ce code invalide immédiatement l'ancien.
-          </p>
-
-          {recoveryStatus && (
-            <p className="text-sm">
-              {recoveryStatus.exists
-                ? <>Code configuré{recoveryStatus.createdAt && <> le <span className="font-mono">{new Date(recoveryStatus.createdAt).toLocaleString()}</span></>}.</>
-                : 'Aucun code configuré.'}
-            </p>
-          )}
-
-          <div>
-            <button
-              className="btn btn-sm btn-warning gap-2 w-fit"
-              onClick={() => void regenerateRecoveryCode()}
-              disabled={regenerating}
-            >
-              {regenerating
-                ? <span className="loading loading-spinner loading-xs" />
-                : <KeyRound size={14} />}
-              Régénérer le code
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* ── Info ── */}
       <div className="alert bg-base-300 border border-base-content/10 text-xs text-base-content/60">
         <span>
           Les chemins de scan et la configuration base de données sont définis via variables
