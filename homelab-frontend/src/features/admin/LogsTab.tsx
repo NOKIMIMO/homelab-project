@@ -9,6 +9,12 @@ interface LogEntry {
   tag: string;
   message: string;
   caller: string;
+  moduleId?: string | null;
+}
+
+interface ModuleOption {
+  id: string;
+  name: string;
 }
 
 const LEVEL_BADGE: Record<string, string> = {
@@ -31,6 +37,8 @@ export default function LogsTab() {
   const { token } = useAuth();
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [filter, setFilter] = useState<string>('ALL');
+  const [moduleFilter, setModuleFilter] = useState<string>('ALL');
+  const [modules, setModules] = useState<ModuleOption[]>([]);
   const [autoScroll, setAutoScroll] = useState(true);
   const [loading, setLoading] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -40,19 +48,29 @@ export default function LogsTab() {
   const fetchLogs = useCallback(async () => {
     setLoading(true);
     try {
-      const qs = filter !== 'ALL' ? `?level=${filter}` : '';
+      const params = new URLSearchParams();
+      if (filter !== 'ALL') params.set('level', filter);
+      if (moduleFilter !== 'ALL') params.set('moduleId', moduleFilter);
+      const qs = params.toString() ? `?${params.toString()}` : '';
       const res = await fetch(getApiUrl(`/api/admin/logs${qs}`), { headers });
       if (res.ok) setLogs(await res.json() as LogEntry[]);
     } finally {
       setLoading(false);
     }
-  }, [filter, token]);
+  }, [filter, moduleFilter, token]);
 
   useEffect(() => {
     void fetchLogs();
     const id = setInterval(() => void fetchLogs(), 5000);
     return () => clearInterval(id);
   }, [fetchLogs]);
+
+  useEffect(() => {
+    void (async () => {
+      const res = await fetch(getApiUrl('/api/modules'), { headers });
+      if (res.ok) setModules(await res.json() as ModuleOption[]);
+    })();
+  }, [token]);
 
   useEffect(() => {
     if (autoScroll) bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -76,6 +94,16 @@ export default function LogsTab() {
             {l}
           </button>
         ))}
+        <select
+          className="select select-xs select-bordered w-auto"
+          value={moduleFilter}
+          onChange={e => setModuleFilter(e.target.value)}
+        >
+          <option value="ALL">Tous les modules</option>
+          {modules.map(m => (
+            <option key={m.id} value={m.id}>{m.name}</option>
+          ))}
+        </select>
         <div className="ml-auto flex items-center gap-3">
           <label className="label cursor-pointer gap-2 text-xs py-0">
             <span className="label-text text-xs">Auto-scroll</span>
@@ -113,6 +141,9 @@ export default function LogsTab() {
               </span>
               {log.tag && (
                 <span className="text-primary/70 shrink-0">[{log.tag}]</span>
+              )}
+              {log.moduleId && (
+                <span className="badge badge-xs badge-outline shrink-0 self-center">{log.moduleId}</span>
               )}
               <span className="break-all flex-1">{log.message}</span>
               <span className="opacity-20 ml-auto shrink-0 text-[10px] self-center">{log.caller}</span>

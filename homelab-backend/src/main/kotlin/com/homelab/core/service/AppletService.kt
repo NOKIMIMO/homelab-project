@@ -29,6 +29,7 @@ class AppletService(
         decl: ModuleActionDeclaration,
         resolvedLogic: List<Map<String, Any>>): Map<String, Any?>{
 
+        val log = AppLogger.loggerFor(AppletService::class, moduleId = id)
         val errorList = mutableListOf<String>()
 
         //param validation
