@@ -1,50 +1,21 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Check, X, Trash2, RefreshCw, ShieldCheck, KeyRound } from 'lucide-react';
 import { useAuth } from '@auth/AuthContext';
-import { getApiUrl } from '@lib/api';
 import RecoveryCodeReveal from '@ui/RecoveryCodeReveal';
-
-interface User {
-  id: number;
-  email: string;
-  name: string | null;
-  isAdmin: boolean;
-  createdAt: string;
-  publicKey: string | null;
-}
-
-interface ModuleSettings {
-  writeAdminOnly: boolean;
-  deleteAdminOnly: boolean;
-}
-
-interface SignupRequest {
-  id: number;
-  email: string;
-  name: string | null;
-  status: string;
-  createdAt: string;
-  processedAt: string | null;
-  publicKey: string | null;
-}
-
-interface PasswordResetRequest {
-  id: number;
-  email: string;
-  status: string;
-  createdAt: string;
-  processedAt: string | null;
-}
-
-const STATUS_BADGE: Record<string, string> = {
-  PENDING:  'badge-warning',
-  APPROVED: 'badge-success',
-  REJECTED: 'badge-error',
-};
+import UsersTable from './access/UsersTable';
+import ModulesAccessTable from './access/ModulesAccessTable';
+import SignupRequestsSection from './access/SignupRequestsSection';
+import PasswordResetSection from './access/PasswordResetSection';
+import {
+  fetchUsers, deleteUser as deleteUserRequest, setUserAdmin,
+  fetchSignupRequests, approveSignupRequest, rejectSignupRequest,
+  fetchPasswordResetRequests, approvePasswordReset as approvePasswordResetRequest, rejectPasswordReset as rejectPasswordResetRequest,
+  type AdminUser, type SignupRequest, type PasswordResetRequest,
+} from './services/accessService';
+import { fetchModuleSettings, updateModuleSettings, type ModuleSettings } from './services/moduleSettingsService';
 
 export default function AccessTab() {
   const { token, userName } = useAuth();
-  const [users, setUsers] = useState<User[]>([]);
+  const [users, setUsers] = useState<AdminUser[]>([]);
   const [requests, setRequests] = useState<SignupRequest[]>([]);
   const [passwordResetRequests, setPasswordResetRequests] = useState<PasswordResetRequest[]>([]);
   const [moduleSettings, setModuleSettings] = useState<Record<string, ModuleSettings>>({});
@@ -61,15 +32,15 @@ export default function AccessTab() {
     setLoading(true);
     try {
       const [usersRes, requestsRes, moduleSettingsRes, resetRequestsRes] = await Promise.all([
-        fetch(getApiUrl('/api/admin/users'), { headers }),
-        fetch(getApiUrl('/api/admin/signup-requests'), { headers }),
-        fetch(getApiUrl('/api/admin/module-settings'), { headers }),
-        fetch(getApiUrl('/api/admin/password-reset-requests'), { headers }),
+        fetchUsers(headers),
+        fetchSignupRequests(headers),
+        fetchModuleSettings(headers),
+        fetchPasswordResetRequests(headers),
       ]);
-      if (usersRes.ok) setUsers(await usersRes.json() as User[]);
-      if (requestsRes.ok) setRequests(await requestsRes.json() as SignupRequest[]);
-      if (moduleSettingsRes.ok) setModuleSettings(await moduleSettingsRes.json() as Record<string, ModuleSettings>);
-      if (resetRequestsRes.ok) setPasswordResetRequests(await resetRequestsRes.json() as PasswordResetRequest[]);
+      if (usersRes) setUsers(usersRes);
+      if (requestsRes) setRequests(requestsRes);
+      if (moduleSettingsRes) setModuleSettings(moduleSettingsRes);
+      if (resetRequestsRes) setPasswordResetRequests(resetRequestsRes);
     } finally {
       setLoading(false);
     }
@@ -85,7 +56,7 @@ export default function AccessTab() {
 
     setActionId(id);
     try {
-      await fetch(getApiUrl(`/api/admin/users/${id}`), { method: 'DELETE', headers });
+      await deleteUserRequest(id, headers);
       setUsers(prev => prev.filter(u => u.id !== id));
     } finally {
       setActionId(null);
@@ -100,11 +71,7 @@ export default function AccessTab() {
 
     setActionId(id);
     try {
-      await fetch(getApiUrl(`/api/admin/users/${id}/admin/${!isAdmin}`), {
-        method: 'PUT',
-        headers,
-        body: JSON.stringify({ isAdmin: !isAdmin }),
-      });
+      await setUserAdmin(id, !isAdmin, headers);
       setUsers(prev => prev.map(u => u.id === id ? { ...u, isAdmin: !isAdmin } : u));
     } finally {
       setActionId(null);
@@ -116,11 +83,7 @@ export default function AccessTab() {
     const next = { ...current, [key]: !current[key] };
     setSavingModuleId(moduleId);
     try {
-      const res = await fetch(getApiUrl(`/api/admin/module-settings/${moduleId}`), {
-        method: 'PUT',
-        headers: { ...headers, 'Content-Type': 'application/json' },
-        body: JSON.stringify(next),
-      });
+      const res = await updateModuleSettings(moduleId, next, { ...headers, 'Content-Type': 'application/json' });
       if (!res.ok) {
         alert("Échec de l'enregistrement des réglages du module.");
         return;
@@ -131,13 +94,10 @@ export default function AccessTab() {
     }
   };
 
-  const handleRequest = async (id: number, action: 'approve' | 'reject') => {
+  const handleSignupRequest = async (id: number, action: 'approve' | 'reject') => {
     setActionId(id);
     try {
-      await fetch(getApiUrl(`/api/admin/signup-requests/${id}/${action}`), {
-        method: 'PUT',
-        headers,
-      });
+      await (action === 'approve' ? approveSignupRequest : rejectSignupRequest)(id, headers);
       void fetchData();
     } finally {
       setActionId(null);
@@ -147,10 +107,7 @@ export default function AccessTab() {
   const approvePasswordReset = async (id: number) => {
     setActionId(id);
     try {
-      const res = await fetch(getApiUrl(`/api/admin/password-reset-requests/${id}/approve`), {
-        method: 'PUT',
-        headers,
-      });
+      const res = await approvePasswordResetRequest(id, headers);
       if (!res.ok) {
         alert("Échec de l'approbation de la demande.");
         return;
@@ -176,10 +133,7 @@ export default function AccessTab() {
   const rejectPasswordReset = async (id: number) => {
     setActionId(id);
     try {
-      await fetch(getApiUrl(`/api/admin/password-reset-requests/${id}/reject`), {
-        method: 'PUT',
-        headers,
-      });
+      await rejectPasswordResetRequest(id, headers);
       void fetchData();
     } finally {
       setActionId(null);
@@ -193,314 +147,38 @@ export default function AccessTab() {
 
   return (
     <div className="h-full overflow-y-auto space-y-8 pr-1">
+      <UsersTable
+        users={users}
+        currentUserEmail={userName}
+        actionId={actionId}
+        loading={loading}
+        onRefresh={fetchData}
+        onToggleAdmin={switchAdminStatus}
+        onDelete={deleteUser}
+      />
 
-      {/* ── Utilisateurs ── */}
-      <section>
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-lg font-bold">Utilisateurs</h2>
-          <button className="btn btn-xs btn-outline gap-1" onClick={fetchData} disabled={loading}>
-            <RefreshCw size={12} className={loading ? 'animate-spin' : ''} />
-            Actualiser
-          </button>
-        </div>
+      <ModulesAccessTable
+        moduleSettings={moduleSettings}
+        savingModuleId={savingModuleId}
+        onToggle={toggleModuleSetting}
+      />
 
-        <div className="overflow-x-auto rounded-xl border border-base-content/10">
-          <table className="table table-sm w-full">
-            <thead>
-              <tr className="bg-base-300 text-xs uppercase tracking-wide">
-                <th>ID</th>
-                <th>Nom</th>
-                <th>Email</th>
-                <th>Admin</th>
-                <th>Créé le</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {users.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="text-center text-base-content/40 italic py-8">
-                    Aucun utilisateur
-                  </td>
-                </tr>
-              ) : (
-                users.map(u => (
-                  <tr key={u.id} className="hover">
-                    <td className="text-xs opacity-40 tabular-nums">{u.id} {u.email  === userName ? " (vous)" : ""}</td>
-                    <td>{u.name ?? <span className="opacity-30 italic">---</span>}</td>
-                    <td className="font-mono text-xs">{u.email}</td>
-                    <td>
-                      <input
-                        type="checkbox"
-                        className={`toggle toggle-sm toggle-success ${
-                          actionId === u.id ? "opacity-50" : ""
-                        }
-                        ${u.email === userName ? "cursor-not-allowed  disabled" : ""}`}
-                        checked={u.isAdmin}
-                        disabled={actionId === u.id && u.email !== userName}
-                        onChange={() => switchAdminStatus(u.id, u.isAdmin, u.email)}
-                      />
-                    </td>
-                    <td className="text-xs opacity-60">
-                      {new Date(u.createdAt).toLocaleDateString('fr-FR')}
-                    </td>
-                    <td>
-                      <button
-                        className={`btn btn-xs btn-error btn-ghost
-                          ${u.email === userName ? "cursor-not-allowed opacity-50 disabled" : ""}
-                        `}
-                        disabled={actionId === u.id && u.email !== userName}
-                        onClick={() => deleteUser(u.id, u.email)}
-                      >
-                        {actionId === u.id
-                          ? <span className="loading loading-spinner loading-xs" />
-                          : <Trash2 size={12} />}
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </section>
+      <SignupRequestsSection
+        pending={pending}
+        processed={processed}
+        actionId={actionId}
+        onApprove={id => handleSignupRequest(id, 'approve')}
+        onReject={id => handleSignupRequest(id, 'reject')}
+      />
 
-      {/* ── Modules ── */}
-      <section>
-        <h2 className="text-lg font-bold mb-1 flex items-center gap-2">
-          <ShieldCheck size={18} className="opacity-70" />
-          Modules
-        </h2>
-        <p className="text-xs opacity-60 mb-3">
-          Par défaut, tout utilisateur authentifié peut créer/modifier et supprimer via un module.
-          Activez un réglage ci-dessous pour réserver cette action aux administrateurs.
-        </p>
-        <div className="overflow-x-auto rounded-xl border border-base-content/10">
-          <table className="table table-sm w-full">
-            <thead>
-              <tr className="bg-base-300 text-xs uppercase tracking-wide">
-                <th>Module</th>
-                <th>Création / Modification : admin uniquement</th>
-                <th>Suppression : admin uniquement</th>
-              </tr>
-            </thead>
-            <tbody>
-              {Object.keys(moduleSettings).length === 0 ? (
-                <tr>
-                  <td colSpan={3} className="text-center text-base-content/40 italic py-8">
-                    Aucun module
-                  </td>
-                </tr>
-              ) : (
-                Object.entries(moduleSettings).map(([moduleId, settings]) => (
-                  <tr key={moduleId} className="hover">
-                    <td className="font-mono text-xs">{moduleId}</td>
-                    <td>
-                      <input
-                        type="checkbox"
-                        className={`toggle toggle-sm toggle-warning ${savingModuleId === moduleId ? "opacity-50" : ""}`}
-                        checked={settings.writeAdminOnly}
-                        disabled={savingModuleId === moduleId}
-                        onChange={() => toggleModuleSetting(moduleId, 'writeAdminOnly')}
-                      />
-                    </td>
-                    <td>
-                      <input
-                        type="checkbox"
-                        className={`toggle toggle-sm toggle-warning ${savingModuleId === moduleId ? "opacity-50" : ""}`}
-                        checked={settings.deleteAdminOnly}
-                        disabled={savingModuleId === moduleId}
-                        onChange={() => toggleModuleSetting(moduleId, 'deleteAdminOnly')}
-                      />
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </section>
+      <PasswordResetSection
+        pending={pendingPasswordResets}
+        processed={processedPasswordResets}
+        actionId={actionId}
+        onApprove={approvePasswordReset}
+        onReject={rejectPasswordReset}
+      />
 
-      {/* ── Demandes en attente ── */}
-      {pending.length > 0 && (
-        <section>
-          <h2 className="text-lg font-bold mb-3 flex items-center gap-2">
-            Demandes en attente
-            <span className="badge badge-warning badge-sm">{pending.length}</span>
-          </h2>
-          <div className="space-y-2">
-            {pending.map(r => (
-              <div
-                key={r.id}
-                className="flex items-center gap-4 p-4 bg-base-300 rounded-xl border border-warning/20"
-              >
-                <div className="flex-1 min-w-0">
-                  <p className="font-semibold truncate">{r.name ?? r.email}</p>
-                  <p className="text-xs opacity-60 font-mono truncate">{r.email}</p>
-                  <p className="text-xs opacity-40 mt-1">
-                    Demandé le {new Date(r.createdAt).toLocaleString('fr-FR')}
-                  </p>
-                </div>
-                <div className="flex gap-2 shrink-0">
-                  <button
-                    className="btn btn-sm btn-success gap-1"
-                    disabled={actionId === r.id}
-                    onClick={() => handleRequest(r.id!, 'approve')}
-                  >
-                    {actionId === r.id
-                      ? <span className="loading loading-spinner loading-xs" />
-                      : <Check size={14} />}
-                    Approuver
-                  </button>
-                  <button
-                    className="btn btn-sm btn-error btn-outline gap-1"
-                    disabled={actionId === r.id}
-                    onClick={() => handleRequest(r.id!, 'reject')}
-                  >
-                    <X size={14} /> Rejeter
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {pending.length === 0 && (
-        <div className="alert bg-base-300 text-sm">
-          <Check size={16} className="text-success" />
-          <span>Aucune demande d'accès en attente.</span>
-        </div>
-      )}
-
-      {/* ── Historique ── */}
-      {processed.length > 0 && (
-        <section>
-          <h2 className="text-lg font-bold mb-3">Historique des demandes</h2>
-          <div className="overflow-x-auto rounded-xl border border-base-content/10">
-            <table className="table table-sm w-full">
-              <thead>
-                <tr className="bg-base-300 text-xs uppercase tracking-wide">
-                  <th>Email</th>
-                  <th>Statut</th>
-                  <th>Demandé le</th>
-                  <th>Traité le</th>
-                </tr>
-              </thead>
-              <tbody>
-                {processed.map(r => (
-                  <tr key={r.id} className="hover">
-                    <td className="font-mono text-xs">{r.email}</td>
-                    <td>
-                      <span className={`badge badge-xs ${STATUS_BADGE[r.status] ?? 'badge-ghost'}`}>
-                        {r.status}
-                      </span>
-                    </td>
-                    <td className="text-xs opacity-60">
-                      {new Date(r.createdAt).toLocaleDateString('fr-FR')}
-                    </td>
-                    <td className="text-xs opacity-60">
-                      {r.processedAt
-                        ? new Date(r.processedAt).toLocaleDateString('fr-FR')
-                        : '---'}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
-      )}
-
-      {/* ── Demandes de reset de mot de passe ── */}
-      <section>
-        <h2 className="text-lg font-bold mb-3 flex items-center gap-2">
-          <KeyRound size={18} className="opacity-70" />
-          Demandes de reset de mot de passe
-          {pendingPasswordResets.length > 0 && (
-            <span className="badge badge-warning badge-sm">{pendingPasswordResets.length}</span>
-          )}
-        </h2>
-
-        {pendingPasswordResets.length === 0 ? (
-          <div className="alert bg-base-300 text-sm">
-            <Check size={16} className="text-success" />
-            <span>Aucune demande de reset en attente.</span>
-          </div>
-        ) : (
-          <div className="space-y-2 mb-4">
-            {pendingPasswordResets.map(r => (
-              <div
-                key={r.id}
-                className="flex items-center gap-4 p-4 bg-base-300 rounded-xl border border-warning/20"
-              >
-                <div className="flex-1 min-w-0">
-                  <p className="font-semibold font-mono truncate">{r.email}</p>
-                  <p className="text-xs opacity-40 mt-1">
-                    Demandé le {new Date(r.createdAt).toLocaleString('fr-FR')}
-                  </p>
-                </div>
-                <div className="flex gap-2 shrink-0">
-                  <button
-                    className="btn btn-sm btn-success gap-1"
-                    disabled={actionId === r.id}
-                    onClick={() => approvePasswordReset(r.id)}
-                  >
-                    {actionId === r.id
-                      ? <span className="loading loading-spinner loading-xs" />
-                      : <Check size={14} />}
-                    Approuver
-                  </button>
-                  <button
-                    className="btn btn-sm btn-error btn-outline gap-1"
-                    disabled={actionId === r.id}
-                    onClick={() => rejectPasswordReset(r.id)}
-                  >
-                    <X size={14} /> Rejeter
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {processedPasswordResets.length > 0 && (
-          <div className="overflow-x-auto rounded-xl border border-base-content/10">
-            <table className="table table-sm w-full">
-              <thead>
-                <tr className="bg-base-300 text-xs uppercase tracking-wide">
-                  <th>Email</th>
-                  <th>Statut</th>
-                  <th>Demandé le</th>
-                  <th>Traité le</th>
-                </tr>
-              </thead>
-              <tbody>
-                {processedPasswordResets.map(r => (
-                  <tr key={r.id} className="hover">
-                    <td className="font-mono text-xs">{r.email}</td>
-                    <td>
-                      <span className={`badge badge-xs ${STATUS_BADGE[r.status] ?? 'badge-ghost'}`}>
-                        {r.status}
-                      </span>
-                    </td>
-                    <td className="text-xs opacity-60">
-                      {new Date(r.createdAt).toLocaleDateString('fr-FR')}
-                    </td>
-                    <td className="text-xs opacity-60">
-                      {r.processedAt
-                        ? new Date(r.processedAt).toLocaleDateString('fr-FR')
-                        : '---'}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </section>
-
-      {/* ── Révélation du mot de passe temporaire ── */}
       {revealedPassword && (
         <RecoveryCodeReveal
           code={revealedPassword}
@@ -510,7 +188,6 @@ export default function AccessTab() {
           confirmLabel="J'ai transmis ce mot de passe"
         />
       )}
-
     </div>
   );
 }
