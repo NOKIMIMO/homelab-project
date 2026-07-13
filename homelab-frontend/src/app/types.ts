@@ -116,3 +116,49 @@ export interface TelemetryData {
     activeModulesCount: number;
     uptime: number;
 }
+
+// ─── Alerts ───
+
+export type MetricType = 'CPU' | 'RAM' | 'DISK';
+export type AlertOperator = 'GT' | 'GTE' | 'LT' | 'LTE';
+export type AlertSeverity = 'INFO' | 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+
+export interface AlertRule {
+  id: number;
+  name: string;
+  metric: MetricType;
+  operator: AlertOperator;
+  operatorSymbol: string;
+  threshold: number;
+  severity: AlertSeverity;
+  enabled: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AlertRuleRequest {
+  name: string;
+  metric: MetricType;
+  operator: AlertOperator;
+  threshold: number;
+  severity: AlertSeverity;
+  enabled: boolean;
+}
+
+export interface AlertEvent {
+  id: number;
+  ruleId: number | null;
+  ruleName: string;
+  metric: MetricType;
+  severity: AlertSeverity;
+  threshold: number;
+  value: number;
+  message: string;
+  triggeredAt: string;
+}
+
+export interface AlertOptions {
+  metrics: { name: MetricType; label: string; unit: string }[];
+  operators: { name: AlertOperator; symbol: string }[];
+  severities: AlertSeverity[];
+}
