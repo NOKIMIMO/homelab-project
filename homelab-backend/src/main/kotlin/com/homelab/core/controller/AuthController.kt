@@ -167,14 +167,21 @@ class AuthController(
                 signupRequestRepository.save(signup)
                 val recoveryCode = recoveryCodeService.generateNewCode()
                 ResponseEntity.ok(mapOf("success" to true, "user" to user.toDto(), "recoveryCode" to recoveryCode))
-            } catch (e: IllegalArgumentException) {
-                ResponseEntity.badRequest().body(mapOf("success" to false, "message" to e.message))
+            } catch (e: Exception) {
+                // Catches more than IllegalArgumentException on purpose: registerUser's DB insert
+                // above may already have committed before signup/recovery-code bookkeeping throws,
+                // and a narrow catch let that escape as an unhandled 500 while the user row (and
+                // thus the account) still existed. Any failure here is reported the same way.
+                log.error("Bootstrap signup failed for ${request.email}", e)
+                ResponseEntity.badRequest().body(mapOf("success" to false, "message" to (e.message ?: "Signup failed")))
             }
         }
 
 
         signupRequestRepository.save(signup)
-        return ResponseEntity.ok().build()
+        // Non-empty body: the frontend used to call res.json() on an empty 200 here, which threw
+        // and made a successfully-recorded signup request look like a failure to the user.
+        return ResponseEntity.ok(mapOf("success" to true, "message" to "Demande d'inscription envoyée, en attente de validation par un administrateur."))
     }
 
     // Small reset: a logged-out user asks for their password back. An admin reviews and
@@ -217,6 +224,27 @@ class AuthController(
         }
 
         userService.updatePassword(user.id!!, AuthService.encodePassword(request.newPassword))
+        return ResponseEntity.ok(mapOf("success" to true))
+    }
+
+    // Self-service account deletion. A full admin must transfer their admin role first (see
+    // AdminController.transferAdmin) so the instance is never left without an admin. The JWT
+    // filter re-derives the caller's identity from the DB on every request, so once this row is
+    // gone the very next request with this token is rejected - the frontend also clears the
+    // stored token and logs out immediately on a successful response.
+    @DeleteMapping("/account")
+    fun deleteOwnAccount(): ResponseEntity<Any> {
+        val email = SecurityContextHolder.getContext().authentication?.name
+            ?: return ResponseEntity.status(401).body(mapOf("success" to false, "message" to "Not authenticated"))
+        val user = repository.findByEmail(email).orElse(null)
+            ?: return ResponseEntity.status(401).body(mapOf("success" to false, "message" to "Not authenticated"))
+        if (user.isAdmin) {
+            return ResponseEntity.status(403).body(mapOf(
+                "success" to false,
+                "message" to "Un administrateur doit d'abord transférer son rôle avant de supprimer son compte"
+            ))
+        }
+        userService.deleteUser(user.id!!)
         return ResponseEntity.ok(mapOf("success" to true))
     }
 

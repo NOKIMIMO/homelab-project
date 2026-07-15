@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Check, X, Trash2, RefreshCw, ShieldCheck, KeyRound, UsersRound } from 'lucide-react';
+import { useNavigate } from 'react-router';
+import { Check, X, Trash2, RefreshCw, ShieldCheck, KeyRound, UsersRound, Repeat } from 'lucide-react';
 import type { Role } from '@app/types';
 import { useAuth } from '@auth/AuthContext';
 import { getApiUrl } from '@lib/api';
@@ -41,7 +42,8 @@ const STATUS_BADGE: Record<string, string> = {
 };
 
 export default function AccessTab() {
-  const { token, userName } = useAuth();
+  const { token, userName, logout } = useAuth();
+  const navigate = useNavigate();
   const [users, setUsers] = useState<User[]>([]);
   const [requests, setRequests] = useState<SignupRequest[]>([]);
   const [passwordResetRequests, setPasswordResetRequests] = useState<PasswordResetRequest[]>([]);
@@ -59,6 +61,9 @@ export default function AccessTab() {
   const [approvingRequest, setApprovingRequest] = useState<SignupRequest | null>(null);
   const [draftApproveRoles, setDraftApproveRoles] = useState<Set<number>>(new Set());
   const [approving, setApproving] = useState(false);
+  const [transferOpen, setTransferOpen] = useState(false);
+  const [transferTargetId, setTransferTargetId] = useState<number | null>(null);
+  const [transferring, setTransferring] = useState(false);
 
   const headers: HeadersInit = token
     ? { Authorization: `Bearer ${token}` }
@@ -101,22 +106,37 @@ export default function AccessTab() {
     }
   };
 
-  const switchAdminStatus = async (id: number, isAdmin: boolean, email: string) => {
-    if (email === userName) {
-      alert("Vous ne pouvez pas modifier votre propre statut d'administrateur.");
-      return;
-    }
+  const openTransfer = () => {
+    setTransferTargetId(null);
+    setTransferOpen(true);
+  };
 
-    setActionId(id);
+  const confirmTransfer = async () => {
+    if (transferTargetId === null) return;
+    setTransferring(true);
     try {
-      await fetch(getApiUrl(`/api/admin/users/${id}/admin/${!isAdmin}`), {
-        method: 'PUT',
+      const res = await fetch(getApiUrl(`/api/admin/users/${transferTargetId}/transfer-admin`), {
+        method: 'POST',
         headers,
-        body: JSON.stringify({ isAdmin: !isAdmin }),
       });
-      setUsers(prev => prev.map(u => u.id === id ? { ...u, isAdmin: !isAdmin } : u));
+      if (!res.ok) {
+        let message = "Échec du transfert du rôle admin.";
+        try {
+          const data = await res.json() as { message?: string };
+          message = data.message || message;
+        } catch {
+          // non-JSON error body
+        }
+        alert(message);
+        return;
+      }
+      // The caller is no longer admin: their current token still carries the old claims, so
+      // force a fresh login to pick up the demoted (moderator) role and permissions.
+      setTransferOpen(false);
+      logout();
+      navigate('/login');
     } finally {
-      setActionId(null);
+      setTransferring(false);
     }
   };
 
@@ -325,16 +345,19 @@ export default function AccessTab() {
                     <td>{u.name ?? <span className="opacity-30 italic">---</span>}</td>
                     <td className="font-mono text-xs">{u.email}</td>
                     <td>
-                      <input
-                        type="checkbox"
-                        className={`toggle toggle-sm toggle-success ${
-                          actionId === u.id ? "opacity-50" : ""
-                        }
-                        ${u.email === userName ? "cursor-not-allowed  disabled" : ""}`}
-                        checked={u.isAdmin}
-                        disabled={actionId === u.id && u.email !== userName}
-                        onChange={() => switchAdminStatus(u.id, u.isAdmin, u.email)}
-                      />
+                      {u.isAdmin ? (
+                        <span className="badge badge-success badge-sm">Admin</span>
+                      ) : (
+                        <span className="text-xs opacity-30 italic">---</span>
+                      )}
+                      {u.email === userName && u.isAdmin && (
+                        <button
+                          className="btn btn-2xs btn-outline gap-1 mt-1 flex"
+                          onClick={openTransfer}
+                        >
+                          <Repeat size={11} /> Transférer
+                        </button>
+                      )}
                     </td>
                     <td>
                       {u.isAdmin ? (
@@ -611,6 +634,54 @@ export default function AccessTab() {
             </div>
           </div>
           <div className="modal-backdrop" onClick={() => !savingRoles && setEditingRolesUser(null)} />
+        </div>
+      )}
+
+      {/* ── Modal transfert du rôle admin ── */}
+      {transferOpen && (
+        <div className="modal modal-open">
+          <div className="modal-box">
+            <h3 className="font-bold text-lg mb-1">Transférer le rôle administrateur</h3>
+            <p className="text-xs opacity-60 mb-4">
+              Vous cesserez d'être administrateur et deviendrez modérateur (rôle "Modérateur"
+              conservant les permissions d'administration). Vous serez déconnecté pour recharger
+              vos droits.
+            </p>
+            <div className="space-y-2 max-h-96 overflow-y-auto">
+              {users.filter(u => u.email !== userName).length === 0 ? (
+                <p className="text-sm opacity-40 italic">Aucun autre utilisateur disponible.</p>
+              ) : (
+                users.filter(u => u.email !== userName).map(u => (
+                  <label key={u.id} className="flex items-center gap-3 bg-base-300 rounded-lg px-3 py-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="transfer-target"
+                      className="radio radio-sm"
+                      checked={transferTargetId === u.id}
+                      onChange={() => setTransferTargetId(u.id)}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <span className="font-semibold text-sm truncate block">{u.name ?? u.email}</span>
+                      <span className="text-xs opacity-50 font-mono">{u.email}</span>
+                    </div>
+                  </label>
+                ))
+              )}
+            </div>
+            <div className="modal-action">
+              <button className="btn btn-sm btn-ghost" onClick={() => setTransferOpen(false)} disabled={transferring}>
+                Annuler
+              </button>
+              <button
+                className="btn btn-sm btn-warning"
+                onClick={() => void confirmTransfer()}
+                disabled={transferring || transferTargetId === null}
+              >
+                {transferring ? <span className="loading loading-spinner loading-xs" /> : 'Transférer'}
+              </button>
+            </div>
+          </div>
+          <div className="modal-backdrop" onClick={() => !transferring && setTransferOpen(false)} />
         </div>
       )}
 

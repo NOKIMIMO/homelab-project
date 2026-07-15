@@ -65,8 +65,12 @@ export async function registerUser(email: string, password: string): Promise<Log
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, password }),
   });
-  const data = (await res.json()) as LoginResult;
-  return data;
+  try {
+    return (await res.json()) as LoginResult;
+  } catch {
+    // A 200 with an empty body still means the signup request was recorded successfully.
+    return { success: res.ok };
+  }
 }
 
 export async function requestPasswordReset(email: string): Promise<SimpleResult> {

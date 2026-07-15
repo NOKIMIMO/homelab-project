@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Key, Loader2, AlertCircle } from 'lucide-react';
+import { Key, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { loginWithPassword, registerUser } from './authHooks';
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -15,7 +15,7 @@ export default function PasswordLoginForm({ onLoginSuccess }: PasswordLoginFormP
   const [passwordFlow, setPasswordFlow] = useState<'login' | 'signup'>('login');
 
   const [error, setError] = useState<string | null>(null);
-  const [, setSuccess] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   const emailValid = emailRegex.test(email);
@@ -37,11 +37,12 @@ export default function PasswordLoginForm({ onLoginSuccess }: PasswordLoginFormP
 
     setLoading(true);
     setError(null);
+    setSuccess(null);
 
     try {
       const result = await registerUser(email, password);
 
-      if (result.success && result.token) {
+      if (result.success) {
         setSuccess("Inscription réussie. L'administrateur vous contactera pour valider votre compte.");
         return;
       }
@@ -64,6 +65,7 @@ export default function PasswordLoginForm({ onLoginSuccess }: PasswordLoginFormP
 
     setLoading(true);
     setError(null);
+    setSuccess(null);
 
     try {
       const result = await loginWithPassword(email, password);
@@ -85,11 +87,13 @@ export default function PasswordLoginForm({ onLoginSuccess }: PasswordLoginFormP
   const handleEmailChange = (value: string) => {
     setEmail(value);
     setError(null);
+    setSuccess(null);
   };
 
   const handlePasswordChange = (value: string) => {
     setPassword(value);
     setError(null);
+    setSuccess(null);
   };
 
   return (
@@ -101,6 +105,13 @@ export default function PasswordLoginForm({ onLoginSuccess }: PasswordLoginFormP
         <div className="alert alert-error mb-2 border border-error/20 shadow-sm">
           <AlertCircle size={18} />
           <span className="text-xs font-bold">{error}</span>
+        </div>
+      )}
+
+      {success && (
+        <div className="alert alert-success mb-2 border border-success/20 shadow-sm">
+          <CheckCircle2 size={18} />
+          <span className="text-xs font-bold">{success}</span>
         </div>
       )}
 
@@ -116,6 +127,7 @@ export default function PasswordLoginForm({ onLoginSuccess }: PasswordLoginFormP
             onClick={() => {
               setPasswordFlow('login');
               setError(null);
+              setSuccess(null);
             }}
           >
             Connexion
@@ -131,6 +143,7 @@ export default function PasswordLoginForm({ onLoginSuccess }: PasswordLoginFormP
             onClick={() => {
               setPasswordFlow('signup');
               setError(null);
+              setSuccess(null);
             }}
           >
             Inscription

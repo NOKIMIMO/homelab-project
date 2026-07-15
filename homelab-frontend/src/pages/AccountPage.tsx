@@ -1,5 +1,6 @@
 import { Settings2 } from 'lucide-react';
 import ChangePasswordForm from '@features/account/ChangePasswordForm';
+import DeleteAccountSection from '@features/account/DeleteAccountSection';
 
 export default function AccountPage() {
   return (
@@ -11,6 +12,7 @@ export default function AccountPage() {
         </h2>
       </div>
       <ChangePasswordForm />
+      <DeleteAccountSection />
     </div>
   );
 }

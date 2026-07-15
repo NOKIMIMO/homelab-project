@@ -1,6 +1,8 @@
 package com.homelab.core.service
 
 import com.homelab.core.exception.NotFoundException
+import com.homelab.core.model.auth.AdminPermission
+import com.homelab.core.model.auth.Role
 import com.homelab.core.model.auth.User
 import com.homelab.core.model.auth.UserRepository
 import com.homelab.core.model.auth.RoleRepository
@@ -16,6 +18,11 @@ class UserService(
     companion object {
         // Same alphabet as RecoveryCodeService: excludes ambiguous characters (0/O, 1/I/L, etc).
         private const val TEMP_PASSWORD_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"
+
+        // Role handed to an admin who transfers away their admin status (see transferAdmin):
+        // keeps every administration permission so they don't lose all capability, without
+        // holding the isAdmin flag itself.
+        private const val MODERATOR_ROLE_NAME = "Modérateur"
     }
 
     private val secureRandom = SecureRandom()
@@ -48,12 +55,26 @@ class UserService(
 
     fun deleteAllUsers() = repository.deleteAll()
 
-    fun updateUserAdmin(id: Long, isAdmin: Boolean) {
-        val user = repository.findById(id).orElseThrow { IllegalArgumentException("User with id $id not found") }
-        if (user.isAdmin == isAdmin) return
-        user.isAdmin = isAdmin
-        repository.save(user)
+    // Hands full admin status to [toId] and demotes [fromId] to a "Modérateur" role that keeps
+    // every AdminPermission, so the outgoing admin doesn't lose all capability. The caller's
+    // existing JWT still carries the old isAdmin claim until they log in again - the frontend
+    // forces a re-login right after a successful transfer to pick up the new role/permissions.
+    fun transferAdmin(fromId: Long, toId: Long) {
+        val from = repository.findById(fromId).orElseThrow { NotFoundException("User with id $fromId not found") }
+        val to = repository.findById(toId).orElseThrow { NotFoundException("User with id $toId not found") }
+        if (!from.isAdmin) throw IllegalArgumentException("Seul un administrateur peut transférer son rôle")
+
+        to.isAdmin = true
+        from.isAdmin = false
+        from.roles.add(moderatorRole())
+        repository.save(to)
+        repository.save(from)
     }
+
+    private fun moderatorRole(): Role =
+        roleRepository.findByNameIgnoreCase(MODERATOR_ROLE_NAME) ?: roleRepository.save(
+            Role(name = MODERATOR_ROLE_NAME, adminPermissions = AdminPermission.entries.mapTo(mutableSetOf()) { it.name })
+        )
 
     fun findByEmail(email: String): User? = repository.findByEmail(email).orElse(null)
 

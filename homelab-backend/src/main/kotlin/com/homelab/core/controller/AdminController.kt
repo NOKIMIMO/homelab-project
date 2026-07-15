@@ -18,6 +18,7 @@ import com.homelab.core.service.module.ModuleConfigService
 import com.homelab.sdk.helper.AppLogger
 import org.springframework.http.ResponseEntity
 import org.springframework.security.access.prepost.PreAuthorize
+import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.web.bind.annotation.*
 import java.time.LocalDateTime
 
@@ -89,10 +90,25 @@ class AdminController(
         userService.deleteUser(id)
         return ResponseEntity.ok().build()
     }
-    @PostMapping("/users/{id}/isAdmin/{isAdmin}")
-    fun setAdmin(@PathVariable id: Long, @PathVariable isAdmin: Boolean): ResponseEntity<Void> {
-        userService.updateUserAdmin(id, isAdmin)
-        return ResponseEntity.ok().build()
+    // The only way to grant isAdmin: the caller hands off their own admin status to another
+    // account and is demoted to a "Modérateur" role (see UserService.transferAdmin). There is
+    // deliberately no standalone "make this user admin" endpoint - it always stays exactly one
+    // isAdmin=true user, transferred atomically, never granted freestanding.
+    @PostMapping("/users/{id}/transfer-admin")
+    fun transferAdmin(@PathVariable id: Long): ResponseEntity<Any> {
+        val callerEmail = SecurityContextHolder.getContext().authentication?.name
+            ?: return ResponseEntity.status(401).body(mapOf("success" to false, "message" to "Not authenticated"))
+        val caller = userService.findByEmail(callerEmail)
+            ?: return ResponseEntity.status(401).body(mapOf("success" to false, "message" to "Not authenticated"))
+        if (caller.id == id) {
+            return ResponseEntity.badRequest().body(mapOf("success" to false, "message" to "Vous êtes déjà administrateur de ce compte"))
+        }
+        return try {
+            userService.transferAdmin(fromId = caller.id!!, toId = id)
+            ResponseEntity.ok(mapOf("success" to true))
+        } catch (e: IllegalArgumentException) {
+            ResponseEntity.badRequest().body(mapOf("success" to false, "message" to e.message))
+        }
     }
 
     @GetMapping("/permissions")

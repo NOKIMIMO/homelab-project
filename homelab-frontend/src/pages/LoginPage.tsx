@@ -1,7 +1,13 @@
 import { useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router';
+import { jwtDecode } from 'jwt-decode';
 import { useAuth } from '@auth/AuthContext';
 import LoginForm from '@features/auth/LoginForm';
+
+interface JwtPayload {
+  isAdmin: boolean;
+  adminPermissions?: string[];
+}
 
 export default function LoginPage() {
   const auth = useAuth();
@@ -14,9 +20,21 @@ export default function LoginPage() {
     return state?.from?.pathname || '/';
   }, [location.state]);
 
+  // redirectPath was captured from whoever was on that page before (possibly a different
+  // user who just logged out from a permission-gated page like /admin). It's only safe to
+  // honor if the newly authenticated user actually has the rights that page requires -
+  // otherwise send them to / instead of bouncing them through a 403.
   const handleLoginSuccess = (token: string, keyName: string, mustResetPassword?: boolean) => {
     auth.login(token, keyName);
-    navigate(mustResetPassword ? '/settings' : redirectPath, { replace: true });
+
+    let target = mustResetPassword ? '/settings' : redirectPath;
+    if (!mustResetPassword && target.startsWith('/admin')) {
+      const claims = jwtDecode<JwtPayload>(token);
+      const hasAdminAccess = claims.isAdmin || (claims.adminPermissions?.length ?? 0) > 0;
+      if (!hasAdminAccess) target = '/';
+    }
+
+    navigate(target, { replace: true });
   };
 
   if (showBootstrap) {
