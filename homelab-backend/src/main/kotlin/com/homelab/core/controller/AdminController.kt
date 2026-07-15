@@ -105,6 +105,12 @@ class AdminController(
         return ResponseEntity.ok().build()
     }
 
+    @PutMapping("/users/{id}/roles")
+    fun setUserRoles(@PathVariable id: Long, @RequestBody roleIds: List<Long>): ResponseEntity<Void> {
+        userService.updateUserRoles(id, roleIds.toSet())
+        return ResponseEntity.ok().build()
+    }
+
     @GetMapping("/signup-requests")
     fun getSignupRequests(): List<SignupRequestDto> = signupRequestRepository.findAll().map { it.toDto() }
 

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Check, X, Trash2, RefreshCw, ShieldCheck, KeyRound } from 'lucide-react';
+import { Check, X, Trash2, RefreshCw, ShieldCheck, KeyRound, UsersRound } from 'lucide-react';
+import type { Role } from '@app/types';
 import { useAuth } from '@auth/AuthContext';
 import { getApiUrl } from '@lib/api';
 import RecoveryCodeReveal from '@ui/RecoveryCodeReveal';
@@ -12,6 +13,7 @@ interface User {
   createdAt: string;
   publicKey: string | null;
   permissions: string[];
+  roleIds: number[];
 }
 
 interface SignupRequest {
@@ -44,11 +46,15 @@ export default function AccessTab() {
   const [requests, setRequests] = useState<SignupRequest[]>([]);
   const [passwordResetRequests, setPasswordResetRequests] = useState<PasswordResetRequest[]>([]);
   const [availablePermissions, setAvailablePermissions] = useState<Record<string, string[]>>({});
+  const [roles, setRoles] = useState<Role[]>([]);
   const [loading, setLoading] = useState(false);
   const [actionId, setActionId] = useState<number | null>(null);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [draftPermissions, setDraftPermissions] = useState<Set<string>>(new Set());
   const [savingPermissions, setSavingPermissions] = useState(false);
+  const [editingRolesUser, setEditingRolesUser] = useState<User | null>(null);
+  const [draftRoles, setDraftRoles] = useState<Set<number>>(new Set());
+  const [savingRoles, setSavingRoles] = useState(false);
   const [revealedPassword, setRevealedPassword] = useState<string | null>(null);
 
   const headers: HeadersInit = token
@@ -58,16 +64,18 @@ export default function AccessTab() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const [usersRes, requestsRes, permissionsRes, resetRequestsRes] = await Promise.all([
+      const [usersRes, requestsRes, permissionsRes, resetRequestsRes, rolesRes] = await Promise.all([
         fetch(getApiUrl('/api/admin/users'), { headers }),
         fetch(getApiUrl('/api/admin/signup-requests'), { headers }),
         fetch(getApiUrl('/api/admin/permissions'), { headers }),
         fetch(getApiUrl('/api/admin/password-reset-requests'), { headers }),
+        fetch(getApiUrl('/api/admin/roles'), { headers }),
       ]);
       if (usersRes.ok) setUsers(await usersRes.json() as User[]);
       if (requestsRes.ok) setRequests(await requestsRes.json() as SignupRequest[]);
       if (permissionsRes.ok) setAvailablePermissions(await permissionsRes.json() as Record<string, string[]>);
       if (resetRequestsRes.ok) setPasswordResetRequests(await resetRequestsRes.json() as PasswordResetRequest[]);
+      if (rolesRes.ok) setRoles(await rolesRes.json() as Role[]);
     } finally {
       setLoading(false);
     }
@@ -141,6 +149,41 @@ export default function AccessTab() {
       setEditingUser(null);
     } finally {
       setSavingPermissions(false);
+    }
+  };
+
+  const openRoles = (u: User) => {
+    setEditingRolesUser(u);
+    setDraftRoles(new Set(u.roleIds));
+  };
+
+  const toggleRole = (roleId: number) => {
+    setDraftRoles(prev => {
+      const next = new Set(prev);
+      if (next.has(roleId)) next.delete(roleId);
+      else next.add(roleId);
+      return next;
+    });
+  };
+
+  const saveRoles = async () => {
+    if (!editingRolesUser) return;
+    setSavingRoles(true);
+    try {
+      const roleIds = Array.from(draftRoles);
+      const res = await fetch(getApiUrl(`/api/admin/users/${editingRolesUser.id}/roles`), {
+        method: 'PUT',
+        headers: { ...headers, 'Content-Type': 'application/json' },
+        body: JSON.stringify(roleIds),
+      });
+      if (!res.ok) {
+        alert("Échec de l'enregistrement des rôles.");
+        return;
+      }
+      setUsers(prev => prev.map(u => u.id === editingRolesUser.id ? { ...u, roleIds } : u));
+      setEditingRolesUser(null);
+    } finally {
+      setSavingRoles(false);
     }
   };
 
@@ -225,6 +268,7 @@ export default function AccessTab() {
                 <th>Nom</th>
                 <th>Email</th>
                 <th>Admin</th>
+                <th>Rôles</th>
                 <th>Permissions</th>
                 <th>Créé le</th>
                 <th></th>
@@ -233,7 +277,7 @@ export default function AccessTab() {
             <tbody>
               {users.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="text-center text-base-content/40 italic py-8">
+                  <td colSpan={8} className="text-center text-base-content/40 italic py-8">
                     Aucun utilisateur
                   </td>
                 </tr>
@@ -254,6 +298,16 @@ export default function AccessTab() {
                         disabled={actionId === u.id && u.email !== userName}
                         onChange={() => switchAdminStatus(u.id, u.isAdmin, u.email)}
                       />
+                    </td>
+                    <td>
+                      {u.isAdmin ? (
+                        <span className="text-xs opacity-40 italic">---</span>
+                      ) : (
+                        <button className="btn btn-xs btn-outline gap-1" onClick={() => openRoles(u)}>
+                          <UsersRound size={12} />
+                          {u.roleIds.length > 0 ? `${u.roleIds.length} rôle(s)` : 'Assigner'}
+                        </button>
+                      )}
                     </td>
                     <td>
                       {u.isAdmin ? (
@@ -477,6 +531,49 @@ export default function AccessTab() {
           description="Communiquez ce mot de passe temporaire à l'utilisateur par un canal sûr. Il n'est valable qu'une seule connexion : il devra en définir un nouveau juste après."
           confirmLabel="J'ai transmis ce mot de passe"
         />
+      )}
+
+      {/* ── Modal rôles ── */}
+      {editingRolesUser && (
+        <div className="modal modal-open">
+          <div className="modal-box">
+            <h3 className="font-bold text-lg mb-1">Rôles de {editingRolesUser.name ?? editingRolesUser.email}</h3>
+            <p className="text-xs opacity-60 mb-4">
+              Un rôle donne accès à tous les modules qu'il autorise. Les rôles s'ajoutent aux permissions accordées individuellement.
+            </p>
+            <div className="space-y-2 max-h-96 overflow-y-auto">
+              {roles.length === 0 ? (
+                <p className="text-sm opacity-40 italic">Aucun rôle n'a encore été créé (onglet Rôles).</p>
+              ) : (
+                roles.map(role => (
+                  <label key={role.id} className="flex items-center gap-3 bg-base-300 rounded-lg px-3 py-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      className="checkbox checkbox-sm"
+                      checked={draftRoles.has(role.id)}
+                      onChange={() => toggleRole(role.id)}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <span className="font-semibold text-sm truncate block">{role.name}</span>
+                      <span className="text-xs opacity-50">
+                        {role.moduleIds.length === 0 ? 'aucun module' : `${role.moduleIds.length} module(s)`}
+                      </span>
+                    </div>
+                  </label>
+                ))
+              )}
+            </div>
+            <div className="modal-action">
+              <button className="btn btn-sm btn-ghost" onClick={() => setEditingRolesUser(null)} disabled={savingRoles}>
+                Annuler
+              </button>
+              <button className="btn btn-sm btn-primary" onClick={saveRoles} disabled={savingRoles}>
+                {savingRoles ? <span className="loading loading-spinner loading-xs" /> : 'Enregistrer'}
+              </button>
+            </div>
+          </div>
+          <div className="modal-backdrop" onClick={() => !savingRoles && setEditingRolesUser(null)} />
+        </div>
       )}
 
       {/* ── Modal permissions ── */}

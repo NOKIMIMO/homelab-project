@@ -162,3 +162,30 @@ export interface AlertOptions {
   operators: { name: AlertOperator; symbol: string }[];
   severities: AlertSeverity[];
 }
+
+// ─── Roles ───
+
+export type DayOfWeek =
+  | 'MONDAY' | 'TUESDAY' | 'WEDNESDAY' | 'THURSDAY' | 'FRIDAY' | 'SATURDAY' | 'SUNDAY';
+
+// A weekly slot during which the role's access is blocked. "HH:mm[:ss]"; end < start crosses midnight.
+export interface BlockedWindow {
+  dayOfWeek: DayOfWeek;
+  start: string;
+  end: string;
+}
+
+export interface Role {
+  id: number;
+  name: string;
+  moduleIds: string[];
+  blockedWindows: BlockedWindow[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface RoleRequest {
+  name: string;
+  moduleIds: string[];
+  blockedWindows: BlockedWindow[];
+}

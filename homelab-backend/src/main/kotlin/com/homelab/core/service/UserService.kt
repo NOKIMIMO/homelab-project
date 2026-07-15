@@ -3,11 +3,15 @@ package com.homelab.core.service
 import com.homelab.core.exception.NotFoundException
 import com.homelab.core.model.auth.User
 import com.homelab.core.model.auth.UserRepository
+import com.homelab.core.model.auth.RoleRepository
 import org.springframework.stereotype.Service
 import java.security.SecureRandom
 
 @Service
-class UserService(private val repository: UserRepository) {
+class UserService(
+    private val repository: UserRepository,
+    private val roleRepository: RoleRepository,
+) {
 
     companion object {
         // Same alphabet as RecoveryCodeService: excludes ambiguous characters (0/O, 1/I/L, etc).
@@ -47,6 +51,12 @@ class UserService(private val repository: UserRepository) {
     fun updateUserPermissions(id: Long, permissions: Set<String>) {
         val user = repository.findById(id).orElseThrow { NotFoundException("User with id $id not found") }
         user.permissions = permissions.toMutableSet()
+        repository.save(user)
+    }
+
+    fun updateUserRoles(id: Long, roleIds: Set<Long>) {
+        val user = repository.findById(id).orElseThrow { NotFoundException("User with id $id not found") }
+        user.roles = roleRepository.findAllById(roleIds).toMutableSet()
         repository.save(user)
     }
 

@@ -10,6 +10,7 @@ data class UserDto(
     val isAdmin: Boolean,
     val publicKey: String?,
     val permissions: Set<String>,
+    val roleIds: List<Long>,
     val mustResetPassword: Boolean,
     val createdAt: LocalDateTime,
 )
@@ -21,6 +22,7 @@ fun User.toDto() = UserDto(
     isAdmin = isAdmin,
     publicKey = publicKey,
     permissions = permissions,
+    roleIds = roles.mapNotNull { it.id },
     mustResetPassword = mustResetPassword,
     createdAt = createdAt,
 )

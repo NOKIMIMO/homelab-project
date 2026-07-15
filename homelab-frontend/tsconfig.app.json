@@ -25,17 +25,15 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true,
 
-    "baseUrl": ".",
-
-    // path aliases
+    // path aliases (resolved relative to this tsconfig's directory since TS 4.1, no baseUrl needed)
     "paths": {
-      "@app/*": ["src/app/*"],
-      "@auth/*": ["src/auth/*"],
-      "@pages/*": ["src/pages/*"],
-      "@ui/*": ["src/components/*"],
-      "@renderer/*": ["src/components/modules/*"],
-      "@lib/*": ["src/lib/*"],
-      "@features/*": ["src/features/*"]
+      "@app/*": ["./src/app/*"],
+      "@auth/*": ["./src/auth/*"],
+      "@pages/*": ["./src/pages/*"],
+      "@ui/*": ["./src/components/*"],
+      "@renderer/*": ["./src/components/modules/*"],
+      "@lib/*": ["./src/lib/*"],
+      "@features/*": ["./src/features/*"]
     }
   },
   "include": ["src"]

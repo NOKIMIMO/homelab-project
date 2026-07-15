@@ -3,6 +3,7 @@ package com.homelab.core.service
 import com.homelab.core.model.auth.User
 import com.homelab.core.model.module.ModuleConfig
 import com.homelab.sdk.module.action.ModuleActionDeclaration
+import java.time.LocalDateTime
 import org.springframework.stereotype.Service
 
 @Service
@@ -37,6 +38,10 @@ class PermissionService {
         if (user.isAdmin) return true
         val required = requiredPermissions(module, decl)
         if (required.isEmpty()) return true
+        // A role granting this module opens all of its actions, unless the role is currently within
+        // one of its blocked time windows. Direct per-user permissions still apply as a fallback.
+        val now = LocalDateTime.now()
+        if (user.roles.any { module.id in it.moduleIds && !it.isBlockedAt(now) }) return true
         return user.permissions.containsAll(required)
     }
 }

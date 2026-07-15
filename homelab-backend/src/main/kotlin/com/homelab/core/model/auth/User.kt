@@ -30,6 +30,14 @@ class User(
     @Column(name = "permission")
     var permissions: MutableSet<String> = mutableSetOf(),
 
+    @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(
+        name = "user_roles",
+        joinColumns = [JoinColumn(name = "user_id")],
+        inverseJoinColumns = [JoinColumn(name = "role_id")]
+    )
+    var roles: MutableSet<Role> = mutableSetOf(),
+
     // Set when an admin approves a password reset request: the current passwordHash is a
     // one-time temporary password that must be replaced via PUT /api/auth/password before
     // a second password login is accepted.
