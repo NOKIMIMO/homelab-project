@@ -144,7 +144,7 @@ export default function AlertsTab() {
                 className="input input-bordered input-sm"
                 value={form.name}
                 onChange={e => setForm({ ...form, name: e.target.value })}
-                placeholder="RAM presque pleine"
+                placeholder="Ex. RAM presque pleine"
               />
             </label>
 

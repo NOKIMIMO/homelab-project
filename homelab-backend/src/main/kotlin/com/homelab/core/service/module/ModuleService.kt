@@ -7,6 +7,8 @@ import com.homelab.core.api.dto.ModulePageResponse
 import com.homelab.core.config.HomelabConfig
 import com.homelab.core.config.ModuleConfigMemory
 import com.homelab.core.config.ObjectDefinitionMemory
+import com.homelab.core.helper.DiskUsage
+import com.homelab.core.service.ResourceLimitsService
 import com.homelab.sdk.helper.AppLogger
 import com.homelab.core.model.module.Module
 import com.homelab.core.model.module.ModuleConfig
@@ -38,7 +40,8 @@ class ModuleService(
     private val moduleConfigMemory: ModuleConfigMemory,
     private val moduleParamsService: ModuleParamsService,
     private val objectMapper: ObjectMapper,
-    private val objectDefinitionMemory: ObjectDefinitionMemory
+    private val objectDefinitionMemory: ObjectDefinitionMemory,
+    private val resourceLimitsService: ResourceLimitsService
 ) {
     private val log = AppLogger.loggerFor(ModuleService::class)
 
@@ -312,6 +315,8 @@ class ModuleService(
             if (destination.exists()) {
                 throw BadRequestException("Module '${config.id}' already installed")
             }
+
+            resourceLimitsService.checkDiskQuota(DiskUsage.folderSizeBytes(moduleRoot.toPath()))
 
             moduleRoot.copyRecursively(destination, overwrite = false)
             scanModules()

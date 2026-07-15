@@ -3,6 +3,7 @@ package com.homelab.core.action
 import com.homelab.core.model.action.*
 import com.homelab.core.plugin.PluginRegistry
 import com.homelab.core.service.GlobalParametersService
+import com.homelab.core.service.ResourceLimitsService
 import com.homelab.sdk.action.Action
 import org.postgresql.util.LruCache
 import org.springframework.stereotype.Service
@@ -10,10 +11,11 @@ import org.springframework.stereotype.Service
 @Service
 class ActionFactory(
     private val pluginRegistry: PluginRegistry,
-    private val globalParametersService: GlobalParametersService
+    private val globalParametersService: GlobalParametersService,
+    private val resourceLimitsService: ResourceLimitsService
 ) {
     private val builtins: Map<String, Action> = mapOf(
-        ActionsEnum.UPLOAD_FILE.name to UploadFileAction(),
+        ActionsEnum.UPLOAD_FILE.name to UploadFileAction(resourceLimitsService),
         ActionsEnum.GET_FILE.name to GetFileAction(),
         ActionsEnum.DELETE.name to DeleteAction(),
         ActionsEnum.CREATE.name to SimpleCreateAction(),

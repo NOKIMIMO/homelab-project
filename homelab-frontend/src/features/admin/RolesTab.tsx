@@ -207,7 +207,7 @@ export default function RolesTab() {
               className="input input-bordered input-sm"
               value={form.name}
               onChange={e => setForm({ ...form, name: e.target.value })}
-              placeholder="Enfant"
+              placeholder="Ex. Adulte, Invité, Modérateur…"
             />
           </label>
 

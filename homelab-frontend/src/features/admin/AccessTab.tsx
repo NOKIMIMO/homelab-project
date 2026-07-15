@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router';
-import { Check, X, Trash2, RefreshCw, ShieldCheck, KeyRound, UsersRound, Repeat } from 'lucide-react';
+import { Check, X, Trash2, RefreshCw, KeyRound, UsersRound, Repeat } from 'lucide-react';
 import type { Role } from '@app/types';
 import { useAuth } from '@auth/AuthContext';
 import { getApiUrl } from '@lib/api';
@@ -47,13 +47,9 @@ export default function AccessTab() {
   const [users, setUsers] = useState<User[]>([]);
   const [requests, setRequests] = useState<SignupRequest[]>([]);
   const [passwordResetRequests, setPasswordResetRequests] = useState<PasswordResetRequest[]>([]);
-  const [availablePermissions, setAvailablePermissions] = useState<Record<string, string[]>>({});
   const [roles, setRoles] = useState<Role[]>([]);
   const [loading, setLoading] = useState(false);
   const [actionId, setActionId] = useState<number | null>(null);
-  const [editingUser, setEditingUser] = useState<User | null>(null);
-  const [draftPermissions, setDraftPermissions] = useState<Set<string>>(new Set());
-  const [savingPermissions, setSavingPermissions] = useState(false);
   const [editingRolesUser, setEditingRolesUser] = useState<User | null>(null);
   const [draftRoles, setDraftRoles] = useState<Set<number>>(new Set());
   const [savingRoles, setSavingRoles] = useState(false);
@@ -72,16 +68,14 @@ export default function AccessTab() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const [usersRes, requestsRes, permissionsRes, resetRequestsRes, rolesRes] = await Promise.all([
+      const [usersRes, requestsRes, resetRequestsRes, rolesRes] = await Promise.all([
         fetch(getApiUrl('/api/admin/users'), { headers }),
         fetch(getApiUrl('/api/admin/signup-requests'), { headers }),
-        fetch(getApiUrl('/api/admin/permissions'), { headers }),
         fetch(getApiUrl('/api/admin/password-reset-requests'), { headers }),
         fetch(getApiUrl('/api/admin/roles'), { headers }),
       ]);
       if (usersRes.ok) setUsers(await usersRes.json() as User[]);
       if (requestsRes.ok) setRequests(await requestsRes.json() as SignupRequest[]);
-      if (permissionsRes.ok) setAvailablePermissions(await permissionsRes.json() as Record<string, string[]>);
       if (resetRequestsRes.ok) setPasswordResetRequests(await resetRequestsRes.json() as PasswordResetRequest[]);
       if (rolesRes.ok) setRoles(await rolesRes.json() as Role[]);
     } finally {
@@ -137,41 +131,6 @@ export default function AccessTab() {
       navigate('/login');
     } finally {
       setTransferring(false);
-    }
-  };
-
-  const openPermissions = (u: User) => {
-    setEditingUser(u);
-    setDraftPermissions(new Set(u.permissions));
-  };
-
-  const togglePermission = (permission: string) => {
-    setDraftPermissions(prev => {
-      const next = new Set(prev);
-      if (next.has(permission)) next.delete(permission);
-      else next.add(permission);
-      return next;
-    });
-  };
-
-  const savePermissions = async () => {
-    if (!editingUser) return;
-    setSavingPermissions(true);
-    try {
-      const permissions = Array.from(draftPermissions);
-      const res = await fetch(getApiUrl(`/api/admin/users/${editingUser.id}/permissions`), {
-        method: 'PUT',
-        headers: { ...headers, 'Content-Type': 'application/json' },
-        body: JSON.stringify(permissions),
-      });
-      if (!res.ok) {
-        alert("Échec de l'enregistrement des permissions.");
-        return;
-      }
-      setUsers(prev => prev.map(u => u.id === editingUser.id ? { ...u, permissions } : u));
-      setEditingUser(null);
-    } finally {
-      setSavingPermissions(false);
     }
   };
 
@@ -326,7 +285,6 @@ export default function AccessTab() {
                 <th>Email</th>
                 <th>Admin</th>
                 <th>Rôles</th>
-                <th>Permissions</th>
                 <th>Créé le</th>
                 <th></th>
               </tr>
@@ -334,7 +292,7 @@ export default function AccessTab() {
             <tbody>
               {users.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="text-center text-base-content/40 italic py-8">
+                  <td colSpan={7} className="text-center text-base-content/40 italic py-8">
                     Aucun utilisateur
                   </td>
                 </tr>
@@ -345,19 +303,21 @@ export default function AccessTab() {
                     <td>{u.name ?? <span className="opacity-30 italic">---</span>}</td>
                     <td className="font-mono text-xs">{u.email}</td>
                     <td>
-                      {u.isAdmin ? (
-                        <span className="badge badge-success badge-sm">Admin</span>
-                      ) : (
-                        <span className="text-xs opacity-30 italic">---</span>
-                      )}
-                      {u.email === userName && u.isAdmin && (
-                        <button
-                          className="btn btn-2xs btn-outline gap-1 mt-1 flex"
-                          onClick={openTransfer}
-                        >
-                          <Repeat size={11} /> Transférer
-                        </button>
-                      )}
+                      <div className="flex flex-col items-center gap-1">
+                        {u.isAdmin ? (
+                          <span className="badge badge-success badge-sm">Admin</span>
+                        ) : (
+                          <span className="text-xs opacity-30 italic">---</span>
+                        )}
+                        {u.email === userName && u.isAdmin && (
+                          <button
+                            className="btn btn-2xs btn-outline gap-1"
+                            onClick={openTransfer}
+                          >
+                            <Repeat size={11} /> Transférer
+                          </button>
+                        )}
+                      </div>
                     </td>
                     <td>
                       {u.isAdmin ? (
@@ -366,16 +326,6 @@ export default function AccessTab() {
                         <button className="btn btn-xs btn-outline gap-1" onClick={() => openRoles(u)}>
                           <UsersRound size={12} />
                           {u.roleIds.length > 0 ? `${u.roleIds.length} rôle(s)` : 'Assigner'}
-                        </button>
-                      )}
-                    </td>
-                    <td>
-                      {u.isAdmin ? (
-                        <span className="text-xs opacity-40 italic">admin (tout accès)</span>
-                      ) : (
-                        <button className="btn btn-xs btn-outline gap-1" onClick={() => openPermissions(u)}>
-                          <ShieldCheck size={12} />
-                          {u.permissions.length > 0 ? `${u.permissions.length} accordée(s)` : 'Gérer'}
                         </button>
                       )}
                     </td>
@@ -682,53 +632,6 @@ export default function AccessTab() {
             </div>
           </div>
           <div className="modal-backdrop" onClick={() => !transferring && setTransferOpen(false)} />
-        </div>
-      )}
-
-      {/* ── Modal permissions ── */}
-      {editingUser && (
-        <div className="modal modal-open">
-          <div className="modal-box">
-            <h3 className="font-bold text-lg mb-1">Permissions de {editingUser.name ?? editingUser.email}</h3>
-            <p className="text-xs opacity-60 mb-4">
-              Seules les permissions déclarées par un module sont applicables ; un module qui n'en déclare aucune reste accessible à tous.
-            </p>
-            <div className="space-y-4 max-h-96 overflow-y-auto">
-              {Object.entries(availablePermissions).filter(([, perms]) => perms.length > 0).length === 0 ? (
-                <p className="text-sm opacity-40 italic">Aucun module ne déclare de permission pour l'instant.</p>
-              ) : (
-                Object.entries(availablePermissions)
-                  .filter(([, perms]) => perms.length > 0)
-                  .map(([moduleId, perms]) => (
-                    <div key={moduleId}>
-                      <p className="text-xs font-semibold uppercase tracking-wide opacity-60 mb-1">{moduleId}</p>
-                      <div className="flex flex-wrap gap-2">
-                        {perms.map(p => (
-                          <label key={p} className="label cursor-pointer gap-2 bg-base-300 rounded-lg px-3 py-1">
-                            <input
-                              type="checkbox"
-                              className="checkbox checkbox-xs"
-                              checked={draftPermissions.has(p)}
-                              onChange={() => togglePermission(p)}
-                            />
-                            <span className="font-mono text-xs">{p}</span>
-                          </label>
-                        ))}
-                      </div>
-                    </div>
-                  ))
-              )}
-            </div>
-            <div className="modal-action">
-              <button className="btn btn-sm btn-ghost" onClick={() => setEditingUser(null)} disabled={savingPermissions}>
-                Annuler
-              </button>
-              <button className="btn btn-sm btn-primary" onClick={savePermissions} disabled={savingPermissions}>
-                {savingPermissions ? <span className="loading loading-spinner loading-xs" /> : 'Enregistrer'}
-              </button>
-            </div>
-          </div>
-          <div className="modal-backdrop" onClick={() => !savingPermissions && setEditingUser(null)} />
         </div>
       )}
 

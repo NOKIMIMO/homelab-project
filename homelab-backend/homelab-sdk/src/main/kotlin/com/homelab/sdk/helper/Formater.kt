@@ -42,6 +42,8 @@ class Formater() {
 
         fun bytesToGigabytes(bytes: Double): Double = bytes / BYTES_PER_GB
 
+        fun gigabytesToBytes(gigabytes: Double): Long = (gigabytes * BYTES_PER_GB).toLong()
+
         fun formatBytes(bytes: Long): String {
             if (bytes < 1024) return "$bytes B"
             val exp = (Math.log(bytes.toDouble()) / Math.log(1024.0)).toInt()

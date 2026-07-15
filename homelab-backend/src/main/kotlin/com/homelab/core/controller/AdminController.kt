@@ -13,6 +13,8 @@ import com.homelab.core.service.AuthService
 import com.homelab.core.service.JwtService
 import com.homelab.core.service.LoginSettingsService
 import com.homelab.core.service.RecoveryCodeService
+import com.homelab.core.service.ResourceLimitsService
+import com.homelab.core.service.SystemRestartService
 import com.homelab.core.service.UserService
 import com.homelab.core.service.module.ModuleConfigService
 import com.homelab.sdk.helper.AppLogger
@@ -34,6 +36,8 @@ class AdminController(
     private val recoveryCodeService: RecoveryCodeService,
     private val loginSettingsService: LoginSettingsService,
     private val moduleConfigService: ModuleConfigService,
+    private val resourceLimitsService: ResourceLimitsService,
+    private val systemRestartService: SystemRestartService,
 ) {
 
     @GetMapping("/logs")
@@ -57,8 +61,15 @@ class AdminController(
         "appRoot" to homelabConfig.appRoot,
         "modulesScanPath" to homelabConfig.modulesScanPath,
         "pluginsScanPath" to homelabConfig.pluginsScanPath,
-        "logLevel" to AppLogger.getLevel().name
+        "logLevel" to AppLogger.getLevel().name,
+        "restartAvailable" to systemRestartService.isAvailable()
     )
+
+    @PostMapping("/restart")
+    fun restart(): Map<String, Any> {
+        systemRestartService.restart()
+        return mapOf("success" to true)
+    }
 
     @PutMapping("/config/log-level")
     fun setLogLevel(@RequestBody body: Map<String, String>): ResponseEntity<Map<String, Any>> {
@@ -71,6 +82,18 @@ class AdminController(
         } catch (_: IllegalArgumentException) {
             ResponseEntity.badRequest().body(mapOf("success" to false, "message" to "Invalid log level: $levelStr"))
         }
+    }
+
+    @GetMapping("/resource-limits")
+    fun getResourceLimits(): Map<String, Any> = resourceLimitsService.status()
+
+    @PutMapping("/resource-limits")
+    fun updateResourceLimits(@RequestBody body: Map<String, Double>): ResponseEntity<Map<String, Any>> {
+        val maxRamGb = body["maxRamGb"]
+            ?: return ResponseEntity.badRequest().body(mapOf("success" to false, "message" to "Missing 'maxRamGb' field"))
+        val maxDiskGb = body["maxDiskGb"]
+            ?: return ResponseEntity.badRequest().body(mapOf("success" to false, "message" to "Missing 'maxDiskGb' field"))
+        return ResponseEntity.ok(resourceLimitsService.updateLimits(maxRamGb, maxDiskGb))
     }
 
     @PutMapping("/login-settings")

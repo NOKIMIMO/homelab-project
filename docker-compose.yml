@@ -12,10 +12,17 @@ services:
       - /proc:/host/proc:ro # read-only mount of proc for oshi : CPU and memory info
       - /sys:/host/sys:ro # read-only mount of sys for oshi : CPU and memory info
       - /etc/os-release:/host/etc/os-release:ro # read-only mount of os-release for oshi : OS info
-      - //var/run/docker.sock:/var/run/docker.sock 
+      # utilisé aussi par le panel admin (bouton Redémarrer), voir SystemRestartService
+      - //var/run/docker.sock:/var/run/docker.sock
       - .:/app_root:ro #read-only mount of the current direct for modules discovery
+      # monté en lecture/écriture séparément : le panel admin (Limites de ressources)
+      # réécrit JAVA_XMX_GB dedans directement, voir HOMELAB_ENV_FILE_PATH ci-dessous
+      - ./.env.production:/app_root/.env:rw
     environment:
       - JAVA_OPTS=-Doshi.os.windows.proc.path=/host/proc -Doshi.os.windows.sys.path=/host/sys -Doshi.os.windows.osRelease.path=/host/etc/os-release
+      - HOMELAB_ENV_FILE_PATH=/app_root/.env
+      # -Xmx n'est PAS fixé ici : entrypoint.sh (homelab-backend/docker/entrypoint.sh) le lit
+      # directement depuis le .env monté à chaque démarrage (restart inclus), voir ResourceLimitsService.
     restart: unless-stopped
     networks:
       - homelab-network

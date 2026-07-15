@@ -1,30 +1,39 @@
 import type { Module } from "@app/App";
-import { useState } from "react";
-import { ShieldCheck, ShieldAlert, Square, Play, SlidersHorizontal } from "lucide-react";
+import { useState, useEffect } from "react";
+import { ShieldCheck, ShieldAlert, Square, Play, SlidersHorizontal, Loader2 } from "lucide-react";
 import ModuleParamsModal from "./ModuleParamsModal";
 
 interface ModuleCardProps {
     modules: Module;
     handleModuleAction: (id: string, action: 'start' | 'stop' | 'dev') => void;
     actionLoading: string | null;
+    canManageModules: boolean;
 }
 
-export function ModuleCard({ modules, handleModuleAction, actionLoading }: ModuleCardProps) {
+export function ModuleCard({ modules, handleModuleAction, actionLoading, canManageModules }: ModuleCardProps) {
     const [now, setNow] = useState(() => Date.now());
     const [paramsOpen, setParamsOpen] = useState(false);
+    const isLoading = actionLoading === modules.id;
 
-    useState(() => {
+    useEffect(() => {
         const interval = setInterval(() => setNow(Date.now()), 60_000);
         return () => clearInterval(interval);
-    });
+    }, []);
 
+    // Resync immediately when the module (re)starts, otherwise `now` can still hold
+    // a timestamp from before the fresh uptimeStart and produce a negative diff.
+    useEffect(() => {
+        setNow(Date.now());
+    }, [modules.uptimeStart]);
+
+    const elapsed = modules.uptimeStart ? Math.max(0, now - modules.uptimeStart) : 0;
     const uptime = modules.uptimeStart
-        ? `${Math.floor((now - modules.uptimeStart) / 3600000)}h ${Math.floor(((now - modules.uptimeStart) % 3600000) / 60000)}m`
+        ? `${Math.floor(elapsed / 3600000)}h ${Math.floor((elapsed % 3600000) / 60000)}m`
         : "--:--";
 
     return (
         <>
-            <div key={modules.id} className="card bg-base-300 border border-base-content/5 shadow-md overflow-hidden group">
+            <div key={modules.id} className={`card bg-base-300 border border-base-content/5 shadow-md overflow-hidden group transition-opacity ${isLoading ? 'opacity-70' : ''}`}>
                 <div className="card-body p-5">
                     <div className="flex justify-between items-start mb-2">
                         <div className="flex items-center gap-3">
@@ -38,7 +47,6 @@ export function ModuleCard({ modules, handleModuleAction, actionLoading }: Modul
                             </div>
                             <div>
                                 <h3 className="font-bold text-lg">{modules.name}</h3>
-                                <p className="text-xs text-base-content/50 font-mono">ID: {modules.id}</p>
                             </div>
                         </div>
                         <div className="flex items-center gap-2">
@@ -52,11 +60,14 @@ export function ModuleCard({ modules, handleModuleAction, actionLoading }: Modul
                                 </button>
                             )}
                             <div className={`badge font-bold gap-1 p-3 ${
+                                isLoading ? 'badge-info' :
                                 modules.status === 'ACTIVE' ? 'badge-success text-success-content' :
                                 modules.status === 'INACTIVE' ? 'badge-ghost opacity-50' : 'badge-warning'
                             }`}>
-                                {modules.status === 'ACTIVE' ? <ShieldCheck size={12} /> : <ShieldAlert size={12} />}
-                                {modules.status}
+                                {isLoading
+                                    ? <Loader2 size={12} className="animate-spin" />
+                                    : modules.status === 'ACTIVE' ? <ShieldCheck size={12} /> : <ShieldAlert size={12} />}
+                                {isLoading ? 'EN COURS' : modules.status}
                             </div>
                         </div>
                     </div>
@@ -73,30 +84,32 @@ export function ModuleCard({ modules, handleModuleAction, actionLoading }: Modul
                             <span className="text-sm font-bold font-mono">{uptime}</span>
                         </div>
 
-                        <div className="flex gap-2">
-                            {modules.status === 'ACTIVE' ? (
-                                <button
-                                    className="btn btn-error btn-sm btn-square"
-                                    onClick={() => handleModuleAction(modules.id, 'stop')}
-                                    disabled={actionLoading === modules.id}
-                                >
-                                    {actionLoading === modules.id
-                                        ? <span className="loading loading-spinner loading-xs"></span>
-                                        : <Square size={16} />}
-                                </button>
-                            ) : (
-                                <button
-                                    className="btn btn-success btn-sm gap-2 px-4"
-                                    onClick={() => handleModuleAction(modules.id, 'start')}
-                                    disabled={actionLoading === modules.id}
-                                >
-                                    {actionLoading === modules.id
-                                        ? <span className="loading loading-spinner loading-xs"></span>
-                                        : <Play size={16} />}
-                                    Lancer
-                                </button>
-                            )}
-                        </div>
+                        {canManageModules && (
+                            <div className="flex gap-2">
+                                {modules.status === 'ACTIVE' ? (
+                                    <button
+                                        className="btn btn-error btn-sm btn-square"
+                                        onClick={() => handleModuleAction(modules.id, 'stop')}
+                                        disabled={isLoading}
+                                    >
+                                        {isLoading
+                                            ? <span className="loading loading-spinner loading-xs"></span>
+                                            : <Square size={16} />}
+                                    </button>
+                                ) : (
+                                    <button
+                                        className="btn btn-success btn-sm gap-2 px-4"
+                                        onClick={() => handleModuleAction(modules.id, 'start')}
+                                        disabled={isLoading}
+                                    >
+                                        {isLoading
+                                            ? <span className="loading loading-spinner loading-xs"></span>
+                                            : <Play size={16} />}
+                                        {isLoading ? 'En cours...' : 'Lancer'}
+                                    </button>
+                                )}
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>

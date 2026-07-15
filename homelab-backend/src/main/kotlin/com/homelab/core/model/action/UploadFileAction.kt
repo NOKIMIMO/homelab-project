@@ -1,5 +1,7 @@
 package com.homelab.core.model.action
 
+import com.homelab.core.exception.BadRequestException
+import com.homelab.core.service.ResourceLimitsService
 import com.homelab.sdk.helper.AppLogger
 import com.homelab.core.service.AppletService
 import com.homelab.sdk.data.GenericTableLayer
@@ -11,7 +13,7 @@ import java.util.UUID
 import com.homelab.sdk.action.Action
 import com.homelab.sdk.module.action.ModuleActionDeclaration
 
-class UploadFileAction : Action {
+class UploadFileAction(private val resourceLimitsService: ResourceLimitsService) : Action {
     private val log = AppLogger.loggerFor(UploadFileAction::class)
 
     override fun execute(
@@ -31,6 +33,13 @@ class UploadFileAction : Action {
         if (fileObj !is MultipartFile) {
             log.warn("[UploadFileAction] no MultipartFile provided in params")
             return mapOf("created" to false, "reason" to "no file")
+        }
+
+        try {
+            resourceLimitsService.checkDiskQuota(fileObj.size)
+        } catch (e: BadRequestException) {
+            log.warn("[UploadFileAction] disk quota exceeded: ${e.message}")
+            return mapOf("created" to false, "reason" to "quota_exceeded", "error" to e.message)
         }
 
         val uploadDir = Path.of("module_storage", moduleId).toAbsolutePath().normalize()

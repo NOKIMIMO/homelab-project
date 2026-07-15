@@ -99,7 +99,7 @@ class AlertService(
 
     /** Resolves the current 0-100 percentage for a metric, or null if it can't be computed. */
     private fun metricPercent(metric: MetricType, t: TelemetryData): Double? = when (metric) {
-        MetricType.CPU -> t.cpu
+        MetricType.CPU -> t.cpu.total
         MetricType.RAM -> if (t.ram.total > 0) t.ram.used / t.ram.total * 100.0 else null
         MetricType.DISK -> if (t.disk.total > 0) t.disk.used / t.disk.total * 100.0 else null
     }

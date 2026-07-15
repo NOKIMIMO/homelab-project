@@ -99,8 +99,27 @@ export interface ModuleSchemaResponse {
   tables: TableSpec[];
 }
 
+export interface ModuleStorageData {
+    id: string;
+    name: string;
+    storageGb: number;
+}
+
+export interface ResourceLimitsStatus {
+    maxRamGb: number;
+    maxDiskGb: number;
+    activeMaxRamGb: number;
+    usedDiskGb: number;
+    ramRestartRequired: boolean;
+    machineMaxRamGb: number;
+    machineMaxDiskGb: number;
+}
+
 export interface TelemetryData {
-    cpu: number;
+    cpu: {
+        total: number;
+        coreUsed: number;
+    };
     ram: {
         total: number;
         used: number;
@@ -115,6 +134,7 @@ export interface TelemetryData {
     };
     activeModulesCount: number;
     uptime: number;
+    perModuleStorage: ModuleStorageData[];
 }
 
 // ─── Alerts ───

@@ -12,8 +12,10 @@ data class Module(
 ){
         fun start() {
                 status = ModuleStatus.ACTIVE
+                uptimeStart = System.currentTimeMillis()
         }
         fun stop() {
                 status = ModuleStatus.INACTIVE
+                uptimeStart = null
         }
 }

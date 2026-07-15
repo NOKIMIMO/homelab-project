@@ -71,20 +71,22 @@ export default function LoginForm({ onLoginSuccess }: LoginProps) {
           {view === 'login' && (
             <>
               <PasswordLoginForm onLoginSuccess={onLoginSuccess} />
-              <button
-                type="button"
-                className="btn btn-ghost btn-xs w-full mt-4 opacity-60"
-                onClick={() => setView('forgotPassword')}
-              >
-                Mot de passe oublié ?
-              </button>
-              <button
-                type="button"
-                className="btn btn-ghost btn-xs w-full opacity-60"
-                onClick={() => setView('recovery')}
-              >
-                Code de reset perdu ?
-              </button>
+              <div className="mt-4 flex flex-col gap-2">
+                <button
+                  type="button"
+                  className="btn btn-ghost btn-xs w-full opacity-60"
+                  onClick={() => setView('forgotPassword')}
+                >
+                  Mot de passe oublié ?
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-ghost btn-xs w-full opacity-60"
+                  onClick={() => setView('recovery')}
+                >
+                  Code de reset perdu ?
+                </button>
+              </div>
             </>
           )}
 

@@ -13,7 +13,8 @@ interface DashboardProps {
 }
 
 export default function Dashboard({ modules, onRefresh, isModulesRefreshing }: DashboardProps) {
-  const { token } = useAuth();
+  const { token, isAdmin, adminPermissions } = useAuth();
+  const canManageModules = isAdmin || adminPermissions.includes('MODULE_START_STOP');
   const [telemetry, setTelemetry] = useState<TelemetryData | null>(null);
   const [countdown, setCountdown] = useState(30);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
@@ -84,31 +85,31 @@ export default function Dashboard({ modules, onRefresh, isModulesRefreshing }: D
       <div className='p-6 mx-auto h-full overflow-y-auto'>
         <div className="mb-12">
           <div className="flex justify-between items-center mb-6">
-            <div className="flex items-center gap-4"> {/* Adjusted structure to keep badge separate */}
-              <h2 className="text-2xl font-bold flex items-center gap-2">
-                <Settings2 className="text-primary w-8 h-8" />
-                Gestion des Modules
-              </h2>
+            <h2 className="text-2xl font-bold flex items-center gap-2">
+              <Settings2 className="text-primary w-8 h-8" />
+              Gestion des Modules
+            </h2>
+            <div className="flex items-center gap-3">
+              <span className="text-xs font-semibold uppercase tracking-wide text-base-content/60">
+                Prochain refresh: {countdown}s
+              </span>
+              {
+                isModulesRefreshing ? (
+                  <button className="btn btn-outline btn-sm gap-2" disabled>
+                    <span className="loading loading-spinner loading-xs"></span>
+                    Rafraîchissement...
+                  </button>
+                ) : (
+                  <button
+                    className="btn btn-outline btn-sm gap-2 rounded-full"
+                    onClick={fetchTelemetry}
+                  >
+                    <RefreshCw className="w-4 h-4" />
+                    Rafraîchir les Modules
+                  </button>
+                )
+              }
             </div>
-            <span className="text-xs font-semibold uppercase tracking-wide text-base-content/60">
-              Prochain refresh: {countdown}s
-            </span>
-            {
-              isModulesRefreshing ? (
-                <button className="btn btn-outline btn-sm gap-2" disabled>
-                  <span className="loading loading-spinner loading-xs"></span>
-                  Rafraîchissement...
-                </button>
-              ) : (
-                <button
-                  className="btn btn-outline btn-sm gap-2 rounded-full"
-                  onClick={fetchTelemetry}
-                >
-                  <RefreshCw className="w-4 h-4" />
-                  Rafraîchir les Modules
-                </button>
-              )
-            }
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {modules.length === 0 ? (
@@ -124,6 +125,7 @@ export default function Dashboard({ modules, onRefresh, isModulesRefreshing }: D
                   modules={module}
                   handleModuleAction={handleModuleAction}
                   actionLoading={actionLoading}
+                  canManageModules={canManageModules}
                 />
               ))
             )}

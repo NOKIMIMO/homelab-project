@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Save, RefreshCw, FolderOpen, Puzzle, Home, KeyRound, MessageSquareText } from 'lucide-react';
+import { Save, RefreshCw, FolderOpen, Puzzle, Home, KeyRound, MessageSquareText, Gauge, AlertTriangle, Power } from 'lucide-react';
 import { useAuth } from '@auth/AuthContext';
 import { getApiUrl } from '@lib/api';
 import RecoveryCodeReveal from '@ui/RecoveryCodeReveal';
+import type { ResourceLimitsStatus } from '@app/types';
 
 const LOGIN_DESCRIPTION_MAX_LENGTH = 500;
 
@@ -16,6 +17,7 @@ interface AppConfig {
   modulesScanPath: string;
   pluginsScanPath: string;
   logLevel: string;
+  restartAvailable: boolean;
 }
 
 const LOG_LEVELS = ['DEBUG', 'INFO', 'WARN', 'ERROR', 'ERROR_DETAILED'] as const;
@@ -48,6 +50,16 @@ export default function SettingsTab() {
   const [savedLoginDescription, setSavedLoginDescription] = useState('');
   const [savingDescription, setSavingDescription] = useState(false);
   const [descriptionSavedOk, setDescriptionSavedOk] = useState(false);
+  const [limits, setLimits] = useState<ResourceLimitsStatus | null>(null);
+  const [ramInput, setRamInput] = useState('');
+  const [diskInput, setDiskInput] = useState('');
+  const [savingLimits, setSavingLimits] = useState(false);
+  const [limitsSavedOk, setLimitsSavedOk] = useState(false);
+  const [limitsError, setLimitsError] = useState<string | null>(null);
+  const [restartOpen, setRestartOpen] = useState(false);
+  const [restarting, setRestarting] = useState(false);
+  const [restartError, setRestartError] = useState<string | null>(null);
+  const [restartTriggered, setRestartTriggered] = useState(false);
 
   const headers: HeadersInit = token
     ? { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
@@ -87,6 +99,51 @@ export default function SettingsTab() {
 
   useEffect(() => { void fetchLoginDescription(); }, [fetchLoginDescription]);
 
+  const fetchResourceLimits = useCallback(async () => {
+    const res = await fetch(getApiUrl('/api/admin/resource-limits'), { headers });
+    if (res.ok) {
+      const data = await res.json() as ResourceLimitsStatus;
+      setLimits(data);
+      setRamInput(String(data.maxRamGb));
+      setDiskInput(String(data.maxDiskGb));
+    }
+  }, [token]);
+
+  useEffect(() => { void fetchResourceLimits(); }, [fetchResourceLimits]);
+
+  const saveLimits = async () => {
+    const maxRamGb = parseFloat(ramInput);
+    const maxDiskGb = parseFloat(diskInput);
+    if (!Number.isFinite(maxRamGb) || maxRamGb <= 0 || !Number.isFinite(maxDiskGb) || maxDiskGb <= 0) {
+      setLimitsError('Valeurs invalides : les deux limites doivent être des nombres positifs.');
+      return;
+    }
+    if (limits && (maxRamGb > limits.machineMaxRamGb || maxDiskGb > limits.machineMaxDiskGb)) {
+      setLimitsError(`Valeurs invalides : max ${limits.machineMaxRamGb} Go de RAM et ${limits.machineMaxDiskGb} Go de disque sur cette machine.`);
+      return;
+    }
+    setSavingLimits(true);
+    setLimitsError(null);
+    try {
+      const res = await fetch(getApiUrl('/api/admin/resource-limits'), {
+        method: 'PUT',
+        headers,
+        body: JSON.stringify({ maxRamGb, maxDiskGb }),
+      });
+      if (res.ok) {
+        const data = await res.json() as ResourceLimitsStatus;
+        setLimits(data);
+        setLimitsSavedOk(true);
+        setTimeout(() => setLimitsSavedOk(false), 2500);
+      } else {
+        const err = await res.json().catch(() => null) as { message?: string } | null;
+        setLimitsError(err?.message ?? 'Échec de la sauvegarde');
+      }
+    } finally {
+      setSavingLimits(false);
+    }
+  };
+
   const saveLoginDescription = async () => {
     setSavingDescription(true);
     try {
@@ -116,6 +173,28 @@ export default function SettingsTab() {
       }
     } finally {
       setRegenerating(false);
+    }
+  };
+
+  const confirmRestart = async () => {
+    setRestarting(true);
+    setRestartError(null);
+    try {
+      const res = await fetch(getApiUrl('/api/admin/restart'), { method: 'POST', headers });
+      if (res.ok) {
+        setRestartTriggered(true);
+        setRestartOpen(false);
+      } else {
+        const err = await res.json().catch(() => null) as { message?: string } | null;
+        setRestartError(err?.message ?? 'Échec du redémarrage');
+      }
+    } catch {
+      // La connexion peut être coupée par le redémarrage lui-même avant la réponse : on le
+      // traite comme un succès plutôt que comme une erreur.
+      setRestartTriggered(true);
+      setRestartOpen(false);
+    } finally {
+      setRestarting(false);
     }
   };
 
@@ -176,6 +255,163 @@ export default function SettingsTab() {
               </div>
             </div>
           ))}
+        </div>
+      </div>
+
+      {/* ── Limites de ressources ── */}
+      <div className="card bg-base-300">
+        <div className="card-body gap-4">
+          <h2 className="card-title text-base flex items-center gap-2">
+            <Gauge size={16} className="opacity-60" /> Limites de ressources
+          </h2>
+          <p className="text-xs text-base-content/50 -mt-2">
+            Plafonds appliqués au homelab (core + modules), pas à la machine hôte entière.
+          </p>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-semibold text-base-content/70">RAM max (Go)</label>
+              <div className="join">
+                <input
+                  type="number"
+                  min="0.1"
+                  max={limits?.machineMaxRamGb}
+                  step="0.1"
+                  className="input input-bordered input-sm w-full join-item"
+                  value={ramInput}
+                  onChange={e => setRamInput(e.target.value)}
+                />
+                {limits && (
+                  <button
+                    type="button"
+                    className="btn btn-sm join-item"
+                    title={`Utiliser le maximum de la machine (${limits.machineMaxRamGb} Go)`}
+                    onClick={() => setRamInput(String(limits.machineMaxRamGb))}
+                  >
+                    Max
+                  </button>
+                )}
+              </div>
+              {limits && (
+                <span className="text-[11px] text-base-content/40">Machine : {limits.machineMaxRamGb} Go</span>
+              )}
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-semibold text-base-content/70">Disque max (Go)</label>
+              <div className="join">
+                <input
+                  type="number"
+                  min="1"
+                  max={limits?.machineMaxDiskGb}
+                  step="1"
+                  className="input input-bordered input-sm w-full join-item"
+                  value={diskInput}
+                  onChange={e => setDiskInput(e.target.value)}
+                />
+                {limits && (
+                  <button
+                    type="button"
+                    className="btn btn-sm join-item"
+                    title={`Utiliser le maximum de la machine (${limits.machineMaxDiskGb} Go)`}
+                    onClick={() => setDiskInput(String(limits.machineMaxDiskGb))}
+                  >
+                    Max
+                  </button>
+                )}
+              </div>
+              {limits && (
+                <span className="text-[11px] text-base-content/40">Machine : {limits.machineMaxDiskGb} Go</span>
+              )}
+            </div>
+          </div>
+
+          {limitsError && <p className="text-xs text-error">{limitsError}</p>}
+
+          <button
+            className={`btn btn-sm gap-2 min-w-28 w-fit ${limitsSavedOk ? 'btn-success' : 'btn-primary'}`}
+            onClick={() => void saveLimits()}
+            disabled={savingLimits}
+          >
+            {savingLimits
+              ? <span className="loading loading-spinner loading-xs" />
+              : <Save size={14} />}
+            {limitsSavedOk ? 'Sauvegardé !' : 'Appliquer'}
+          </button>
+
+          {limits && (
+            <>
+              <div className="flex flex-col gap-1">
+                <div className="flex items-center justify-between text-xs text-base-content/60">
+                  <span>Disque utilisé (homelab)</span>
+                  <span className="font-mono">{limits.usedDiskGb.toFixed(2)} / {limits.maxDiskGb} Go</span>
+                </div>
+                <progress
+                  className={`progress w-full h-2 ${limits.usedDiskGb / limits.maxDiskGb > 0.8 ? 'progress-error' : 'progress-accent'}`}
+                  value={limits.usedDiskGb}
+                  max={limits.maxDiskGb}
+                />
+                <p className="text-[11px] text-base-content/40">
+                  Appliqué immédiatement : les installations de modules et uploads sont refusés au-delà.
+                </p>
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <div className="flex items-center justify-between text-xs text-base-content/60">
+                  <span>RAM (JVM)</span>
+                  <span className="font-mono">actif {limits.activeMaxRamGb} Go / configuré {limits.maxRamGb} Go</span>
+                </div>
+                {limits.ramRestartRequired && (
+                  <div className="alert bg-warning/10 border border-warning/30 text-xs py-2 px-3 flex items-start gap-2">
+                    <AlertTriangle size={14} className="text-warning shrink-0 mt-0.5" />
+                    <span>
+                      Redémarrage requis pour appliquer cette limite : le fichier{' '}
+                      <code className="font-mono bg-base-200 px-1 rounded">.env</code> a été mis à jour
+                      automatiquement (<code className="font-mono bg-base-200 px-1 rounded">JAVA_XMX_GB</code>),
+                      il ne reste qu'à redémarrer le conteneur avec le bouton
+                      "Redémarrer le projet" ci-dessous.
+                    </span>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* ── Redémarrage ── */}
+      <div className="card bg-base-300">
+        <div className="card-body gap-4">
+          <h2 className="card-title text-base flex items-center gap-2">
+            <Power size={16} className="opacity-60" /> Redémarrage
+          </h2>
+          <p className="text-xs text-base-content/50 -mt-2">
+            Redémarre le conteneur de l'application (backend + frontend). Courte interruption
+            pendant le redémarrage. Applique la limite de RAM configurée ci-dessus. Ne recrée pas
+            le conteneur : un changement de chemins runtime ou d'autres variables définies dans
+            docker-compose nécessite toujours un <code className="font-mono">docker compose up -d</code>{' '}
+            manuel.
+          </p>
+
+          {!config.restartAvailable && (
+            <p className="text-xs text-warning">
+              Indisponible : le socket Docker n'est pas monté sur ce déploiement.
+            </p>
+          )}
+          {restartError && <p className="text-xs text-error">{restartError}</p>}
+          {restartTriggered && (
+            <p className="text-xs text-success">
+              Redémarrage en cours... l'application sera de nouveau disponible dans quelques secondes.
+            </p>
+          )}
+
+          <button
+            className="btn btn-sm btn-error gap-2 w-fit"
+            onClick={() => setRestartOpen(true)}
+            disabled={!config.restartAvailable || restartTriggered}
+          >
+            <Power size={14} />
+            Redémarrer le projet
+          </button>
         </div>
       </div>
 
@@ -300,6 +536,32 @@ export default function SettingsTab() {
 
       {revealedCode && (
         <RecoveryCodeReveal code={revealedCode} onClose={() => setRevealedCode(null)} />
+      )}
+
+      {/* ── Modal confirmation redémarrage ── */}
+      {restartOpen && (
+        <div className="modal modal-open">
+          <div className="modal-box">
+            <h3 className="font-bold text-lg mb-1">Redémarrer le projet ?</h3>
+            <p className="text-xs opacity-60 mb-4">
+              Le conteneur va redémarrer immédiatement. L'application sera indisponible pendant
+              quelques secondes pour tous les utilisateurs connectés.
+            </p>
+            <div className="modal-action">
+              <button className="btn btn-sm btn-ghost" onClick={() => setRestartOpen(false)} disabled={restarting}>
+                Annuler
+              </button>
+              <button
+                className="btn btn-sm btn-error"
+                onClick={() => void confirmRestart()}
+                disabled={restarting}
+              >
+                {restarting ? <span className="loading loading-spinner loading-xs" /> : 'Redémarrer'}
+              </button>
+            </div>
+          </div>
+          <div className="modal-backdrop" onClick={() => !restarting && setRestartOpen(false)} />
+        </div>
       )}
     </div>
   );
