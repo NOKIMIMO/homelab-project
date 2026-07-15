@@ -175,11 +175,15 @@ export interface BlockedWindow {
   end: string;
 }
 
+// Global "administration" capabilities a role can grant, separate from its module access.
+export type AdminPermission = 'MANAGE_ROLES' | 'MOBILE_ACCESS' | 'MODULE_START_STOP' | 'MODULE_INSTALL';
+
 export interface Role {
   id: number;
   name: string;
   moduleIds: string[];
   blockedWindows: BlockedWindow[];
+  adminPermissions: AdminPermission[];
   createdAt: string;
   updatedAt: string;
 }
@@ -188,4 +192,5 @@ export interface RoleRequest {
   name: string;
   moduleIds: string[];
   blockedWindows: BlockedWindow[];
+  adminPermissions: AdminPermission[];
 }

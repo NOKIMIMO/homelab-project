@@ -56,6 +56,9 @@ export default function AccessTab() {
   const [draftRoles, setDraftRoles] = useState<Set<number>>(new Set());
   const [savingRoles, setSavingRoles] = useState(false);
   const [revealedPassword, setRevealedPassword] = useState<string | null>(null);
+  const [approvingRequest, setApprovingRequest] = useState<SignupRequest | null>(null);
+  const [draftApproveRoles, setDraftApproveRoles] = useState<Set<number>>(new Set());
+  const [approving, setApproving] = useState(false);
 
   const headers: HeadersInit = token
     ? { Authorization: `Bearer ${token}` }
@@ -187,16 +190,50 @@ export default function AccessTab() {
     }
   };
 
-  const handleRequest = async (id: number, action: 'approve' | 'reject') => {
+  const rejectRequest = async (id: number) => {
     setActionId(id);
     try {
-      await fetch(getApiUrl(`/api/admin/signup-requests/${id}/${action}`), {
+      await fetch(getApiUrl(`/api/admin/signup-requests/${id}/reject`), {
         method: 'PUT',
         headers,
       });
       void fetchData();
     } finally {
       setActionId(null);
+    }
+  };
+
+  const openApprove = (r: SignupRequest) => {
+    setApprovingRequest(r);
+    setDraftApproveRoles(new Set());
+  };
+
+  const toggleApproveRole = (roleId: number) => {
+    setDraftApproveRoles(prev => {
+      const next = new Set(prev);
+      if (next.has(roleId)) next.delete(roleId);
+      else next.add(roleId);
+      return next;
+    });
+  };
+
+  const confirmApprove = async () => {
+    if (!approvingRequest || draftApproveRoles.size === 0) return;
+    setApproving(true);
+    try {
+      const res = await fetch(getApiUrl(`/api/admin/signup-requests/${approvingRequest.id}/approve`), {
+        method: 'PUT',
+        headers: { ...headers, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ roleIds: Array.from(draftApproveRoles) }),
+      });
+      if (!res.ok) {
+        alert("Échec de l'approbation de la demande.");
+        return;
+      }
+      setApprovingRequest(null);
+      void fetchData();
+    } finally {
+      setApproving(false);
     }
   };
 
@@ -367,19 +404,20 @@ export default function AccessTab() {
                   <button
                     className="btn btn-sm btn-success gap-1"
                     disabled={actionId === r.id}
-                    onClick={() => handleRequest(r.id!, 'approve')}
+                    onClick={() => openApprove(r)}
                   >
-                    {actionId === r.id
-                      ? <span className="loading loading-spinner loading-xs" />
-                      : <Check size={14} />}
+                    <Check size={14} />
                     Approuver
                   </button>
                   <button
                     className="btn btn-sm btn-error btn-outline gap-1"
                     disabled={actionId === r.id}
-                    onClick={() => handleRequest(r.id!, 'reject')}
+                    onClick={() => rejectRequest(r.id!)}
                   >
-                    <X size={14} /> Rejeter
+                    {actionId === r.id
+                      ? <span className="loading loading-spinner loading-xs" />
+                      : <X size={14} />}
+                    Rejeter
                   </button>
                 </div>
               </div>
@@ -620,6 +658,55 @@ export default function AccessTab() {
             </div>
           </div>
           <div className="modal-backdrop" onClick={() => !savingPermissions && setEditingUser(null)} />
+        </div>
+      )}
+
+      {/* ── Modal approbation de demande ── */}
+      {approvingRequest && (
+        <div className="modal modal-open">
+          <div className="modal-box">
+            <h3 className="font-bold text-lg mb-1">
+              Approuver {approvingRequest.name ?? approvingRequest.email}
+            </h3>
+            <p className="text-xs opacity-60 mb-4">
+              Au moins un rôle doit être attribué pour créer le compte.
+            </p>
+            <div className="space-y-2 max-h-96 overflow-y-auto">
+              {roles.length === 0 ? (
+                <p className="text-sm opacity-40 italic">Aucun rôle n'a encore été créé (onglet Rôles).</p>
+              ) : (
+                roles.map(role => (
+                  <label key={role.id} className="flex items-center gap-3 bg-base-300 rounded-lg px-3 py-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      className="checkbox checkbox-sm"
+                      checked={draftApproveRoles.has(role.id)}
+                      onChange={() => toggleApproveRole(role.id)}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <span className="font-semibold text-sm truncate block">{role.name}</span>
+                      <span className="text-xs opacity-50">
+                        {role.moduleIds.length === 0 ? 'aucun module' : `${role.moduleIds.length} module(s)`}
+                      </span>
+                    </div>
+                  </label>
+                ))
+              )}
+            </div>
+            <div className="modal-action">
+              <button className="btn btn-sm btn-ghost" onClick={() => setApprovingRequest(null)} disabled={approving}>
+                Annuler
+              </button>
+              <button
+                className="btn btn-sm btn-success"
+                onClick={() => void confirmApprove()}
+                disabled={approving || draftApproveRoles.size === 0}
+              >
+                {approving ? <span className="loading loading-spinner loading-xs" /> : 'Approuver'}
+              </button>
+            </div>
+          </div>
+          <div className="modal-backdrop" onClick={() => !approving && setApprovingRequest(null)} />
         </div>
       )}
     </div>

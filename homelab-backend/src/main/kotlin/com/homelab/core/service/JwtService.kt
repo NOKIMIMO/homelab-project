@@ -16,13 +16,18 @@ class JwtService {
     private val key: SecretKey =
         Keys.hmacShaKeyFor(secret.toByteArray())
 
-    fun generateToken(username: String, isAdmin: Boolean): String {
+    // adminPermissions is a UI-gating hint only (decoded client-side, like isAdmin) - every
+    // request is still re-authorized server-side from the live DB state
+    // (see JwtAuthenticationFilter, PermissionService.currentUserHasAdminPermission), so a
+    // stale token here can under- but never over-grant access.
+    fun generateToken(username: String, isAdmin: Boolean, adminPermissions: Set<String> = emptySet()): String {
         val now = Date()
         val expiryDate = Date(now.time + 86400000) // 24h
 
         return Jwts.builder()
             .setSubject(username)
             .claim("isAdmin", isAdmin)
+            .claim("adminPermissions", adminPermissions.toList())
             .setIssuedAt(now)
             .setExpiration(expiryDate)
             .signWith(key)

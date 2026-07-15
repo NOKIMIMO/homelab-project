@@ -17,6 +17,8 @@ data class RoleRequest(
     val name: String = "",
     val moduleIds: List<String> = emptyList(),
     val blockedWindows: List<BlockedWindowDto> = emptyList(),
+    // AdminPermission.name() values, e.g. "MANAGE_ROLES", "MODULE_START_STOP".
+    val adminPermissions: List<String> = emptyList(),
 )
 
 data class RoleDto(
@@ -24,6 +26,7 @@ data class RoleDto(
     val name: String,
     val moduleIds: List<String>,
     val blockedWindows: List<BlockedWindowDto>,
+    val adminPermissions: List<String>,
     val createdAt: LocalDateTime,
     val updatedAt: LocalDateTime,
 )
@@ -33,6 +36,7 @@ fun Role.toDto() = RoleDto(
     name = name,
     moduleIds = moduleIds.toList(),
     blockedWindows = blockedWindows.map { BlockedWindowDto(it.dayOfWeek, it.start, it.end) },
+    adminPermissions = adminPermissions.toList(),
     createdAt = createdAt,
     updatedAt = updatedAt,
 )

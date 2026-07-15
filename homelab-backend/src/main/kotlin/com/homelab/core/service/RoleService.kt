@@ -3,6 +3,7 @@ package com.homelab.core.service
 import com.homelab.core.api.dto.RoleRequest
 import com.homelab.core.exception.BadRequestException
 import com.homelab.core.exception.NotFoundException
+import com.homelab.core.model.auth.AdminPermission
 import com.homelab.core.model.auth.BlockedWindow
 import com.homelab.core.model.auth.Role
 import com.homelab.core.model.auth.RoleRepository
@@ -25,7 +26,12 @@ class RoleService(
             throw BadRequestException("Un rôle nommé \"$name\" existe déjà")
         }
         return roleRepository.save(
-            Role(name = name, moduleIds = req.moduleIds.toMutableSet(), blockedWindows = req.toWindows())
+            Role(
+                name = name,
+                moduleIds = req.moduleIds.toMutableSet(),
+                blockedWindows = req.toWindows(),
+                adminPermissions = req.validatedAdminPermissions(),
+            )
         )
     }
 
@@ -39,6 +45,7 @@ class RoleService(
         role.name = name
         role.moduleIds = req.moduleIds.toMutableSet()
         role.blockedWindows = req.toWindows()
+        role.adminPermissions = req.validatedAdminPermissions()
         role.updatedAt = LocalDateTime.now()
         return roleRepository.save(role)
     }
@@ -56,6 +63,11 @@ class RoleService(
 
     private fun RoleRequest.validatedName(): String =
         name.trim().ifBlank { throw BadRequestException("Le nom du rôle est requis") }
+
+    private fun RoleRequest.validatedAdminPermissions(): MutableSet<String> =
+        adminPermissions.map {
+            AdminPermission.fromNameOrNull(it) ?: throw BadRequestException("Permission d'administration inconnue: $it")
+        }.mapTo(mutableSetOf()) { it.name }
 
     // Keep at most one window per day of week (last wins), matching how isBlockedAt resolves them.
     private fun RoleRequest.toWindows(): MutableList<BlockedWindow> =

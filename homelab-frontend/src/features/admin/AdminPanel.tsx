@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { BellRing, Blocks, ScrollText, ShieldCheck, SlidersHorizontal, Users } from 'lucide-react';
+import { useAuth } from '@auth/AuthContext';
 import LogsTab from './LogsTab';
 import AccessTab from './AccessTab';
 import SettingsTab from './SettingsTab';
@@ -9,17 +10,24 @@ import RolesTab from './RolesTab';
 
 type Tab = 'logs' | 'access' | 'settings' | 'modules' | 'alerts' | 'roles';
 
-const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
-  { id: 'logs',     label: 'Logs',        icon: <ScrollText size={15} /> },
-  { id: 'access',   label: 'Accès',       icon: <ShieldCheck size={15} /> },
-  { id: 'roles',    label: 'Rôles',       icon: <Users size={15} /> },
-  { id: 'settings', label: 'Paramètres',  icon: <SlidersHorizontal size={15} /> },
-  { id: 'modules',  label: 'Modules',     icon: <Blocks size={15} /> },
-  { id: 'alerts',   label: 'Alertes',     icon: <BellRing size={15} /> },
+const TABS: { id: Tab; label: string; icon: React.ReactNode; adminOnly: boolean }[] = [
+  { id: 'logs',     label: 'Logs',        icon: <ScrollText size={15} />, adminOnly: true },
+  { id: 'access',   label: 'Accès',       icon: <ShieldCheck size={15} />, adminOnly: true },
+  { id: 'roles',    label: 'Rôles',       icon: <Users size={15} />, adminOnly: false },
+  { id: 'settings', label: 'Paramètres',  icon: <SlidersHorizontal size={15} />, adminOnly: true },
+  { id: 'modules',  label: 'Modules',     icon: <Blocks size={15} />, adminOnly: true },
+  { id: 'alerts',   label: 'Alertes',     icon: <BellRing size={15} />, adminOnly: true },
 ];
 
 export default function AdminPanel() {
-  const [active, setActive] = useState<Tab>('logs');
+  const { isAdmin, adminPermissions } = useAuth();
+  // Only the Rôles tab is reachable via the MANAGE_ROLES administration permission alone; every
+  // other tab still requires full admin.
+  const visibleTabs = useMemo(
+    () => TABS.filter(t => isAdmin || (!t.adminOnly && adminPermissions.includes('MANAGE_ROLES'))),
+    [isAdmin, adminPermissions]
+  );
+  const [active, setActive] = useState<Tab>(visibleTabs[0]?.id ?? 'logs');
 
   return (
     <div className="p-6 h-full flex flex-col overflow-hidden">
@@ -31,7 +39,7 @@ export default function AdminPanel() {
 
       {/* tabs */}
       <div role="tablist" className="tabs tabs-boxed bg-base-300 w-fit mb-6">
-        {TABS.map(tab => (
+        {visibleTabs.map(tab => (
           <button
             key={tab.id}
             role="tab"

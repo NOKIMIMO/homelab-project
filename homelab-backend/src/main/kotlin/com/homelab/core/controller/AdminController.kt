@@ -1,5 +1,6 @@
 package com.homelab.core.controller
 
+import com.homelab.core.api.dto.ApproveSignupRequest
 import com.homelab.core.api.dto.PasswordResetRequestDto
 import com.homelab.core.api.dto.SignupRequestDto
 import com.homelab.core.api.dto.UserDto
@@ -114,16 +115,22 @@ class AdminController(
     @GetMapping("/signup-requests")
     fun getSignupRequests(): List<SignupRequestDto> = signupRequestRepository.findAll().map { it.toDto() }
 
+    // A role must be assigned as part of approval so the account isn't left roleless (and thus
+    // moduleless) until an admin remembers to circle back and set one via the Accès tab.
     @PutMapping("/signup-requests/{id}/approve")
-    fun approveSignupRequest(@PathVariable id: Long): ResponseEntity<Any> {
+    fun approveSignupRequest(@PathVariable id: Long, @RequestBody(required = false) body: ApproveSignupRequest?): ResponseEntity<Any> {
         val opt = signupRequestRepository.findById(id)
         if (!opt.isPresent) return ResponseEntity.notFound().build()
         val req = opt.get()
         if (req.status != "PENDING") {
             return ResponseEntity.badRequest().body(mapOf("success" to false, "message" to "Request already processed"))
         }
+        val roleIds = body?.roleIds.orEmpty()
+        if (roleIds.isEmpty()) {
+            return ResponseEntity.badRequest().body(mapOf("success" to false, "message" to "Au moins un rôle est requis pour approuver la demande"))
+        }
         return try {
-            val user = userService.registerUser(req.name, req.email, req.publicKey, isAdmin = false, req.passwordHash)
+            val user = userService.registerUser(req.name, req.email, req.publicKey, isAdmin = false, req.passwordHash, roleIds = roleIds.toSet())
             req.status = "APPROVED"
             req.processedAt = LocalDateTime.now()
             signupRequestRepository.save(req)

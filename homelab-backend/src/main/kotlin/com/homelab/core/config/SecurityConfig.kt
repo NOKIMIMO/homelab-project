@@ -35,6 +35,11 @@ class SecurityConfig {
                     auth.requestMatchers("/error").permitAll() // for 404 and other
                     // Allow public access to module icons and UI assets
                     auth.requestMatchers("/api/modules/*/UI/icon").permitAll()
+                    // Role management is also open to non-admins holding the MANAGE_ROLES
+                    // administration permission - method security (RoleController's
+                    // @PreAuthorize) does the actual authorization check. Must precede the
+                    // blanket /api/admin/** rule below since Spring Security uses first match.
+                    auth.requestMatchers("/api/admin/roles/**").authenticated()
                     auth.requestMatchers("/api/admin/**").hasRole("ADMIN")
                     auth.requestMatchers("/api/**").authenticated()
                     auth.anyRequest().authenticated()

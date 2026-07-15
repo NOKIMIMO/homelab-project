@@ -9,6 +9,7 @@ const USER_KEY = 'homelab_user_name';
 interface JwtPayload {
   sub: string;
   isAdmin: boolean;
+  adminPermissions?: string[];
   exp: number;
   iat: number;
 }
@@ -48,6 +49,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       token,
       userName: claims?.sub ?? userName,
       isAdmin: claims?.isAdmin ?? false,
+      adminPermissions: claims?.adminPermissions ?? [],
       isAuthenticated: Boolean(token),
       login,
       logout,

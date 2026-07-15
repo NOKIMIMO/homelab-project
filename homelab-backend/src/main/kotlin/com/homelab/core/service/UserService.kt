@@ -22,7 +22,14 @@ class UserService(
 
     fun getAllUsers(): List<User> = repository.findAll()
 
-    fun registerUser(name: String?, email: String, publicKeyPem: String?, isAdmin: Boolean = false, passwordHash: String?): com.homelab.core.model.auth.User {
+    fun registerUser(
+        name: String?,
+        email: String,
+        publicKeyPem: String?,
+        isAdmin: Boolean = false,
+        passwordHash: String?,
+        roleIds: Set<Long> = emptySet(),
+    ): com.homelab.core.model.auth.User {
         if (publicKeyPem.isNullOrBlank() && passwordHash.isNullOrBlank()) {
             throw IllegalArgumentException("Either publicKey or password must be provided")
         }
@@ -31,7 +38,9 @@ class UserService(
             throw IllegalArgumentException("User with this email already exists")
         }
 
-        val user = User(name = name, email = email, publicKey = publicKeyPem, isAdmin = isAdmin, passwordHash = passwordHash)
+        val roles: MutableSet<com.homelab.core.model.auth.Role> =
+            if (roleIds.isEmpty()) mutableSetOf() else roleRepository.findAllById(roleIds).toMutableSet()
+        val user = User(name = name, email = email, publicKey = publicKeyPem, isAdmin = isAdmin, passwordHash = passwordHash, roles = roles)
         return repository.save(user)
     }
 

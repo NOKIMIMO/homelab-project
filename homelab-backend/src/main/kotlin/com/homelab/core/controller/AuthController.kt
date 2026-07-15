@@ -11,6 +11,7 @@ import com.homelab.core.model.auth.User
 import com.homelab.core.model.auth.UserRepository
 import com.homelab.core.model.auth.SignupRequest
 import com.homelab.core.model.auth.SignupRequestRepository
+import com.homelab.core.model.auth.effectiveAdminPermissions
 import com.homelab.core.service.AppletService
 import com.homelab.core.service.AuthService
 import com.homelab.core.service.JwtService
@@ -87,7 +88,8 @@ class AuthController(
                     }
                     val token = jwtService.generateToken(
                         username = user.email,
-                        isAdmin = user.isAdmin
+                        isAdmin = user.isAdmin,
+                        adminPermissions = user.effectiveAdminPermissions()
                     )
                     val cookie = jakarta.servlet.http.Cookie("homelab_token", token)
                     cookie.isHttpOnly = true
@@ -120,7 +122,8 @@ class AuthController(
             return if (matchedUser != null) {
                 val token = jwtService.generateToken(
                     username = matchedUser.email,
-                    isAdmin = matchedUser.isAdmin
+                    isAdmin = matchedUser.isAdmin,
+                    adminPermissions = matchedUser.effectiveAdminPermissions()
                 )
                 val cookie = jakarta.servlet.http.Cookie("homelab_token", token)
                 cookie.isHttpOnly = true

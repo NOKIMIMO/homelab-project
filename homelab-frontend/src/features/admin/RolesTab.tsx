@@ -1,10 +1,17 @@
 import { useState, useEffect, useCallback } from 'react';
-import { ShieldPlus, Plus, Trash2, RefreshCw, Pencil, X, Clock } from 'lucide-react';
-import type { Role, RoleRequest, Module, DayOfWeek } from '@app/types';
+import { ShieldPlus, Plus, Trash2, RefreshCw, Pencil, X, Clock, Shield } from 'lucide-react';
+import type { Role, RoleRequest, Module, DayOfWeek, AdminPermission } from '@app/types';
 import { useAuth } from '@auth/AuthContext';
 import { getApiUrl } from '@lib/api';
 
-const EMPTY_FORM: RoleRequest = { name: '', moduleIds: [], blockedWindows: [] };
+const EMPTY_FORM: RoleRequest = { name: '', moduleIds: [], blockedWindows: [], adminPermissions: [] };
+
+const ADMIN_PERMISSIONS: { key: AdminPermission; label: string; description: string }[] = [
+  { key: 'MANAGE_ROLES',      label: 'Gestion de rôle',        description: "Créer, modifier et supprimer des rôles (sauf le statut administrateur)" },
+  { key: 'MOBILE_ACCESS',     label: 'Application mobile',     description: "Se connecter depuis l'application mobile" },
+  { key: 'MODULE_START_STOP', label: 'Arrêter / Lancer',       description: "Démarrer et arrêter les modules" },
+  { key: 'MODULE_INSTALL',    label: 'Ajouter des modules',    description: "Installer de nouveaux modules" },
+];
 
 const DAYS: { key: DayOfWeek; label: string }[] = [
   { key: 'MONDAY',    label: 'Lundi' },
@@ -99,6 +106,15 @@ export default function RolesTab() {
     }));
   };
 
+  const toggleAdminPermission = (permission: AdminPermission) => {
+    setForm(prev => ({
+      ...prev,
+      adminPermissions: prev.adminPermissions.includes(permission)
+        ? prev.adminPermissions.filter(p => p !== permission)
+        : [...prev.adminPermissions, permission],
+    }));
+  };
+
   const windowFor = (day: DayOfWeek) => form.blockedWindows.find(w => w.dayOfWeek === day);
 
   const setDayBlocked = (day: DayOfWeek, on: boolean) => {
@@ -127,6 +143,7 @@ export default function RolesTab() {
         start: w.start.slice(0, 5),
         end: w.end.slice(0, 5),
       })),
+      adminPermissions: [...role.adminPermissions],
     });
     setError(null);
   };
@@ -257,6 +274,29 @@ export default function RolesTab() {
             </p>
           </div>
 
+          <div>
+            <span className="label-text text-xs flex items-center gap-1.5">
+              <Shield size={13} className="opacity-60" /> Administration
+              <span className="opacity-50">(capacités globales, indépendantes des modules)</span>
+            </span>
+            <div className="flex flex-col gap-2 mt-2">
+              {ADMIN_PERMISSIONS.map(p => (
+                <label key={p.key} className="flex items-center gap-3 bg-base-200 rounded-lg px-3 py-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    className="toggle toggle-sm toggle-primary"
+                    checked={form.adminPermissions.includes(p.key)}
+                    onChange={() => toggleAdminPermission(p.key)}
+                  />
+                  <div className="flex-1 min-w-0">
+                    <span className="font-semibold text-sm truncate block">{p.label}</span>
+                    <span className="text-xs text-base-content/40">{p.description}</span>
+                  </div>
+                </label>
+              ))}
+            </div>
+          </div>
+
           {error && <p className="text-xs text-error">{error}</p>}
 
           <div className="flex justify-end gap-2">
@@ -303,6 +343,12 @@ export default function RolesTab() {
                     {role.blockedWindows.length > 0 && (
                       <span className="text-xs text-warning flex items-center gap-1 mt-0.5">
                         <Clock size={11} /> horaires restreints ({role.blockedWindows.length} j)
+                      </span>
+                    )}
+                    {role.adminPermissions.length > 0 && (
+                      <span className="text-xs text-primary flex items-center gap-1 mt-0.5">
+                        <Shield size={11} />
+                        {role.adminPermissions.map(p => ADMIN_PERMISSIONS.find(a => a.key === p)?.label ?? p).join(', ')}
                       </span>
                     )}
                   </div>

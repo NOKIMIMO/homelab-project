@@ -13,6 +13,9 @@ data class SignupRequestDto(
     val processedAt: LocalDateTime?,
 )
 
+// A role must be assigned as part of approval - the resulting account isn't left roleless.
+data class ApproveSignupRequest(val roleIds: List<Long> = emptyList())
+
 fun SignupRequest.toDto() = SignupRequestDto(
     id = id,
     name = name,

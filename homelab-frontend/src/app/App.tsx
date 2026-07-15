@@ -11,7 +11,8 @@ export type { AppOutletContext, Module };
 function AppLayout() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { isAdmin ,logout } = useAuth();
+  const { isAdmin, adminPermissions, logout } = useAuth();
+  const hasAdminAccess = isAdmin || adminPermissions.length > 0;
   const [modules, setModules] = useState<Module[]>([]);
   const [isModulesRefreshing, setIsModulesRefreshing] = useState(false);
 
@@ -90,7 +91,7 @@ function AppLayout() {
                 <span className="text-[15px]">Vue d'ensemble</span>
               </button>
             </li>
-            {isAdmin && (
+            {hasAdminAccess && (
               <li>
                 <button
                   className={location.pathname === '/admin' ? 'active font-medium' : 'font-medium'}

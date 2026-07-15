@@ -27,6 +27,13 @@ class Role(
     @CollectionTable(name = "role_blocked_windows", joinColumns = [JoinColumn(name = "role_id")])
     var blockedWindows: MutableList<BlockedWindow> = mutableListOf(),
 
+    // Global "administration" capabilities this role grants (see AdminPermission), separate from
+    // the per-module access in [moduleIds]. Stores AdminPermission.name() values.
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "role_admin_permissions", joinColumns = [JoinColumn(name = "role_id")])
+    @Column(name = "permission")
+    var adminPermissions: MutableSet<String> = mutableSetOf(),
+
     @Column(nullable = false)
     val createdAt: LocalDateTime = LocalDateTime.now(),
 
