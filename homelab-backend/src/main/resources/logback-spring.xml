@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+    <include resource="org/springframework/boot/logging/logback/console-appender.xml"/>
+
+    <springProperty scope="context" name="LOGS_PATH" source="HOMELAB_LOGS_PATH" defaultValue="logs"/>
+
+    <!--
+      Dumps every log line (console + AppLogger-independent SLF4J output) to a file, rotated once
+      a day regardless of uptime - TimeBasedRollingPolicy rolls at midnight on its own, so this
+      works correctly for a container that runs continuously for weeks without a restart, with no
+      scheduled task needed on the app side. The actively-written file is always "homelab.log"
+      (today's not-yet-rolled entries only); at rollover it's renamed to homelab-YYYY-MM-DD.log and
+      a fresh homelab.log starts. See LogFileService for listing/downloading these from the admin
+      panel.
+    -->
+    <appender name="ROLLING_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOGS_PATH}/homelab.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${LOGS_PATH}/homelab-%d{yyyy-MM-dd}.log</fileNamePattern>
+            <maxHistory>30</maxHistory>
+            <totalSizeCap>500MB</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>${FILE_LOG_PATTERN}</pattern>
+        </encoder>
+    </appender>
+
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="ROLLING_FILE"/>
+    </root>
+</configuration>

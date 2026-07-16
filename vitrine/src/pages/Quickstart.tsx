@@ -60,7 +60,7 @@ const TEXT: Record<
         fichiers à la racine du repo (ou d'un dossier vide) :
       </>
     ),
-    optionAcmd: 'docker compose -f docker-compose.all-in-one.yml up -d --build',
+    optionAcmd: 'docker compose -f docker-compose.all-in-one.yml up -d',
     optionBtitle: 'B. Services séparés (backend / frontend / Postgres)',
     optionBintro: (
       <>
@@ -109,7 +109,7 @@ const TEXT: Record<
         the repo (or any empty folder):
       </>
     ),
-    optionAcmd: 'docker compose -f docker-compose.all-in-one.yml up -d --build',
+    optionAcmd: 'docker compose -f docker-compose.all-in-one.yml up -d',
     optionBtitle: 'B. Split services (backend / frontend / Postgres)',
     optionBintro: (
       <>

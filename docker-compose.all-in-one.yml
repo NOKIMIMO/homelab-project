@@ -36,6 +36,7 @@ services:
       - JAVA_OPTS=-Doshi.os.windows.osRelease.path=/host/etc/os-release
       - HOMELAB_ENV_FILE_PATH=/app_root/.env
       - HOMELAB_STORAGE_PATH=/data
+      - HOMELAB_LOGS_PATH=/data/logs
       # -Xmx n'est PAS fixé ici : entrypoint.sh le lit directement depuis le .env monté à chaque
       # démarrage (restart inclus), voir docker/all-in-one/entrypoint.sh et ResourceLimitsService.
     restart: unless-stopped

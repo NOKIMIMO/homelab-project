@@ -1,4 +1,4 @@
-export const DOCKER_PULL = `docker pull ghcr.io/nokimimo/homelab-project:v1.0.2`
+export const DOCKER_PULL = `docker pull ghcr.io/nokimimo/homelab-project`
 
 export const DOCKER_RUN = `docker run -d --name homelab \\
   -p 80:80 \\
@@ -11,9 +11,7 @@ export const DOCKER_RUN = `docker run -d --name homelab \\
 export const DOCKER_COMPOSE_ALL_IN_ONE_YML = `# docker-compose.all-in-one.yml
 services:
   homelab:
-    build:
-      context: .
-      dockerfile: Dockerfile.all-in-one
+    image: ghcr.io/nokimimo/homelab-project:v1.0.2
     container_name: homelab-all-in-one
     ports:
       - "80:80"
@@ -306,4 +304,125 @@ export const SDK_GRADLE = `repositories {
 
 dependencies {
     implementation("com.homelab:homelab-sdk:0.0.3")
+}`
+
+export const PLUGIN_SDK_INTERFACES = `interface LogicPlugin {
+    fun typeName(): String
+    fun actionSingleton(): Action
+}
+
+interface Action {
+    fun execute(
+        moduleId: String,
+        mergedParams: Map<String, Any>,
+        genericObject: GenericTableLayer,
+        declaration: ModuleActionDeclaration
+    ): Any?
+
+    // Helpers fournis par défaut (délèguent à FilterHelpers)
+    fun getFilters(mergedParams: Map<String, Any>, declaration: ModuleActionDeclaration):
+        Map<String, Pair<Any?, ModuleActionParameterType>>
+    fun addFilter(filters: MutableMap<String, Pair<Any?, ModuleActionParameterType>>,
+        key: Pair<String, ModuleActionParameterType>, value: Any?)
+}`
+
+export const PLUGIN_SDK_DEPENDENCY_MAVEN = `<dependency>
+  <groupId>com.homelab</groupId>
+  <artifactId>homelab-sdk</artifactId>
+  <version>0.0.5</version>
+</dependency>`
+
+export const PLUGIN_SDK_DEPENDENCY_GRADLE = `implementation("com.homelab:homelab-sdk:0.0.5")`
+
+export const PLUGIN_KOTLIN_EXAMPLE = `// FileMovePlugin.kt
+package com.homelab.plugin.filemove
+
+import com.homelab.sdk.action.Action
+import com.homelab.sdk.plugin.LogicPlugin
+
+class FileMovePlugin : LogicPlugin {
+    private val action: Action = MoveFileAction()
+
+    override fun typeName(): String = "FILE_MOVE"
+    override fun actionSingleton(): Action = action
+}
+
+// MoveFileAction.kt (extrait simplifié --- voir homelab-filemove-plugin/ pour la version complète)
+package com.homelab.plugin.filemove
+
+import com.homelab.sdk.action.Action
+import com.homelab.sdk.data.GenericTableLayer
+import com.homelab.sdk.module.action.ModuleActionDeclaration
+import java.nio.file.Files
+import java.nio.file.Path
+import java.nio.file.StandardCopyOption
+
+class MoveFileAction : Action {
+    override fun execute(
+        moduleId: String,
+        mergedParams: Map<String, Any>,
+        genericObject: GenericTableLayer,
+        declaration: ModuleActionDeclaration
+    ): Any {
+        val targetDir = mergedParams["targetDir"] as? String
+            ?: return mapOf("moved" to false, "reason" to "missing_targetDir")
+
+        // getFilters() vient de l'interface Action --- il dérive les filtres des
+        // paramètres EQUAL déclarés par la fonction (ex. "id").
+        val filters = getFilters(mergedParams, declaration)
+        val record = genericObject.find(filters).firstOrNull()
+            ?: return mapOf("moved" to false, "reason" to "no_record_found")
+
+        val srcPath = Path.of(record["file"].toString()).toAbsolutePath().normalize()
+        val targetPath = Path.of("data", moduleId, targetDir, srcPath.fileName.toString())
+        Files.createDirectories(targetPath.parent)
+        Files.move(srcPath, targetPath, StandardCopyOption.REPLACE_EXISTING)
+
+        genericObject.updateByFilters(filters.mapValues { it.value.first }, mapOf("file" to targetPath.toString()))
+        return mapOf("moved" to true, "target" to targetPath.toString())
+    }
+}`
+
+export const PLUGIN_SERVICE_FILE = `# src/main/resources/META-INF/services/com.homelab.sdk.plugin.LogicPlugin
+com.homelab.plugin.filemove.FileMovePlugin`
+
+export const PLUGIN_MANIFEST_SNIPPET = `{
+  "name": "moveReceipt",
+  "description": "Déplace le fichier d'un reçu vers un dossier d'archive.",
+  "parameters": [
+    { "name": "id", "type": "EQUAL" },
+    { "name": "targetDir", "type": "NONE" }
+  ],
+  "logic": [{ "type": "FILE_MOVE" }],
+  "actUponObject": "receipts.xml"
+}`
+
+export const CUSTOM_FUNCTION_CHAIN_EXAMPLE = `{
+  "name": "callApi",
+  "parameters": [],
+  "logic": [
+    {
+      "type": "FETCH_EXTERNAL_GENERIC",
+      "params": {
+        "urlTemplate": "https://api.exemple.com/data",
+        "method": "GET"
+      }
+    },
+    { "type": "MAP_JSON" }
+  ],
+  "actUponObject": "call.xml"
+}`
+
+export const MAP_JSON_MAPPING_FILE = `{
+  "responseMapping": {
+    "title": "data.title",
+    "value": "data.items[0].value"
+  },
+  "upsertKey": "title"
+}`
+
+export const CODEBLOCK_UI_EXAMPLE = `{
+  "type": "CodeBlock",
+  "props": { "lang": "json" },
+  "source": { "binding": "callApi", "method": "POST" }
 }`
