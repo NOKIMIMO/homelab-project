@@ -3,7 +3,7 @@ import type { Module } from '@app/types';
 import PageHost from './PageHost';
 
 export default function ModuleView({ module }: { module?: Module }) {
-  if (!module) return <div className="p-10">Application non trouvée</div>;
+  if (!module) return <div className="p-10">Application not found</div>;
 
   if (module.status !== 'ACTIVE') {
     return (
@@ -18,11 +18,11 @@ export default function ModuleView({ module }: { module?: Module }) {
           <div className="badge badge-warning font-bold mb-4">{module.status}</div>
           <p className="text-base-content/70 font-medium">
             {module.status === 'STARTING'
-              ? "Le module est en cours de lancement. Veuillez patienter..."
-              : "Le module n'est pas encore démarré ou n'est pas accessible."}
+              ? "The module is starting up. Please wait..."
+              : "The module has not started yet or is not accessible."}
           </p>
           <p className="mt-4 text-xs opacity-40 italic">
-            Activez le module depuis la "Vue d'ensemble" pour y accéder ici.
+            Activate the module from the "Overview" to access it here.
           </p>
         </div>
       </div>

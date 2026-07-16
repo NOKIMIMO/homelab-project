@@ -51,7 +51,7 @@ class AlertService(
     }
 
     fun updateRule(id: Long, req: AlertRuleRequest): AlertRule {
-        val rule = ruleRepository.findById(id).orElseThrow { NotFoundException("Alerte introuvable: $id") }
+        val rule = ruleRepository.findById(id).orElseThrow { NotFoundException("Alert not found: $id") }
         rule.name = req.validatedName()
         rule.metric = req.metric
         rule.operator = req.operator
@@ -65,7 +65,7 @@ class AlertService(
     }
 
     fun deleteRule(id: Long) {
-        if (!ruleRepository.existsById(id)) throw NotFoundException("Alerte introuvable: $id")
+        if (!ruleRepository.existsById(id)) throw NotFoundException("Alert not found: $id")
         ruleRepository.deleteById(id)
         firing.remove(id)
     }
@@ -106,8 +106,8 @@ class AlertService(
 
     private fun persistEvent(rule: AlertRule, value: Double) {
         val rounded = Formater.round(value, 1)
-        val message = "${rule.metric.label} à $rounded${rule.metric.unit} " +
-            "(seuil ${rule.operator.symbol} ${rule.threshold}${rule.metric.unit})"
+        val message = "${rule.metric.label} at $rounded${rule.metric.unit} " +
+            "(threshold ${rule.operator.symbol} ${rule.threshold}${rule.metric.unit})"
         eventRepository.save(
             AlertEvent(
                 ruleId = rule.id,
@@ -119,17 +119,17 @@ class AlertService(
                 message = message,
             )
         )
-        log.info("Alerte '${rule.name}' [${rule.severity}] déclenchée: $message")
+        log.info("Alert '${rule.name}' [${rule.severity}] triggered: $message")
     }
 
     // ---------------------------------------------------------------- Validation
 
     private fun AlertRuleRequest.validatedName(): String =
-        name.trim().ifBlank { throw BadRequestException("Le nom de l'alerte est requis") }
+        name.trim().ifBlank { throw BadRequestException("Alert name is required") }
 
     private fun AlertRuleRequest.validatedThreshold(): Double {
         if (threshold < 0.0 || threshold > 100.0) {
-            throw BadRequestException("Le seuil doit être compris entre 0 et 100 (%)")
+            throw BadRequestException("Threshold must be between 0 and 100 (%)")
         }
         return threshold
     }

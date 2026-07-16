@@ -88,7 +88,7 @@ function AppLayout() {
                 onClick={() => navigate('/')}
               >
                 <BarChart size={20} className="mr-1 opacity-70" />
-                <span className="text-[15px]">Vue d'ensemble</span>
+                <span className="text-[15px]">Overview</span>
               </button>
             </li>
             {hasAdminAccess && (

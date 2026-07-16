@@ -40,7 +40,7 @@ export default function RecoveryResetForm({ onResetSuccess, onShowHardReset }: R
       const data = await res.json() as ResetResult;
 
       if (!res.ok || !data.success || !data.token || !data.userEmail) {
-        setError(data.message || 'Code de récupération invalide');
+        setError(data.message || 'Invalid recovery code');
         return;
       }
 
@@ -48,7 +48,7 @@ export default function RecoveryResetForm({ onResetSuccess, onShowHardReset }: R
       if (data.recoveryCode) setRevealedCode(data.recoveryCode);
     } catch (err) {
       console.error(err);
-      setError('Erreur technique lors de la réinitialisation.');
+      setError('Technical error while resetting.');
     } finally {
       setLoading(false);
     }
@@ -61,10 +61,10 @@ export default function RecoveryResetForm({ onResetSuccess, onShowHardReset }: R
 
   return (
     <div className="space-y-6">
-      <div className="badge badge-warning gap-2">Réinitialisation d'urgence</div>
+      <div className="badge badge-warning gap-2">Emergency Reset</div>
       <p className="text-xs opacity-60">
-        Présenter un code de récupération valide supprime tous les comptes existants et crée un
-        nouveau compte administrateur avec les informations ci-dessous.
+        Presenting a valid recovery code deletes all existing accounts and creates a new
+        administrator account with the information below.
       </p>
 
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -76,7 +76,7 @@ export default function RecoveryResetForm({ onResetSuccess, onShowHardReset }: R
         )}
 
         <div className="form-control w-full gap-1">
-          <label className="label pb-1"><span className="label-text font-bold">Code de récupération</span></label>
+          <label className="label pb-1"><span className="label-text font-bold">Recovery Code</span></label>
           <input
             type="text"
             className="input input-bordered h-12 w-full rounded-xl bg-base-200 font-mono focus:input-primary"
@@ -88,7 +88,7 @@ export default function RecoveryResetForm({ onResetSuccess, onShowHardReset }: R
         </div>
 
         <div className="form-control w-full gap-1">
-          <label className="label pb-1"><span className="label-text font-bold">Nom</span></label>
+          <label className="label pb-1"><span className="label-text font-bold">Name</span></label>
           <input
             type="text"
             className="input input-bordered h-12 w-full rounded-xl bg-base-200 focus:input-primary"
@@ -102,7 +102,7 @@ export default function RecoveryResetForm({ onResetSuccess, onShowHardReset }: R
           <input
             type="email"
             className="input input-bordered h-12 w-full rounded-xl bg-base-200 focus:input-primary"
-            placeholder="vous@exemple.com"
+            placeholder="you@example.com"
             value={email}
             onChange={e => setEmail(e.target.value)}
             required
@@ -110,7 +110,7 @@ export default function RecoveryResetForm({ onResetSuccess, onShowHardReset }: R
         </div>
 
         <div className="form-control w-full gap-1">
-          <label className="label pb-1"><span className="label-text font-bold">Nouveau mot de passe</span></label>
+          <label className="label pb-1"><span className="label-text font-bold">New Password</span></label>
           <input
             type="password"
             className="input input-bordered h-12 w-full rounded-xl bg-base-200 focus:input-primary"
@@ -125,12 +125,12 @@ export default function RecoveryResetForm({ onResetSuccess, onShowHardReset }: R
           disabled={loading}
         >
           {loading ? <Loader2 size={20} className="animate-spin" /> : <KeyRound size={20} />}
-          Réinitialiser et créer le compte admin
+          Reset and Create Admin Account
         </button>
       </form>
 
       <button type="button" className="btn btn-ghost btn-sm w-full" onClick={onShowHardReset}>
-        Code de reset aussi perdu ?
+        Reset code also lost?
       </button>
 
       {revealedCode && (

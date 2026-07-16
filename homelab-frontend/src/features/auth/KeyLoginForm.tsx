@@ -27,13 +27,13 @@ export default function KeyLoginForm({ onLoginSuccess }: KeyLoginFormProps) {
     setError(null);
     try {
       if (privateKey.startsWith('ssh-rsa') || privateKey.includes('---- BEGIN SSH2 PUBLIC KEY ----')) {
-        setError("Attention : Vous essayez d'utiliser une CLÉ PUBLIQUE pour vous connecter. La connexion nécessite votre CLÉ PRIVÉE (celle qui commence par '-----BEGIN PRIVATE KEY-----').");
+        setError("Warning: You are trying to use a PUBLIC KEY to sign in. Signing in requires your PRIVATE KEY (the one starting with '-----BEGIN PRIVATE KEY-----').");
         setLoading(false);
         return;
       }
 
       if (privateKey.includes('PuTTY-User-Key-File')) {
-        setError("Format .ppk (PuTTY) détecté. Ce format n'est pas supporté directement par le navigateur. Veuillez exporter votre clé en 'OpenSSH Key' puis la convertir en PKCS#8.");
+        setError("Detected .ppk (PuTTY) format. This format is not directly supported by the browser. Please export your key as 'OpenSSH Key' and then convert it to PKCS#8.");
         setLoading(false);
         return;
       }
@@ -42,11 +42,11 @@ export default function KeyLoginForm({ onLoginSuccess }: KeyLoginFormProps) {
       if (result.success && result.token) {
         onLoginSuccess(result.token, result.keyName || '');
       } else {
-        setError(result.message || "Échec de l'authentification");
+        setError(result.message || "Authentication failed");
       }
     } catch (err: unknown) {
       console.error(err);
-      setError("Erreur technique : Vérifiez que votre clé est au format PKCS#8 RSA PEM. (Les clés OpenSSH doivent être converties en PKCS#8)");
+      setError("Technical error: check that your key is in PKCS#8 RSA PEM format. (OpenSSH keys must be converted to PKCS#8)");
     } finally {
       setLoading(false);
     }
@@ -63,7 +63,7 @@ export default function KeyLoginForm({ onLoginSuccess }: KeyLoginFormProps) {
 
       <div className="form-control">
         <label className="label">
-          <span className="label-text font-bold flex items-center gap-2"><Key size={14} /> Cle Privee (PKCS#8 PEM)</span>
+          <span className="label-text font-bold flex items-center gap-2"><Key size={14} /> Private Key (PKCS#8 PEM)</span>
         </label>
         <div
           className={`relative border-2 border-dashed rounded-2xl p-6 transition-all flex flex-col items-center justify-center gap-2 cursor-pointer mb-4 ${isDragging ? 'border-primary bg-primary/5' : 'border-base-content/10 bg-base-200 hover:border-primary/30'}`}
@@ -87,24 +87,24 @@ export default function KeyLoginForm({ onLoginSuccess }: KeyLoginFormProps) {
             }}
           />
           <Upload size={24} className="text-primary opacity-50" />
-          <p className="text-xs font-medium opacity-70">Glissez votre fichier de cle privee ou cliquez ici</p>
+          <p className="text-xs font-medium opacity-70">Drag your private key file here or click to browse</p>
         </div>
         <textarea
           className="textarea textarea-bordered h-32 font-mono text-[10px] focus:textarea-primary transition-all bg-base-200"
-          placeholder="Ou collez le contenu ici : -----BEGIN PRIVATE KEY-----..."
+          placeholder="Or paste the content here: -----BEGIN PRIVATE KEY-----..."
           value={privateKey}
           onChange={(e) => setPrivateKey(e.target.value)}
           required
         ></textarea>
         <label className="label">
-          <span className="label-text-alt opacity-50 italic">La cle ne quitte jamais votre navigateur.</span>
-          <span className="label-text-alt opacity-50 italic">Elle est utilisee uniquement pour signer le nonce.</span>
+          <span className="label-text-alt opacity-50 italic">Your key never leaves your browser.</span>
+          <span className="label-text-alt opacity-50 italic">It is used only to sign the nonce.</span>
         </label>
       </div>
 
       <button className="btn btn-primary w-full gap-2 shadow-lg shadow-primary/20 h-14 rounded-2xl" disabled={loading}>
         {loading ? <Loader2 size={20} className="animate-spin" /> : <KeyRound size={20} />}
-        Connexion au Homelab
+        Sign In to Homelab
       </button>
     </form>
   );

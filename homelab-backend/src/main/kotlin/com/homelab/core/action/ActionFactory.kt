@@ -1,5 +1,6 @@
 package com.homelab.core.action
 
+import com.homelab.core.config.HomelabConfig
 import com.homelab.core.model.action.*
 import com.homelab.core.plugin.PluginRegistry
 import com.homelab.core.service.GlobalParametersService
@@ -12,10 +13,11 @@ import org.springframework.stereotype.Service
 class ActionFactory(
     private val pluginRegistry: PluginRegistry,
     private val globalParametersService: GlobalParametersService,
-    private val resourceLimitsService: ResourceLimitsService
+    private val resourceLimitsService: ResourceLimitsService,
+    private val homelabConfig: HomelabConfig
 ) {
     private val builtins: Map<String, Action> = mapOf(
-        ActionsEnum.UPLOAD_FILE.name to UploadFileAction(resourceLimitsService),
+        ActionsEnum.UPLOAD_FILE.name to UploadFileAction(resourceLimitsService, homelabConfig),
         ActionsEnum.GET_FILE.name to GetFileAction(),
         ActionsEnum.DELETE.name to DeleteAction(),
         ActionsEnum.CREATE.name to SimpleCreateAction(),

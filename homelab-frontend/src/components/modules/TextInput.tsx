@@ -14,7 +14,7 @@ interface TextInputProps {
 export const TextInput: React.FC<TextInputProps> = ({
   placeholder = '',
   label,
-  buttonLabel = 'Rechercher',
+  buttonLabel = 'Search',
   value = '',
   onChange,
   onSubmit,

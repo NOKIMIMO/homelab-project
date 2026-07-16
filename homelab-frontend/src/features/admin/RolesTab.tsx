@@ -8,20 +8,20 @@ import SignupRequestsSection from './SignupRequestsSection';
 const EMPTY_FORM: RoleRequest = { name: '', moduleIds: [], blockedWindows: [], adminPermissions: [] };
 
 const ADMIN_PERMISSIONS: { key: AdminPermission; label: string; description: string }[] = [
-  { key: 'MANAGE_ROLES',      label: 'Gestion de rôle',        description: "Créer, modifier et supprimer des rôles (sauf le statut administrateur)" },
-  { key: 'MOBILE_ACCESS',     label: 'Application mobile',     description: "Se connecter depuis l'application mobile" },
-  { key: 'MODULE_START_STOP', label: 'Arrêter / Lancer',       description: "Démarrer et arrêter les modules" },
-  { key: 'MODULE_INSTALL',    label: 'Ajouter des modules',    description: "Installer de nouveaux modules" },
+  { key: 'MANAGE_ROLES',      label: 'Manage roles',           description: "Create, edit, and delete roles (except administrator status)" },
+  { key: 'MOBILE_ACCESS',     label: 'Mobile app',             description: "Sign in from the mobile app" },
+  { key: 'MODULE_START_STOP', label: 'Stop / Start',           description: "Start and stop modules" },
+  { key: 'MODULE_INSTALL',    label: 'Add modules',            description: "Install new modules" },
 ];
 
 const DAYS: { key: DayOfWeek; label: string }[] = [
-  { key: 'MONDAY',    label: 'Lundi' },
-  { key: 'TUESDAY',   label: 'Mardi' },
-  { key: 'WEDNESDAY', label: 'Mercredi' },
-  { key: 'THURSDAY',  label: 'Jeudi' },
-  { key: 'FRIDAY',    label: 'Vendredi' },
-  { key: 'SATURDAY',  label: 'Samedi' },
-  { key: 'SUNDAY',    label: 'Dimanche' },
+  { key: 'MONDAY',    label: 'Monday' },
+  { key: 'TUESDAY',   label: 'Tuesday' },
+  { key: 'WEDNESDAY', label: 'Wednesday' },
+  { key: 'THURSDAY',  label: 'Thursday' },
+  { key: 'FRIDAY',    label: 'Friday' },
+  { key: 'SATURDAY',  label: 'Saturday' },
+  { key: 'SUNDAY',    label: 'Sunday' },
 ];
 
 // Quarter-hour slots for the pickers below.
@@ -170,7 +170,7 @@ export default function RolesTab() {
         void fetchRoles();
       } else {
         const body = await res.json().catch(() => null) as { error?: string } | null;
-        setError(body?.error ?? 'Enregistrement impossible');
+        setError(body?.error ?? 'Unable to save');
       }
     } finally {
       setSaving(false);
@@ -190,37 +190,37 @@ export default function RolesTab() {
   return (
     <div className="h-full overflow-y-auto space-y-6 max-w-3xl pr-1">
 
-      {/* ── Validation des comptes ── */}
-      {/* Reachable here (and not just from the Accès tab) because approving a signup request
+      {/* ── Account approval ── */}
+      {/* Reachable here (and not just from the Access tab) because approving a signup request
           already requires assigning a role, so MANAGE_ROLES holders are trusted to do it. */}
       <SignupRequestsSection />
 
-      {/* ── Créer / éditer un rôle ── */}
+      {/* ── Create / edit role ── */}
       <div className="card bg-base-300">
         <div className="card-body gap-4">
           <h2 className="card-title text-base flex items-center gap-2">
             <ShieldPlus size={16} className="opacity-60" />
-            {editingId != null ? 'Modifier le rôle' : 'Nouveau rôle'}
+            {editingId != null ? 'Edit role' : 'New role'}
           </h2>
           <p className="text-xs text-base-content/50 -mt-2">
-            Un utilisateur possédant ce rôle peut utiliser tous les modules cochés (toutes leurs actions),
-            sauf pendant les créneaux horaires bloqués.
+            A user with this role can use all checked modules (all their actions),
+            except during blocked time slots.
           </p>
 
           <label className="form-control">
-            <span className="label-text text-xs mb-1">Nom du rôle</span>
+            <span className="label-text text-xs mb-1">Role name</span>
             <input
               className="input input-bordered input-sm"
               value={form.name}
               onChange={e => setForm({ ...form, name: e.target.value })}
-              placeholder="Ex. Adulte, Invité, Modérateur…"
+              placeholder="E.g. Adult, Guest, Moderator…"
             />
           </label>
 
           <div>
-            <span className="label-text text-xs">Modules autorisés</span>
+            <span className="label-text text-xs">Allowed modules</span>
             {modules.length === 0 ? (
-              <p className="text-sm text-base-content/50 italic mt-1">Aucun module découvert.</p>
+              <p className="text-sm text-base-content/50 italic mt-1">No modules found.</p>
             ) : (
               <div className="flex flex-col gap-2 mt-2">
                 {modules.map(m => (
@@ -243,8 +243,8 @@ export default function RolesTab() {
 
           <div>
             <span className="label-text text-xs flex items-center gap-1.5">
-              <Clock size={13} className="opacity-60" /> Restrictions horaires
-              <span className="opacity-50">(accès bloqué pendant ces créneaux)</span>
+              <Clock size={13} className="opacity-60" /> Time restrictions
+              <span className="opacity-50">(access blocked during these slots)</span>
             </span>
             <div className="flex flex-col gap-1.5 mt-2">
               {DAYS.map((d, i) => {
@@ -262,28 +262,28 @@ export default function RolesTab() {
                     </label>
                     {w ? (
                       <div className="flex items-center gap-2">
-                        <span className="opacity-50 text-xs">de</span>
+                        <span className="opacity-50 text-xs">from</span>
                         <TimeSelect value={w.start} onChange={v => setDayTime(d.key, 'start', v)} openUp={i >= 4} />
-                        <span className="opacity-50 text-xs">à</span>
+                        <span className="opacity-50 text-xs">to</span>
                         <TimeSelect value={w.end} onChange={v => setDayTime(d.key, 'end', v)} openUp={i >= 4} />
                       </div>
                     ) : (
-                      <span className="text-xs opacity-40 italic">accès autorisé toute la journée</span>
+                      <span className="text-xs opacity-40 italic">access allowed all day</span>
                     )}
                   </div>
                 );
               })}
             </div>
             <p className="text-xs text-base-content/40 mt-2">
-              Si l'heure de fin précède l'heure de début, le créneau passe minuit (ex. 20:00 → 07:00).
-              Les heures suivent le fuseau horaire du serveur.
+              If the end time precedes the start time, the slot crosses midnight (e.g. 20:00 to 07:00).
+              Times follow the server's time zone.
             </p>
           </div>
 
           <div>
             <span className="label-text text-xs flex items-center gap-1.5">
               <Shield size={13} className="opacity-60" /> Administration
-              <span className="opacity-50">(capacités globales, indépendantes des modules)</span>
+              <span className="opacity-50">(global capabilities, independent of modules)</span>
             </span>
             <div className="flex flex-col gap-2 mt-2">
               {ADMIN_PERMISSIONS.map(p => (
@@ -308,7 +308,7 @@ export default function RolesTab() {
           <div className="flex justify-end gap-2">
             {editingId != null && (
               <button className="btn btn-sm btn-ghost gap-1" onClick={cancelEdit} disabled={saving}>
-                <X size={14} /> Annuler
+                <X size={14} /> Cancel
               </button>
             )}
             <button
@@ -317,24 +317,24 @@ export default function RolesTab() {
               disabled={saving || form.name.trim() === ''}
             >
               {saving ? <span className="loading loading-spinner loading-xs" /> : <Plus size={14} />}
-              {editingId != null ? 'Mettre à jour' : 'Créer le rôle'}
+              {editingId != null ? 'Update' : 'Create role'}
             </button>
           </div>
         </div>
       </div>
 
-      {/* ── Rôles existants ── */}
+      {/* ── Existing roles ── */}
       <div className="card bg-base-300">
         <div className="card-body gap-3">
           <div className="flex items-center justify-between">
-            <h2 className="card-title text-base">Rôles existants</h2>
+            <h2 className="card-title text-base">Existing roles</h2>
             <button className="btn btn-xs btn-ghost gap-1" onClick={() => void refreshAll()} disabled={refreshing}>
               <RefreshCw size={12} className={refreshing ? 'animate-spin' : ''} />
             </button>
           </div>
 
           {roles.length === 0 ? (
-            <p className="text-sm text-base-content/50 italic">Aucun rôle configuré.</p>
+            <p className="text-sm text-base-content/50 italic">No roles configured.</p>
           ) : (
             <div className="flex flex-col gap-2">
               {roles.map(role => (
@@ -343,12 +343,12 @@ export default function RolesTab() {
                     <span className="font-semibold text-sm truncate block">{role.name}</span>
                     <span className="text-xs text-base-content/50">
                       {role.moduleIds.length === 0
-                        ? 'aucun module'
+                        ? 'no modules'
                         : role.moduleIds.map(moduleName).join(', ')}
                     </span>
                     {role.blockedWindows.length > 0 && (
                       <span className="text-xs text-warning flex items-center gap-1 mt-0.5">
-                        <Clock size={11} /> horaires restreints ({role.blockedWindows.length} j)
+                        <Clock size={11} /> restricted hours ({role.blockedWindows.length} d)
                       </span>
                     )}
                     {role.adminPermissions.length > 0 && (
@@ -358,10 +358,10 @@ export default function RolesTab() {
                       </span>
                     )}
                   </div>
-                  <button className="btn btn-xs btn-ghost" onClick={() => startEdit(role)} aria-label="Modifier">
+                  <button className="btn btn-xs btn-ghost" onClick={() => startEdit(role)} aria-label="Edit">
                     <Pencil size={14} />
                   </button>
-                  <button className="btn btn-xs btn-ghost text-error" onClick={() => void deleteRole(role.id)} aria-label="Supprimer">
+                  <button className="btn btn-xs btn-ghost text-error" onClick={() => void deleteRole(role.id)} aria-label="Delete">
                     <Trash2 size={14} />
                   </button>
                 </div>

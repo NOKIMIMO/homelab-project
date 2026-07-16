@@ -17,7 +17,7 @@ class LoginSettings(
     @Column(nullable = true, length = 100)
     var appName: String? = null,
 
-    // File name of the uploaded image stored on disk (branding_storage/), rendered as the
+    // File name of the uploaded image stored on disk (storage/branding/, see HomelabConfig.storagePath), rendered as the
     // browser tab favicon. Falls back to the default favicon when unset.
     @Column(nullable = true, length = 255)
     var appIcon: String? = null,

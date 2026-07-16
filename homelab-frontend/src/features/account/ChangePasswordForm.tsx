@@ -42,11 +42,11 @@ export default function ChangePasswordForm() {
     setError(null);
 
     if (!newPasswordValid) {
-      setError('Le nouveau mot de passe doit contenir au moins 8 caractères');
+      setError('The new password must be at least 8 characters long');
       return;
     }
     if (!passwordsMatch) {
-      setError('Les mots de passe ne correspondent pas');
+      setError('Passwords do not match');
       return;
     }
 
@@ -73,10 +73,10 @@ export default function ChangePasswordForm() {
         setCurrentUser(prev => prev ? { ...prev, mustResetPassword: false } : prev);
         return;
       }
-      setError(data?.message || 'Échec de la mise à jour du mot de passe');
+      setError(data?.message || 'Failed to update password');
     } catch (err) {
       console.error(err);
-      setError('Erreur technique lors de la mise à jour.');
+      setError('A technical error occurred while updating.');
     } finally {
       setLoading(false);
     }
@@ -86,7 +86,7 @@ export default function ChangePasswordForm() {
     <div className="max-w-md space-y-6">
       <div>
         <h2 className="text-xl font-bold flex items-center gap-2">
-          <KeyRound size={20} className="opacity-70" /> Changer mon mot de passe
+          <KeyRound size={20} className="opacity-70" /> Change my password
         </h2>
         {currentUser && (
           <p className="mt-1 text-sm text-base-content/60 font-mono">{currentUser.email}</p>
@@ -97,7 +97,7 @@ export default function ChangePasswordForm() {
         <div className="alert alert-warning border border-warning/20 shadow-sm">
           <ShieldAlert size={18} />
           <span className="text-xs font-bold">
-            Vous êtes connecté avec un mot de passe temporaire à usage unique. Définissez un nouveau mot de passe pour continuer à l'utiliser.
+            You are logged in with a temporary, single-use password. Set a new password to keep using your account.
           </span>
         </div>
       )}
@@ -112,7 +112,7 @@ export default function ChangePasswordForm() {
       {success && (
         <div className="alert alert-success border border-success/20 shadow-sm">
           <CheckCircle2 size={18} />
-          <span className="text-xs font-bold">Mot de passe mis à jour.</span>
+          <span className="text-xs font-bold">Password updated.</span>
         </div>
       )}
 
@@ -120,7 +120,7 @@ export default function ChangePasswordForm() {
         {!mustReset && (
           <div className="form-control w-full gap-1">
             <label className="label pb-1">
-              <span className="label-text font-bold">Mot de passe actuel</span>
+              <span className="label-text font-bold">Current password</span>
             </label>
             <input
               type="password"
@@ -134,7 +134,7 @@ export default function ChangePasswordForm() {
 
         <div className="form-control w-full gap-1">
           <label className="label pb-1">
-            <span className="label-text font-bold">Nouveau mot de passe</span>
+            <span className="label-text font-bold">New password</span>
           </label>
           <input
             type="password"
@@ -145,12 +145,12 @@ export default function ChangePasswordForm() {
             onChange={(e) => { setNewPassword(e.target.value); setError(null); }}
             required
           />
-          <span className="text-xs opacity-60 mt-1">Minimum 8 caractères</span>
+          <span className="text-xs opacity-60 mt-1">Minimum 8 characters</span>
         </div>
 
         <div className="form-control w-full gap-1">
           <label className="label pb-1">
-            <span className="label-text font-bold">Confirmer le nouveau mot de passe</span>
+            <span className="label-text font-bold">Confirm new password</span>
           </label>
           <input
             type="password"
@@ -168,7 +168,7 @@ export default function ChangePasswordForm() {
           disabled={loading || !newPasswordValid || !passwordsMatch || (!mustReset && !currentPassword)}
         >
           {loading ? <Loader2 size={18} className="animate-spin" /> : <KeyRound size={18} />}
-          Mettre à jour
+          Update
         </button>
       </form>
     </div>

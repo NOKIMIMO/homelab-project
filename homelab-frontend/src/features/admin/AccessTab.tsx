@@ -72,7 +72,7 @@ export default function AccessTab() {
 
   const deleteUser = async (id: number, email: string) => {
     if (email === userName) {
-      alert("Vous ne pouvez pas supprimer votre propre compte.");
+      alert("You cannot delete your own account.");
       return;
     }
 
@@ -99,7 +99,7 @@ export default function AccessTab() {
         headers,
       });
       if (!res.ok) {
-        let message = "Échec du transfert du rôle admin.";
+        let message = "Failed to transfer the admin role.";
         try {
           const data = await res.json() as { message?: string };
           message = data.message || message;
@@ -144,7 +144,7 @@ export default function AccessTab() {
         body: JSON.stringify(roleIds),
       });
       if (!res.ok) {
-        alert("Échec de l'enregistrement des rôles.");
+        alert("Failed to save roles.");
         return;
       }
       setUsers(prev => prev.map(u => u.id === editingRolesUser.id ? { ...u, roleIds } : u));
@@ -162,14 +162,14 @@ export default function AccessTab() {
         headers,
       });
       if (!res.ok) {
-        alert("Échec de l'approbation de la demande.");
+        alert("Failed to approve the request.");
         return;
       }
       let data: { success: boolean; temporaryPassword?: string; message?: string };
       try {
         data = await res.json() as { success: boolean; temporaryPassword?: string; message?: string };
       } catch {
-        alert("Réponse invalide du serveur.");
+        alert("Invalid response from server.");
         return;
       }
       if (data.success && data.temporaryPassword) {
@@ -202,13 +202,13 @@ export default function AccessTab() {
   return (
     <div className="h-full overflow-y-auto space-y-8 pr-1">
 
-      {/* ── Utilisateurs ── */}
+      {/* ── Users ── */}
       <section>
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-lg font-bold">Utilisateurs</h2>
+          <h2 className="text-lg font-bold">Users</h2>
           <button className="btn btn-xs btn-outline gap-1" onClick={fetchData} disabled={loading}>
             <RefreshCw size={12} className={loading ? 'animate-spin' : ''} />
-            Actualiser
+            Refresh
           </button>
         </div>
 
@@ -217,11 +217,11 @@ export default function AccessTab() {
             <thead>
               <tr className="bg-base-300 text-xs uppercase tracking-wide">
                 <th>ID</th>
-                <th>Nom</th>
+                <th>Name</th>
                 <th>Email</th>
                 <th>Admin</th>
-                <th>Rôles</th>
-                <th>Créé le</th>
+                <th>Roles</th>
+                <th>Created on</th>
                 <th></th>
               </tr>
             </thead>
@@ -229,13 +229,13 @@ export default function AccessTab() {
               {users.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="text-center text-base-content/40 italic py-8">
-                    Aucun utilisateur
+                    No users
                   </td>
                 </tr>
               ) : (
                 users.map(u => (
                   <tr key={u.id} className="hover">
-                    <td className="text-xs opacity-40 tabular-nums">{u.id} {u.email  === userName ? " (vous)" : ""}</td>
+                    <td className="text-xs opacity-40 tabular-nums">{u.id} {u.email  === userName ? " (you)" : ""}</td>
                     <td>{u.name ?? <span className="opacity-30 italic">---</span>}</td>
                     <td className="font-mono text-xs">{u.email}</td>
                     <td>
@@ -250,7 +250,7 @@ export default function AccessTab() {
                             className="btn btn-2xs btn-outline gap-1"
                             onClick={openTransfer}
                           >
-                            <Repeat size={11} /> Transférer
+                            <Repeat size={11} /> Transfer
                           </button>
                         )}
                       </div>
@@ -261,12 +261,12 @@ export default function AccessTab() {
                       ) : (
                         <button className="btn btn-xs btn-outline gap-1" onClick={() => openRoles(u)}>
                           <UsersRound size={12} />
-                          {u.roleIds.length > 0 ? `${u.roleIds.length} rôle(s)` : 'Assigner'}
+                          {u.roleIds.length > 0 ? `${u.roleIds.length} role(s)` : 'Assign'}
                         </button>
                       )}
                     </td>
                     <td className="text-xs opacity-60">
-                      {new Date(u.createdAt).toLocaleDateString('fr-FR')}
+                      {new Date(u.createdAt).toLocaleDateString('en-US')}
                     </td>
                     <td>
                       <button
@@ -291,11 +291,11 @@ export default function AccessTab() {
 
       <SignupRequestsSection />
 
-      {/* ── Demandes de reset de mot de passe ── */}
+      {/* ── Password reset requests ── */}
       <section>
         <h2 className="text-lg font-bold mb-3 flex items-center gap-2">
           <KeyRound size={18} className="opacity-70" />
-          Demandes de reset de mot de passe
+          Password reset requests
           {pendingPasswordResets.length > 0 && (
             <span className="badge badge-warning badge-sm">{pendingPasswordResets.length}</span>
           )}
@@ -304,7 +304,7 @@ export default function AccessTab() {
         {pendingPasswordResets.length === 0 ? (
           <div className="alert bg-base-300 text-sm">
             <Check size={16} className="text-success" />
-            <span>Aucune demande de reset en attente.</span>
+            <span>No pending reset requests.</span>
           </div>
         ) : (
           <div className="space-y-2 mb-4">
@@ -316,7 +316,7 @@ export default function AccessTab() {
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold font-mono truncate">{r.email}</p>
                   <p className="text-xs opacity-40 mt-1">
-                    Demandé le {new Date(r.createdAt).toLocaleString('fr-FR')}
+                    Requested on {new Date(r.createdAt).toLocaleString('en-US')}
                   </p>
                 </div>
                 <div className="flex gap-2 shrink-0">
@@ -328,14 +328,14 @@ export default function AccessTab() {
                     {actionId === r.id
                       ? <span className="loading loading-spinner loading-xs" />
                       : <Check size={14} />}
-                    Approuver
+                    Approve
                   </button>
                   <button
                     className="btn btn-sm btn-error btn-outline gap-1"
                     disabled={actionId === r.id}
                     onClick={() => rejectPasswordReset(r.id)}
                   >
-                    <X size={14} /> Rejeter
+                    <X size={14} /> Reject
                   </button>
                 </div>
               </div>
@@ -349,9 +349,9 @@ export default function AccessTab() {
               <thead>
                 <tr className="bg-base-300 text-xs uppercase tracking-wide">
                   <th>Email</th>
-                  <th>Statut</th>
-                  <th>Demandé le</th>
-                  <th>Traité le</th>
+                  <th>Status</th>
+                  <th>Requested on</th>
+                  <th>Processed on</th>
                 </tr>
               </thead>
               <tbody>
@@ -364,11 +364,11 @@ export default function AccessTab() {
                       </span>
                     </td>
                     <td className="text-xs opacity-60">
-                      {new Date(r.createdAt).toLocaleDateString('fr-FR')}
+                      {new Date(r.createdAt).toLocaleDateString('en-US')}
                     </td>
                     <td className="text-xs opacity-60">
                       {r.processedAt
-                        ? new Date(r.processedAt).toLocaleDateString('fr-FR')
+                        ? new Date(r.processedAt).toLocaleDateString('en-US')
                         : '---'}
                     </td>
                   </tr>
@@ -379,28 +379,28 @@ export default function AccessTab() {
         )}
       </section>
 
-      {/* ── Révélation du mot de passe temporaire ── */}
+      {/* ── Temporary password reveal ── */}
       {revealedPassword && (
         <RecoveryCodeReveal
           code={revealedPassword}
           onClose={() => setRevealedPassword(null)}
-          label="Mot de passe temporaire"
-          description="Communiquez ce mot de passe temporaire à l'utilisateur par un canal sûr. Il n'est valable qu'une seule connexion : il devra en définir un nouveau juste après."
-          confirmLabel="J'ai transmis ce mot de passe"
+          label="Temporary password"
+          description="Share this temporary password with the user through a secure channel. It is valid for a single login: they will need to set a new one right after."
+          confirmLabel="I have shared this password"
         />
       )}
 
-      {/* ── Modal rôles ── */}
+      {/* ── Roles modal ── */}
       {editingRolesUser && (
         <div className="modal modal-open">
           <div className="modal-box">
-            <h3 className="font-bold text-lg mb-1">Rôles de {editingRolesUser.name ?? editingRolesUser.email}</h3>
+            <h3 className="font-bold text-lg mb-1">Roles of {editingRolesUser.name ?? editingRolesUser.email}</h3>
             <p className="text-xs opacity-60 mb-4">
-              Un rôle donne accès à tous les modules qu'il autorise. Les rôles s'ajoutent aux permissions accordées individuellement.
+              A role grants access to all the modules it allows. Roles add to permissions granted individually.
             </p>
             <div className="space-y-2 max-h-96 overflow-y-auto">
               {roles.length === 0 ? (
-                <p className="text-sm opacity-40 italic">Aucun rôle n'a encore été créé (onglet Rôles).</p>
+                <p className="text-sm opacity-40 italic">No role has been created yet (Roles tab).</p>
               ) : (
                 roles.map(role => (
                   <label key={role.id} className="flex items-center gap-3 bg-base-300 rounded-lg px-3 py-2 cursor-pointer">
@@ -413,7 +413,7 @@ export default function AccessTab() {
                     <div className="flex-1 min-w-0">
                       <span className="font-semibold text-sm truncate block">{role.name}</span>
                       <span className="text-xs opacity-50">
-                        {role.moduleIds.length === 0 ? 'aucun module' : `${role.moduleIds.length} module(s)`}
+                        {role.moduleIds.length === 0 ? 'no modules' : `${role.moduleIds.length} module(s)`}
                       </span>
                     </div>
                   </label>
@@ -422,10 +422,10 @@ export default function AccessTab() {
             </div>
             <div className="modal-action">
               <button className="btn btn-sm btn-ghost" onClick={() => setEditingRolesUser(null)} disabled={savingRoles}>
-                Annuler
+                Cancel
               </button>
               <button className="btn btn-sm btn-primary" onClick={saveRoles} disabled={savingRoles}>
-                {savingRoles ? <span className="loading loading-spinner loading-xs" /> : 'Enregistrer'}
+                {savingRoles ? <span className="loading loading-spinner loading-xs" /> : 'Save'}
               </button>
             </div>
           </div>
@@ -433,19 +433,19 @@ export default function AccessTab() {
         </div>
       )}
 
-      {/* ── Modal transfert du rôle admin ── */}
+      {/* ── Admin role transfer modal ── */}
       {transferOpen && (
         <div className="modal modal-open">
           <div className="modal-box">
-            <h3 className="font-bold text-lg mb-1">Transférer le rôle administrateur</h3>
+            <h3 className="font-bold text-lg mb-1">Transfer the administrator role</h3>
             <p className="text-xs opacity-60 mb-4">
-              Vous cesserez d'être administrateur et deviendrez modérateur (rôle "Modérateur"
-              conservant les permissions d'administration). Vous serez déconnecté pour recharger
-              vos droits.
+              You will stop being an administrator and become a moderator (a "Moderator" role
+              retaining administration permissions). You will be logged out to reload
+              your permissions.
             </p>
             <div className="space-y-2 max-h-96 overflow-y-auto">
               {users.filter(u => u.email !== userName).length === 0 ? (
-                <p className="text-sm opacity-40 italic">Aucun autre utilisateur disponible.</p>
+                <p className="text-sm opacity-40 italic">No other user available.</p>
               ) : (
                 users.filter(u => u.email !== userName).map(u => (
                   <label key={u.id} className="flex items-center gap-3 bg-base-300 rounded-lg px-3 py-2 cursor-pointer">
@@ -466,14 +466,14 @@ export default function AccessTab() {
             </div>
             <div className="modal-action">
               <button className="btn btn-sm btn-ghost" onClick={() => setTransferOpen(false)} disabled={transferring}>
-                Annuler
+                Cancel
               </button>
               <button
                 className="btn btn-sm btn-warning"
                 onClick={() => void confirmTransfer()}
                 disabled={transferring || transferTargetId === null}
               >
-                {transferring ? <span className="loading loading-spinner loading-xs" /> : 'Transférer'}
+                {transferring ? <span className="loading loading-spinner loading-xs" /> : 'Transfer'}
               </button>
             </div>
           </div>

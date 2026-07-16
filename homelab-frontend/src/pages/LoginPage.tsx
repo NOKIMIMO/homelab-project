@@ -42,7 +42,7 @@ export default function LoginPage() {
       <div className="min-h-screen bg-base-300 flex flex-col pt-12">
         <div className="max-w-4xl mx-auto w-full px-4 text-center mb-6">
           <button className="btn btn-ghost btn-sm gap-2" onClick={() => setShowBootstrap(false)}>
-            - Retour a la connexion
+            - Back to login
           </button>
         </div>
       </div>

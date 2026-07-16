@@ -1,5 +1,6 @@
 package com.homelab.core.service
 
+import com.homelab.core.config.HomelabConfig
 import com.homelab.core.exception.BadRequestException
 import com.homelab.core.model.auth.LoginSettings
 import com.homelab.core.model.auth.LoginSettingsRepository
@@ -13,7 +14,7 @@ import java.nio.file.StandardCopyOption
 import java.time.LocalDateTime
 import java.util.UUID
 
-private val MAX_ICON_BYTES = 2L * 1024 * 1024 // 2 Mo
+private val MAX_ICON_BYTES = 2L * 1024 * 1024 // 2 MB
 
 // The owner-configurable description, app name and app icon shown on the login card / browser
 // tab. Single active row, publicly readable since the login page itself isn't authenticated.
@@ -21,9 +22,10 @@ private val MAX_ICON_BYTES = 2L * 1024 * 1024 // 2 Mo
 class LoginSettingsService(
     private val repository: LoginSettingsRepository,
     private val resourceLimitsService: ResourceLimitsService,
+    private val homelabConfig: HomelabConfig,
 ) {
     private val log = AppLogger.loggerFor(LoginSettingsService::class)
-    private val iconStorageDir: Path = Path.of("branding_storage").toAbsolutePath().normalize()
+    private val iconStorageDir: Path = Path.of(homelabConfig.storagePath, "branding").toAbsolutePath().normalize()
 
     private fun current(): LoginSettings = repository.findAll().firstOrNull() ?: LoginSettings()
 
@@ -33,7 +35,7 @@ class LoginSettingsService(
     fun setDescription(description: String?): String? = save { it.description = description }.description
     fun setAppName(appName: String?): String? = save { it.appName = appName }.appName
 
-    fun hasAppIcon(): Boolean = !current().appIcon.isNullOrBlank()
+    fun hasAppIcon(): Boolean = getAppIconFile() != null
 
     fun getAppIconFile(): File? {
         val fileName = current().appIcon.takeUnless { it.isNullOrBlank() } ?: return null
@@ -43,12 +45,12 @@ class LoginSettingsService(
     }
 
     fun setAppIcon(file: MultipartFile) {
-        if (file.isEmpty) throw BadRequestException("Fichier vide")
+        if (file.isEmpty) throw BadRequestException("Empty file")
         if (file.contentType?.startsWith("image/") != true) {
-            throw BadRequestException("Le fichier doit être une image")
+            throw BadRequestException("File must be an image")
         }
         if (file.size > MAX_ICON_BYTES) {
-            throw BadRequestException("Image trop volumineuse (max ${MAX_ICON_BYTES / (1024 * 1024)} Mo)")
+            throw BadRequestException("Image too large (max ${MAX_ICON_BYTES / (1024 * 1024)} MB)")
         }
         resourceLimitsService.checkDiskQuota(file.size)
 
@@ -62,7 +64,7 @@ class LoginSettingsService(
         val storedFileName = "icon-${UUID.randomUUID()}" + if (extension.isNotEmpty()) ".$extension" else ""
         val targetPath = iconStorageDir.resolve(storedFileName).normalize()
         if (!targetPath.startsWith(iconStorageDir)) {
-            throw BadRequestException("Nom de fichier invalide")
+            throw BadRequestException("Invalid file name")
         }
 
         deleteStoredIconFile()
@@ -70,7 +72,7 @@ class LoginSettingsService(
             file.inputStream.use { input -> Files.copy(input, targetPath, StandardCopyOption.REPLACE_EXISTING) }
         } catch (e: Exception) {
             log.error("Failed to save app icon: ${e.message}", e)
-            throw BadRequestException("Échec de l'enregistrement du fichier")
+            throw BadRequestException("Failed to save the file")
         }
 
         save { it.appIcon = storedFileName }

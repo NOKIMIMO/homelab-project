@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.*
 // Full admins always pass; otherwise the caller must hold the MANAGE_ROLES administration
 // permission via one of their roles (see PermissionService.currentUserHasAdminPermission).
 // This does not grant the ability to change a user's isAdmin flag - granting isAdmin only ever
-// happens via AdminController.transferAdmin, matching "changer les rôles, sauf de l'administrateur".
+// happens via AdminController.transferAdmin - i.e. "change roles, except the administrator's".
 @PreAuthorize("hasRole('ADMIN') or @permissionService.currentUserHasAdminPermission('MANAGE_ROLES')")
 @CrossOrigin(origins = ["*"])
 class RoleController(private val roleService: RoleService) {

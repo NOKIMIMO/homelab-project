@@ -133,7 +133,7 @@ class AdminController(
         return ResponseEntity.ok().build()
     }
     // The only way to grant isAdmin: the caller hands off their own admin status to another
-    // account and is demoted to a "Modérateur" role (see UserService.transferAdmin). There is
+    // account and is demoted to a "Moderator" role (see UserService.transferAdmin). There is
     // deliberately no standalone "make this user admin" endpoint - it always stays exactly one
     // isAdmin=true user, transferred atomically, never granted freestanding.
     @PostMapping("/users/{id}/transfer-admin")
@@ -143,7 +143,7 @@ class AdminController(
         val caller = userService.findByEmail(callerEmail)
             ?: return ResponseEntity.status(401).body(mapOf("success" to false, "message" to "Not authenticated"))
         if (caller.id == id) {
-            return ResponseEntity.badRequest().body(mapOf("success" to false, "message" to "Vous êtes déjà administrateur de ce compte"))
+            return ResponseEntity.badRequest().body(mapOf("success" to false, "message" to "You are already the administrator of this account"))
         }
         return try {
             userService.transferAdmin(fromId = caller.id!!, toId = id)
@@ -177,7 +177,7 @@ class AdminController(
     fun getSignupRequests(): List<SignupRequestDto> = signupRequestRepository.findAll().map { it.toDto() }
 
     // A role must be assigned as part of approval so the account isn't left roleless (and thus
-    // moduleless) until an admin remembers to circle back and set one via the Accès tab.
+    // moduleless) until an admin remembers to circle back and set one via the Access tab.
     @PreAuthorize("hasRole('ADMIN') or @permissionService.currentUserHasAdminPermission('MANAGE_ROLES')")
     @PutMapping("/signup-requests/{id}/approve")
     fun approveSignupRequest(@PathVariable id: Long, @RequestBody(required = false) body: ApproveSignupRequest?): ResponseEntity<Any> {
@@ -189,7 +189,7 @@ class AdminController(
         }
         val roleIds = body?.roleIds.orEmpty()
         if (roleIds.isEmpty()) {
-            return ResponseEntity.badRequest().body(mapOf("success" to false, "message" to "Au moins un rôle est requis pour approuver la demande"))
+            return ResponseEntity.badRequest().body(mapOf("success" to false, "message" to "At least one role is required to approve the request"))
         }
         return try {
             val user = userService.registerUser(req.name, req.email, req.publicKey, isAdmin = false, req.passwordHash, roleIds = roleIds.toSet())

@@ -15,10 +15,10 @@ import type {
 
 const COLUMN_TYPES: ColumnType[] = ['string', 'int', 'long', 'boolean', 'date', 'datetime'];
 const CARDINALITIES: { value: Cardinality; label: string }[] = [
-  { value: 'ONE_TO_MANY', label: 'Un vers plusieurs' },
-  { value: 'MANY_TO_ONE', label: 'Plusieurs vers un' },
-  { value: 'ONE_TO_ONE', label: 'Un vers un' },
-  { value: 'MANY_TO_MANY', label: 'Plusieurs vers plusieurs' },
+  { value: 'ONE_TO_MANY', label: 'One to many' },
+  { value: 'MANY_TO_ONE', label: 'Many to one' },
+  { value: 'ONE_TO_ONE', label: 'One to one' },
+  { value: 'MANY_TO_MANY', label: 'Many to many' },
 ];
 const PARAM_TYPES: ModuleParamSpec['type'][] = ['string', 'secret', 'boolean', 'number'];
 
@@ -197,14 +197,14 @@ export default function CreateModuleForm({ onClose, onCreated, initialSpec }: Pr
 
       if (!res.ok) {
         const errBody = await res.json().catch(() => null) as { error?: string } | null;
-        setError(errBody?.error ?? `Échec de ${isEditing ? "la modification" : "la création"} (${res.status})`);
+        setError(errBody?.error ?? `Failed to ${isEditing ? "update" : "create"} (${res.status})`);
         return;
       }
 
       onCreated();
       onClose();
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Erreur inconnue');
+      setError(e instanceof Error ? e.message : 'Unknown error');
     } finally {
       setSubmitting(false);
     }
@@ -215,7 +215,7 @@ export default function CreateModuleForm({ onClose, onCreated, initialSpec }: Pr
       <div className="bg-base-300 rounded-2xl shadow-2xl w-full max-w-4xl flex flex-col max-h-[90vh]">
 
         <div className="flex items-center justify-between px-6 py-4 border-b border-base-content/10">
-          <h2 className="text-lg font-black">{isEditing ? `Modifier ${initialSpec.name}` : 'Créer un module'}</h2>
+          <h2 className="text-lg font-black">{isEditing ? `Edit ${initialSpec.name}` : 'Create a module'}</h2>
           <button className="btn btn-ghost btn-sm btn-square" onClick={onClose}>
             <X size={18} />
           </button>
@@ -224,20 +224,20 @@ export default function CreateModuleForm({ onClose, onCreated, initialSpec }: Pr
         <div className="flex-1 overflow-y-auto px-6 py-4 space-y-6">
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1">
-              <label className="text-sm font-semibold">Identifiant</label>
+              <label className="text-sm font-semibold">ID</label>
               <input
                 className="input input-bordered input-sm w-full font-mono disabled:opacity-60"
-                placeholder="mon_module"
+                placeholder="my_module"
                 value={id}
                 disabled={isEditing}
                 onChange={e => setId(e.target.value)}
               />
             </div>
             <div className="flex flex-col gap-1">
-              <label className="text-sm font-semibold">Nom</label>
+              <label className="text-sm font-semibold">Name</label>
               <input
                 className="input input-bordered input-sm w-full"
-                placeholder="Mon Module"
+                placeholder="My Module"
                 value={name}
                 onChange={e => setName(e.target.value)}
               />
@@ -254,18 +254,18 @@ export default function CreateModuleForm({ onClose, onCreated, initialSpec }: Pr
 
           {/* Module-level parameters (params.json) */}
           <div className="space-y-2">
-            <p className="text-xs font-semibold opacity-60">Paramètres du module (clé API, URL de base, ...)</p>
+            <p className="text-xs font-semibold opacity-60">Module parameters (API key, base URL, ...)</p>
             {params.map((param, pIdx) => (
               <div key={pIdx} className="flex items-center gap-2">
                 <input
                   className="input input-bordered input-xs flex-1 font-mono"
-                  placeholder="clé"
+                  placeholder="key"
                   value={param.key}
                   onChange={e => updateParam(pIdx, { key: e.target.value })}
                 />
                 <input
                   className="input input-bordered input-xs flex-1"
-                  placeholder="Libellé"
+                  placeholder="Label"
                   value={param.label}
                   onChange={e => updateParam(pIdx, { label: e.target.value })}
                 />
@@ -278,7 +278,7 @@ export default function CreateModuleForm({ onClose, onCreated, initialSpec }: Pr
                 </select>
                 <input
                   className="input input-bordered input-xs flex-1"
-                  placeholder="Valeur par défaut"
+                  placeholder="Default value"
                   value={param.defaultValue}
                   onChange={e => updateParam(pIdx, { defaultValue: e.target.value })}
                 />
@@ -288,13 +288,13 @@ export default function CreateModuleForm({ onClose, onCreated, initialSpec }: Pr
               </div>
             ))}
             <button className="btn btn-xs btn-outline gap-1" onClick={addParam}>
-              <Plus size={12} /> Paramètre
+              <Plus size={12} /> Parameter
             </button>
           </div>
 
           {isEditing && (
             <p className="text-[11px] opacity-50">
-              Renommer une table/colonne est appliqué en place. Retyper une colonne tente une conversion des données existantes (peut échouer si incompatible). Supprimer une table ou une colonne existante n'est pas supporté ici.
+              Renaming a table/column is applied in place. Retyping a column attempts to convert the existing data (may fail if incompatible). Deleting an existing table or column is not supported here.
             </p>
           )}
 
@@ -304,7 +304,7 @@ export default function CreateModuleForm({ onClose, onCreated, initialSpec }: Pr
                 <div className="flex items-center gap-3">
                   <input
                     className="input input-bordered input-sm flex-1 font-mono"
-                    placeholder="nom_de_table"
+                    placeholder="table_name"
                     value={table.name}
                     onChange={e => updateTable(tIdx, { name: e.target.value })}
                   />
@@ -315,7 +315,7 @@ export default function CreateModuleForm({ onClose, onCreated, initialSpec }: Pr
                       checked={table.enableFileStorage}
                       onChange={e => updateTable(tIdx, { enableFileStorage: e.target.checked })}
                     />
-                    Stockage de fichier
+                    File storage
                   </label>
                   {tables.length > 1 && (
                     <button className="btn btn-xs btn-ghost btn-error" onClick={() => removeTable(tIdx)}>
@@ -326,12 +326,12 @@ export default function CreateModuleForm({ onClose, onCreated, initialSpec }: Pr
 
                 {/* Columns */}
                 <div className="space-y-2">
-                  <p className="text-xs font-semibold opacity-60">Colonnes</p>
+                  <p className="text-xs font-semibold opacity-60">Columns</p>
                   {table.columns.map((col, cIdx) => (
                     <div key={cIdx} className="flex items-center gap-2">
                       <input
                         className="input input-bordered input-xs flex-1 font-mono"
-                        placeholder="nom_colonne"
+                        placeholder="column_name"
                         value={col.name}
                         onChange={e => updateColumn(tIdx, cIdx, { name: e.target.value })}
                       />
@@ -349,7 +349,7 @@ export default function CreateModuleForm({ onClose, onCreated, initialSpec }: Pr
                           checked={!col.nullable}
                           onChange={e => updateColumn(tIdx, cIdx, { nullable: !e.target.checked })}
                         />
-                        requis
+                        required
                       </label>
                       <label className="flex items-center gap-1 text-xs">
                         <input
@@ -366,7 +366,7 @@ export default function CreateModuleForm({ onClose, onCreated, initialSpec }: Pr
                     </div>
                   ))}
                   <button className="btn btn-xs btn-outline gap-1" onClick={() => addColumn(tIdx)}>
-                    <Plus size={12} /> Colonne
+                    <Plus size={12} /> Column
                   </button>
                 </div>
 
@@ -375,7 +375,7 @@ export default function CreateModuleForm({ onClose, onCreated, initialSpec }: Pr
                   <p className="text-xs font-semibold opacity-60">Relations</p>
                   {table.relations.map((rel, rIdx) => (
                     <div key={rIdx} className="flex items-center gap-2">
-                      <span className="text-xs opacity-50">vers</span>
+                      <span className="text-xs opacity-50">to</span>
                       <select
                         className="select select-bordered select-xs"
                         value={rel.targetTable}
@@ -413,12 +413,12 @@ export default function CreateModuleForm({ onClose, onCreated, initialSpec }: Pr
 
                 {/* Unique together */}
                 <div className="space-y-2">
-                  <p className="text-xs font-semibold opacity-60">Contraintes d'unicité combinée</p>
+                  <p className="text-xs font-semibold opacity-60">Combined uniqueness constraints</p>
                   {table.uniqueTogether.map((group, gIdx) => (
                     <div key={gIdx} className="flex items-center gap-2">
                       <input
                         className="input input-bordered input-xs flex-1 font-mono"
-                        placeholder="colonne1,colonne2"
+                        placeholder="column1,column2"
                         defaultValue={group.join(',')}
                         onBlur={e => updateUniqueGroup(tIdx, gIdx, e.target.value)}
                       />
@@ -428,19 +428,19 @@ export default function CreateModuleForm({ onClose, onCreated, initialSpec }: Pr
                     </div>
                   ))}
                   <button className="btn btn-xs btn-outline gap-1" onClick={() => addUniqueGroup(tIdx)}>
-                    <Plus size={12} /> Groupe unique
+                    <Plus size={12} /> Unique group
                   </button>
                 </div>
 
                 {/* External API fetch functions (FETCH_EXTERNAL_GENERIC), like the weather module */}
                 <div className="space-y-2">
-                  <p className="text-xs font-semibold opacity-60">Fonctions d'appel API externe</p>
+                  <p className="text-xs font-semibold opacity-60">External API call functions</p>
                   {table.externalFetches.map((fetch, fIdx) => (
                     <div key={fIdx} className="border border-base-content/10 rounded-lg p-3 space-y-2">
                       <div className="flex items-center gap-2">
                         <input
                           className="input input-bordered input-xs flex-1 font-mono"
-                          placeholder="nomDeLaFonction"
+                          placeholder="functionName"
                           value={fetch.functionName}
                           onChange={e => updateFetch(tIdx, fIdx, { functionName: e.target.value })}
                         />
@@ -457,42 +457,42 @@ export default function CreateModuleForm({ onClose, onCreated, initialSpec }: Pr
 
                       <input
                         className="input input-bordered input-xs w-full font-mono"
-                        placeholder="https://api.exemple.com/v1?q={query}&appid={apiKey}"
+                        placeholder="https://api.example.com/v1?q={query}&appid={apiKey}"
                         value={fetch.urlTemplate}
                         onChange={e => updateFetch(tIdx, fIdx, { urlTemplate: e.target.value })}
                       />
                       <p className="text-[11px] opacity-50">
-                        {'{nom}'} dans l'URL est remplacé par un paramètre d'appel ou une valeur des paramètres du module.
+                        {'{name}'} in the URL is replaced with a call parameter or a value from the module parameters.
                       </p>
 
                       <div className="flex items-center gap-2">
                         <input
                           className="input input-bordered input-xs flex-1 font-mono"
-                          placeholder="paramètres d'appel: query,city"
+                          placeholder="call parameters: query,city"
                           defaultValue={fetch.queryParams.join(',')}
                           onBlur={e => updateFetchQueryParams(tIdx, fIdx, e.target.value)}
                         />
                         <input
                           className="input input-bordered input-xs flex-1 font-mono"
-                          placeholder="colonne clé d'upsert (optionnel)"
+                          placeholder="upsert key column (optional)"
                           value={fetch.upsertKey ?? ''}
                           onChange={e => updateFetch(tIdx, fIdx, { upsertKey: e.target.value })}
                         />
                       </div>
 
                       <div className="space-y-1">
-                        <p className="text-[11px] opacity-50">Mapping colonne → chemin JSON (ex: main.temp, weather[0].description)</p>
+                        <p className="text-[11px] opacity-50">Column to JSON path mapping (e.g. main.temp, weather[0].description)</p>
                         {Object.entries(fetch.responseMapping).map(([key, value], rowIdx) => (
                           <div key={rowIdx} className="flex items-center gap-2">
                             <input
                               className="input input-bordered input-xs flex-1 font-mono"
-                              placeholder="colonne"
+                              placeholder="column"
                               value={key}
                               onChange={e => mappingRow(tIdx, fIdx, rowIdx, e.target.value, value)}
                             />
                             <input
                               className="input input-bordered input-xs flex-1 font-mono"
-                              placeholder="chemin.json[0]"
+                              placeholder="json.path[0]"
                               value={value}
                               onChange={e => mappingRow(tIdx, fIdx, rowIdx, key, e.target.value)}
                             />
@@ -508,7 +508,7 @@ export default function CreateModuleForm({ onClose, onCreated, initialSpec }: Pr
                     </div>
                   ))}
                   <button className="btn btn-xs btn-outline gap-1" onClick={() => addFetch(tIdx)}>
-                    <Plus size={12} /> Fonction API externe
+                    <Plus size={12} /> External API function
                   </button>
                 </div>
               </div>
@@ -516,21 +516,21 @@ export default function CreateModuleForm({ onClose, onCreated, initialSpec }: Pr
           </div>
 
           <button className="btn btn-sm btn-outline gap-1" onClick={addTable}>
-            <Plus size={14} /> Ajouter une table
+            <Plus size={14} /> Add a table
           </button>
 
           {error && <p className="text-sm text-error">{error}</p>}
         </div>
 
         <div className="flex justify-end gap-3 px-6 py-4 border-t border-base-content/10">
-          <button className="btn btn-ghost btn-sm" onClick={onClose}>Annuler</button>
+          <button className="btn btn-ghost btn-sm" onClick={onClose}>Cancel</button>
           <button
             className="btn btn-sm btn-primary gap-2 min-w-28"
             onClick={handleSubmit}
             disabled={submitting || !id.trim() || !name.trim() || tables.some(t => !t.name.trim())}
           >
             {submitting ? <span className="loading loading-spinner loading-xs" /> : <Save size={14} />}
-            {isEditing ? 'Enregistrer' : 'Créer'}
+            {isEditing ? 'Save' : 'Create'}
           </button>
         </div>
       </div>

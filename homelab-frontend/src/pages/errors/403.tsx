@@ -8,13 +8,13 @@ export default function Error403Page() {
           </h1>
 
           <h2 className="text-2xl font-bold mt-4 text-base-content">
-            Accès refusé
+            Access denied
           </h2>
 
           <p className="text-base-content/60 mt-2 text-sm leading-relaxed">
-            Vous n'avez pas la permission d'accéder à cette ressource.
+            You do not have permission to access this resource.
             <br />
-            Contactez un administrateur si nécessaire.
+            Contact an administrator if needed.
           </p>
 
           <div className="divider my-6 opacity-30" />
@@ -22,7 +22,7 @@ export default function Error403Page() {
             href="/"
             className="btn btn-primary w-full rounded-xl shadow-lg shadow-primary/20"
           >
-            Retour à l'accueil
+            Back to home
           </a>
         </div>
 

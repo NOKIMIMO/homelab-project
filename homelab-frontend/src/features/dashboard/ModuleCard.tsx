@@ -53,7 +53,7 @@ export function ModuleCard({ modules, handleModuleAction, actionLoading, canMana
                             {modules.hasParams && (
                                 <button
                                     className="btn btn-ghost btn-xs btn-square opacity-50 hover:opacity-100"
-                                    title="Paramètres du module"
+                                    title="Module settings"
                                     onClick={() => setParamsOpen(true)}
                                 >
                                     <SlidersHorizontal size={14} />
@@ -67,13 +67,13 @@ export function ModuleCard({ modules, handleModuleAction, actionLoading, canMana
                                 {isLoading
                                     ? <Loader2 size={12} className="animate-spin" />
                                     : modules.status === 'ACTIVE' ? <ShieldCheck size={12} /> : <ShieldAlert size={12} />}
-                                {isLoading ? 'EN COURS' : modules.status}
+                                {isLoading ? 'IN PROGRESS' : modules.status}
                             </div>
                         </div>
                     </div>
 
                     <p className="text-sm text-base-content/70 mt-2 line-clamp-2 min-h-10">
-                        {modules.description || "Aucune description fournie pour ce module."}
+                        {modules.description || "No description provided for this module."}
                     </p>
 
                     <div className="divider my-2 opacity-10"></div>
@@ -105,7 +105,7 @@ export function ModuleCard({ modules, handleModuleAction, actionLoading, canMana
                                         {isLoading
                                             ? <span className="loading loading-spinner loading-xs"></span>
                                             : <Play size={16} />}
-                                        {isLoading ? 'En cours...' : 'Lancer'}
+                                        {isLoading ? 'Starting...' : 'Start'}
                                     </button>
                                 )}
                             </div>

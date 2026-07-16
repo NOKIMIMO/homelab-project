@@ -1,5 +1,6 @@
 package com.homelab.core.model.action
 
+import com.homelab.core.config.HomelabConfig
 import com.homelab.core.exception.BadRequestException
 import com.homelab.core.service.ResourceLimitsService
 import com.homelab.sdk.helper.AppLogger
@@ -13,7 +14,10 @@ import java.util.UUID
 import com.homelab.sdk.action.Action
 import com.homelab.sdk.module.action.ModuleActionDeclaration
 
-class UploadFileAction(private val resourceLimitsService: ResourceLimitsService) : Action {
+class UploadFileAction(
+    private val resourceLimitsService: ResourceLimitsService,
+    private val homelabConfig: HomelabConfig,
+) : Action {
     private val log = AppLogger.loggerFor(UploadFileAction::class)
 
     override fun execute(
@@ -42,7 +46,7 @@ class UploadFileAction(private val resourceLimitsService: ResourceLimitsService)
             return mapOf("created" to false, "reason" to "quota_exceeded", "error" to e.message)
         }
 
-        val uploadDir = Path.of("module_storage", moduleId).toAbsolutePath().normalize()
+        val uploadDir = Path.of(homelabConfig.storagePath, "modules", moduleId).toAbsolutePath().normalize()
         try {
             Files.createDirectories(uploadDir)
         } catch (e: Exception) {

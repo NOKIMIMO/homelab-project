@@ -18,9 +18,14 @@ services:
       # monté en lecture/écriture séparément : le panel admin (Limites de ressources)
       # réécrit JAVA_XMX_GB dedans directement, voir HOMELAB_ENV_FILE_PATH ci-dessous
       - ./.env.production:/app_root/.env:rw
+      # fichiers écrits par l'app elle-même (uploads de modules, icône du homelab, ...) : doit
+      # être un volume nommé, sans quoi ils sont perdus à chaque recréation du conteneur (pas
+      # juste un redémarrage), voir HomelabConfig.storagePath
+      - app-storage:/data
     environment:
       - JAVA_OPTS=-Doshi.os.windows.proc.path=/host/proc -Doshi.os.windows.sys.path=/host/sys -Doshi.os.windows.osRelease.path=/host/etc/os-release
       - HOMELAB_ENV_FILE_PATH=/app_root/.env
+      - HOMELAB_STORAGE_PATH=/data
       # -Xmx n'est PAS fixé ici : entrypoint.sh (homelab-backend/docker/entrypoint.sh) le lit
       # directement depuis le .env monté à chaque démarrage (restart inclus), voir ResourceLimitsService.
     restart: unless-stopped
@@ -58,3 +63,4 @@ networks:
 
 volumes:
   db-data:
+  app-storage:

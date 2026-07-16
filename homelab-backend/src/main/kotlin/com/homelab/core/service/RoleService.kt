@@ -23,7 +23,7 @@ class RoleService(
     fun createRole(req: RoleRequest): Role {
         val name = req.validatedName()
         if (roleRepository.existsByNameIgnoreCase(name)) {
-            throw BadRequestException("Un rôle nommé \"$name\" existe déjà")
+            throw BadRequestException("A role named \"$name\" already exists")
         }
         return roleRepository.save(
             Role(
@@ -36,11 +36,11 @@ class RoleService(
     }
 
     fun updateRole(id: Long, req: RoleRequest): Role {
-        val role = roleRepository.findById(id).orElseThrow { NotFoundException("Rôle introuvable: $id") }
+        val role = roleRepository.findById(id).orElseThrow { NotFoundException("Role not found: $id") }
         val name = req.validatedName()
         val clash = roleRepository.findByNameIgnoreCase(name)
         if (clash != null && clash.id != id) {
-            throw BadRequestException("Un rôle nommé \"$name\" existe déjà")
+            throw BadRequestException("A role named \"$name\" already exists")
         }
         role.name = name
         role.moduleIds = req.moduleIds.toMutableSet()
@@ -54,7 +54,7 @@ class RoleService(
     // so the delete doesn't fail on the foreign key.
     @Transactional
     fun deleteRole(id: Long) {
-        val role = roleRepository.findById(id).orElseThrow { NotFoundException("Rôle introuvable: $id") }
+        val role = roleRepository.findById(id).orElseThrow { NotFoundException("Role not found: $id") }
         userRepository.findAll().forEach { user ->
             if (user.roles.removeIf { it.id == id }) userRepository.save(user)
         }
@@ -62,11 +62,11 @@ class RoleService(
     }
 
     private fun RoleRequest.validatedName(): String =
-        name.trim().ifBlank { throw BadRequestException("Le nom du rôle est requis") }
+        name.trim().ifBlank { throw BadRequestException("Role name is required") }
 
     private fun RoleRequest.validatedAdminPermissions(): MutableSet<String> =
         adminPermissions.map {
-            AdminPermission.fromNameOrNull(it) ?: throw BadRequestException("Permission d'administration inconnue: $it")
+            AdminPermission.fromNameOrNull(it) ?: throw BadRequestException("Unknown admin permission: $it")
         }.mapTo(mutableSetOf()) { it.name }
 
     // Keep at most one window per day of week (last wins), matching how isBlockedAt resolves them.

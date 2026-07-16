@@ -35,21 +35,21 @@ class SystemRestartService {
     fun restart() {
         if (!isAvailable()) {
             throw BadRequestException(
-                "Redémarrage indisponible : le socket Docker n'est pas monté sur ce déploiement."
+                "Restart unavailable: the Docker socket is not mounted on this deployment."
             )
         }
         val containerId = System.getenv("HOSTNAME")
         if (containerId.isNullOrBlank()) {
-            throw BadRequestException("Redémarrage indisponible : identifiant du conteneur introuvable.")
+            throw BadRequestException("Restart unavailable: container identifier not found.")
         }
 
-        log.info("Redémarrage du conteneur demandé (id=$containerId)")
+        log.info("Container restart requested (id=$containerId)")
         Thread {
             try {
                 Thread.sleep(500)
                 sendRestartRequest(containerId)
             } catch (e: Exception) {
-                log.warn("Échec de l'appel de redémarrage Docker: ${e.message}")
+                log.warn("Docker restart call failed: ${e.message}")
             }
         }.apply {
             isDaemon = true
@@ -66,10 +66,10 @@ class SystemRestartService {
                 "Connection: close\r\n\r\n"
             channel.write(ByteBuffer.wrap(request.toByteArray(StandardCharsets.US_ASCII)))
 
-            // Docker traite la requête de façon asynchrone cote serveur : fermer le socket tout de
-            // suite apres le write() peut couper la connexion (RST) avant que le daemon ait fini de
-            // la lire, et le restart n'a jamais lieu. On attend donc la reponse (ou la fermeture par
-            // le daemon) avant de fermer notre cote.
+            // Docker processes the request asynchronously server-side: closing the socket right
+            // after write() can cut the connection (RST) before the daemon finishes reading it,
+            // and the restart never happens. So we wait for the response (or the daemon closing
+            // its end) before closing ours.
             val buffer = ByteBuffer.allocate(4096)
             val response = StringBuilder()
             while (channel.read(buffer) != -1) {
@@ -77,7 +77,7 @@ class SystemRestartService {
                 response.append(StandardCharsets.US_ASCII.decode(buffer))
                 buffer.clear()
             }
-            log.info("Réponse Docker au redémarrage: ${response.lineSequence().firstOrNull()}")
+            log.info("Docker restart response: ${response.lineSequence().firstOrNull()}")
         }
     }
 }

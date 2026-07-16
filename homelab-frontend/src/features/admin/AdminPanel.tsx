@@ -12,16 +12,16 @@ type Tab = 'logs' | 'access' | 'settings' | 'modules' | 'alerts' | 'roles';
 
 const TABS: { id: Tab; label: string; icon: React.ReactNode; adminOnly: boolean }[] = [
   { id: 'logs',     label: 'Logs',        icon: <ScrollText size={15} />, adminOnly: true },
-  { id: 'access',   label: 'Accès',       icon: <ShieldCheck size={15} />, adminOnly: true },
-  { id: 'roles',    label: 'Rôles',       icon: <Users size={15} />, adminOnly: false },
-  { id: 'settings', label: 'Paramètres',  icon: <SlidersHorizontal size={15} />, adminOnly: true },
+  { id: 'access',   label: 'Access',      icon: <ShieldCheck size={15} />, adminOnly: true },
+  { id: 'roles',    label: 'Roles',       icon: <Users size={15} />, adminOnly: false },
+  { id: 'settings', label: 'Settings',    icon: <SlidersHorizontal size={15} />, adminOnly: true },
   { id: 'modules',  label: 'Modules',     icon: <Blocks size={15} />, adminOnly: true },
-  { id: 'alerts',   label: 'Alertes',     icon: <BellRing size={15} />, adminOnly: true },
+  { id: 'alerts',   label: 'Alerts',      icon: <BellRing size={15} />, adminOnly: true },
 ];
 
 export default function AdminPanel() {
   const { isAdmin, adminPermissions } = useAuth();
-  // Only the Rôles tab is reachable via the MANAGE_ROLES administration permission alone; every
+  // Only the Roles tab is reachable via the MANAGE_ROLES administration permission alone; every
   // other tab still requires full admin.
   const visibleTabs = useMemo(
     () => TABS.filter(t => isAdmin || (!t.adminOnly && adminPermissions.includes('MANAGE_ROLES'))),

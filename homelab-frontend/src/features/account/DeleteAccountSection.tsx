@@ -22,7 +22,7 @@ export default function DeleteAccountSection() {
       if (!res) return;
 
       if (!res.ok) {
-        let message = 'Échec de la suppression du compte.';
+        let message = 'Failed to delete account.';
         try {
           const data = await res.json() as { message?: string };
           message = data.message || message;
@@ -43,18 +43,18 @@ export default function DeleteAccountSection() {
   return (
     <div className="max-w-md space-y-4 mt-10 pt-8 border-t border-error/20">
       <h2 className="text-xl font-bold flex items-center gap-2 text-error">
-        <AlertTriangle size={20} /> Supprimer mon compte
+        <AlertTriangle size={20} /> Delete my account
       </h2>
 
       {isAdmin ? (
         <p className="text-sm opacity-60">
-          Vous êtes administrateur : transférez d'abord votre rôle admin à un autre compte
-          (Administration → Accès) avant de pouvoir supprimer votre compte.
+          You are an administrator: transfer your admin role to another account first
+          (Administration → Access) before you can delete your account.
         </p>
       ) : (
         <>
           <p className="text-sm opacity-60">
-            Cette action est définitive : votre compte et vos accès sont supprimés immédiatement.
+            This action is permanent: your account and access are removed immediately.
           </p>
 
           {error && (
@@ -65,7 +65,7 @@ export default function DeleteAccountSection() {
 
           {!confirming ? (
             <button className="btn btn-error btn-outline gap-2" onClick={() => setConfirming(true)}>
-              <Trash2 size={16} /> Supprimer mon compte
+              <Trash2 size={16} /> Delete my account
             </button>
           ) : (
             <div className="flex items-center gap-2">
@@ -75,10 +75,10 @@ export default function DeleteAccountSection() {
                 onClick={() => void handleDelete()}
               >
                 {deleting ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
-                Confirmer la suppression
+                Confirm deletion
               </button>
               <button className="btn btn-ghost" disabled={deleting} onClick={() => setConfirming(false)}>
-                Annuler
+                Cancel
               </button>
             </div>
           )}

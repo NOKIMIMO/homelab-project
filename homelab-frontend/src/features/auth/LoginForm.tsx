@@ -14,7 +14,7 @@ interface LoginProps {
 
 type View = 'login' | 'forgotPassword' | 'recovery' | 'hardReset';
 
-const DEFAULT_DESCRIPTION = "Votre espace personnel, hébergé chez vous.";
+const DEFAULT_DESCRIPTION = "Your personal space, hosted at home.";
 
 export default function LoginForm({ onLoginSuccess }: LoginProps) {
   const [view, setView] = useState<View>('login');
@@ -55,7 +55,7 @@ export default function LoginForm({ onLoginSuccess }: LoginProps) {
               <Sparkles size={14} /> Acces securise
             </div> */}
             
-            <h1 className="text-3xl font-black leading-tight md:text-4xl">Bienvenue sur votre Homelab</h1>
+            <h1 className="text-3xl font-black leading-tight md:text-4xl">Welcome to your Homelab</h1>
             <p className="mt-3 max-w-md text-sm text-base-content/70 whitespace-pre-line">
               {description}
             </p>
@@ -64,8 +64,8 @@ export default function LoginForm({ onLoginSuccess }: LoginProps) {
 
         <div className="rounded-3xl border border-base-content/10 bg-base-100 p-6 shadow-2xl md:p-8">
           <div className="mb-6">
-            <h2 className="text-2xl font-extrabold">Connexion</h2>
-            <p className="mt-1 text-sm text-base-content/60">Saisissez vos identifiants pour continuer</p>
+            <h2 className="text-2xl font-extrabold">Sign In</h2>
+            <p className="mt-1 text-sm text-base-content/60">Enter your credentials to continue</p>
           </div>
 
           {view === 'login' && (
@@ -77,14 +77,14 @@ export default function LoginForm({ onLoginSuccess }: LoginProps) {
                   className="btn btn-ghost btn-xs w-full opacity-60"
                   onClick={() => setView('forgotPassword')}
                 >
-                  Mot de passe oublié ?
+                  Forgot your password?
                 </button>
                 <button
                   type="button"
                   className="btn btn-ghost btn-xs w-full opacity-60"
                   onClick={() => setView('recovery')}
                 >
-                  Code de reset perdu ?
+                  Lost your reset code?
                 </button>
               </div>
             </>
@@ -111,7 +111,7 @@ export default function LoginForm({ onLoginSuccess }: LoginProps) {
               className="btn btn-ghost btn-xs w-full mt-2 opacity-60"
               onClick={() => setView('login')}
             >
-              Retour à la connexion
+              Back to sign in
             </button>
           )}
 

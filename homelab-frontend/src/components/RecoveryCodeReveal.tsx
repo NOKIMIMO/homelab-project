@@ -12,9 +12,9 @@ interface RecoveryCodeRevealProps {
 export default function RecoveryCodeReveal({
   code,
   onClose,
-  label = 'Code de récupération',
-  description = 'Conservez ce code en lieu sûr (gestionnaire de mots de passe, papier hors-ligne). Il ne sera plus jamais affiché.',
-  confirmLabel = "J'ai sauvegardé ce code",
+  label = 'Recovery code',
+  description = 'Store this code somewhere safe (password manager, offline paper backup). It will never be shown again.',
+  confirmLabel = "I've saved this code",
 }: RecoveryCodeRevealProps) {
   const [copied, setCopied] = useState(false);
 

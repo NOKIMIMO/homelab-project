@@ -38,13 +38,13 @@ class GenericFetchExternalAction(private val globalParametersService: GlobalPara
         declaration: ModuleActionDeclaration
     ): Any? {
         val config = declaration.logic.firstOrNull { it.type == "FETCH_EXTERNAL_GENERIC" }?.params
-            ?: return mapOf("error" to "Configuration FETCH_EXTERNAL_GENERIC manquante")
+            ?: return mapOf("error" to "Missing FETCH_EXTERNAL_GENERIC configuration")
 
         val urlTemplate = config["urlTemplate"] as? String
-            ?: return mapOf("error" to "'urlTemplate' non configuré")
+            ?: return mapOf("error" to "'urlTemplate' not configured")
 
         val responseMapping = config["responseMapping"] as? Map<String, String>
-            ?: return mapOf("error" to "'responseMapping' non configuré")
+            ?: return mapOf("error" to "'responseMapping' not configured")
 
         val upsertKey = config["upsertKey"] as? String
 
@@ -85,7 +85,7 @@ class GenericFetchExternalAction(private val globalParametersService: GlobalPara
             record
         } catch (e: Exception) {
             log.error("[$moduleId] External fetch failed for function '${declaration.name}': ${e.message}", e)
-            mapOf("error" to (e.message ?: "Erreur inconnue"))
+            mapOf("error" to (e.message ?: "Unknown error"))
         }
     }
 

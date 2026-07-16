@@ -29,7 +29,7 @@ homelab-frontend/src/components/modules/ComponentRenderer.old.tsx
 # ── Environment & secrets ────────────────────────────────────────────────────
 .env
 homelab-backend/.env
-homelab-backend/module_storage/
+homelab-backend/storage/
 
 # ── Git internals ────────────────────────────────────────────────────────────
 .git/

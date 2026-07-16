@@ -36,12 +36,12 @@ export default function ModuleBuilderTab() {
       });
       const body = await res.json().catch(() => null);
       if (!res.ok) {
-        throw new Error(body?.error ?? body?.message ?? "Échec de l'installation du module");
+        throw new Error(body?.error ?? body?.message ?? "Failed to install the module");
       }
-      setInstallMessage({ type: 'success', text: `Module '${body?.id ?? ''}' installé avec succès.` });
+      setInstallMessage({ type: 'success', text: `Module '${body?.id ?? ''}' installed successfully.` });
       void fetchModules();
     } catch (err) {
-      setInstallMessage({ type: 'error', text: err instanceof Error ? err.message : "Échec de l'installation du module" });
+      setInstallMessage({ type: 'error', text: err instanceof Error ? err.message : "Failed to install the module" });
     } finally {
       setInstalling(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -102,7 +102,7 @@ export default function ModuleBuilderTab() {
         <div className="flex items-center gap-2">
           <button className="btn btn-xs btn-outline gap-1" onClick={fetchModules} disabled={loading}>
             <RefreshCw size={12} className={loading ? 'animate-spin' : ''} />
-            Actualiser
+            Refresh
           </button>
         </div>
         <div className="flex items-center gap-2">
@@ -124,10 +124,10 @@ export default function ModuleBuilderTab() {
             {installing
               ? <span className="loading loading-spinner loading-xs" />
               : <Upload size={14} />}
-            Installer un module (.zip)
+            Install a module (.zip)
           </button>
           <button className="btn btn-sm btn-primary gap-2" onClick={() => setShowCreate(true)}>
-            <Plus size={14} /> Créer un module
+            <Plus size={14} /> Create a module
           </button>
         </div>
       </div>
@@ -142,8 +142,8 @@ export default function ModuleBuilderTab() {
         <table className="table table-sm w-full">
           <thead>
             <tr className="bg-base-300 text-xs uppercase tracking-wide">
-              <th>Identifiant</th>
-              <th>Nom</th>
+              <th>ID</th>
+              <th>Name</th>
               <th>Description</th>
               <th>Type</th>
               <th></th>
@@ -153,7 +153,7 @@ export default function ModuleBuilderTab() {
             {modules.length === 0 ? (
               <tr>
                 <td colSpan={5} className="text-center text-base-content/40 italic py-8">
-                  Aucun module détecté.
+                  No modules found.
                 </td>
               </tr>
             ) : (
@@ -164,7 +164,7 @@ export default function ModuleBuilderTab() {
                   <td className="text-xs opacity-60">{mod.description ?? <span className="opacity-30 italic">---</span>}</td>
                   <td>
                     <span className={`badge badge-xs ${mod.custom ? 'badge-primary' : 'badge-ghost'}`}>
-                      {mod.custom ? 'Personnalisé' : 'Système'}
+                      {mod.custom ? 'Custom' : 'System'}
                     </span>
                   </td>
                   <td className="flex items-center gap-2 justify-end">
@@ -175,14 +175,14 @@ export default function ModuleBuilderTab() {
                           disabled={editLoadingId === mod.id}
                           onClick={() => openEdit(mod)}
                         >
-                          <Pencil size={12} /> Modifier
+                          <Pencil size={12} /> Edit
                         </button>
                         <button
                           className="btn btn-xs btn-outline gap-1"
                           disabled={busyId === mod.id}
                           onClick={() => openAddColumn(mod)}
                         >
-                          <Columns3 size={12} /> Colonne
+                          <Columns3 size={12} /> Column
                         </button>
                         <button
                           className="btn btn-xs btn-error btn-ghost"
@@ -193,7 +193,7 @@ export default function ModuleBuilderTab() {
                         </button>
                       </>
                     ) : (
-                      <span className="text-xs opacity-30 italic">non modifiable ici</span>
+                      <span className="text-xs opacity-30 italic">not editable here</span>
                     )}
                   </td>
                 </tr>
@@ -231,9 +231,9 @@ export default function ModuleBuilderTab() {
       {pendingDelete && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
           <div className="bg-base-300 rounded-2xl shadow-2xl w-full max-w-sm p-6 space-y-4">
-            <h2 className="text-lg font-black">Supprimer le module ?</h2>
+            <h2 className="text-lg font-black">Delete the module?</h2>
             <p className="text-sm text-base-content/70">
-              Le module <span className="font-mono">{pendingDelete.id}</span> sera retiré du disque et du tableau de bord.
+              The module <span className="font-mono">{pendingDelete.id}</span> will be removed from disk and from the dashboard.
             </p>
             <label className="flex items-center gap-2 text-sm">
               <input
@@ -242,11 +242,11 @@ export default function ModuleBuilderTab() {
                 checked={dropData}
                 onChange={e => setDropData(e.target.checked)}
               />
-              Supprimer aussi les données stockées (irréversible)
+              Also delete stored data (irreversible)
             </label>
             <div className="flex justify-end gap-3 pt-2">
               <button className="btn btn-ghost btn-sm" onClick={() => { setPendingDelete(null); setDropData(false); }}>
-                Annuler
+                Cancel
               </button>
               <button
                 className="btn btn-sm btn-error gap-2"
@@ -256,7 +256,7 @@ export default function ModuleBuilderTab() {
                 {busyId === pendingDelete.id
                   ? <span className="loading loading-spinner loading-xs" />
                   : <Trash2 size={14} />}
-                Supprimer
+                Delete
               </button>
             </div>
           </div>

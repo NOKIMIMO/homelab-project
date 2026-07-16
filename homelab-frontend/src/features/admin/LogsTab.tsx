@@ -88,11 +88,11 @@ export default function LogsTab() {
           </label>
           <button className="btn btn-xs btn-outline gap-1" onClick={fetchLogs} disabled={loading}>
             <RefreshCw size={12} className={loading ? 'animate-spin' : ''} />
-            Rafraîchir
+            Refresh
           </button>
           <button className="btn btn-xs btn-error btn-outline gap-1" onClick={clearLogs}>
             <Trash2 size={12} />
-            Effacer
+            Clear
           </button>
         </div>
       </div>
@@ -100,7 +100,7 @@ export default function LogsTab() {
       {/* log viewer */}
       <div className="flex-1 min-h-0 overflow-y-auto bg-base-300 rounded-xl p-3 font-mono text-xs space-y-px">
         {logs.length === 0 ? (
-          <p className="text-base-content/30 italic p-4 text-center">Aucune entrée de log</p>
+          <p className="text-base-content/30 italic p-4 text-center">No log entries</p>
         ) : (
           logs.map((log, i) => (
             <div
@@ -123,7 +123,7 @@ export default function LogsTab() {
       </div>
 
       <p className="text-xs text-base-content/40">
-        {logs.length} entrée(s) · rafraîchissement auto toutes les 5s
+        {logs.length} entr{logs.length === 1 ? 'y' : 'ies'} · auto-refresh every 5s
       </p>
     </div>
   );

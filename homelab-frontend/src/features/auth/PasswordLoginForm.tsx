@@ -26,12 +26,12 @@ export default function PasswordLoginForm({ onLoginSuccess }: PasswordLoginFormP
     e.preventDefault();
 
     if (!emailValid) {
-      setError("Email invalide");
+      setError("Invalid email");
       return;
     }
 
     if (!passwordValid) {
-      setError("Mot de passe trop faible");
+      setError("Password too weak");
       return;
     }
 
@@ -45,14 +45,14 @@ export default function PasswordLoginForm({ onLoginSuccess }: PasswordLoginFormP
       if (result.success) {
         setSuccess(
           result.message ||
-            "Inscription réussie. Votre compte de devra être validé par un administrateur."
+            "Registration successful. Your account will need to be validated by an administrator."
         );
         return;
       }
-      setError(result.message || "Echec de l'enregistrement");
+      setError(result.message || "Registration failed");
     } catch (err) {
       console.error(err);
-      setError('Erreur technique lors de la connexion par email.');
+      setError('Technical error while signing in with email.');
     } finally {
       setLoading(false);
     }
@@ -62,7 +62,7 @@ export default function PasswordLoginForm({ onLoginSuccess }: PasswordLoginFormP
     e.preventDefault();
 
     if (!emailValid) {
-      setError("Email invalide");
+      setError("Invalid email");
       return;
     }
 
@@ -78,10 +78,10 @@ export default function PasswordLoginForm({ onLoginSuccess }: PasswordLoginFormP
         return;
       }
 
-      setError(result.message || "Echec de l'authentification");
+      setError(result.message || "Authentication failed");
     } catch (err) {
       console.error(err);
-      setError('Erreur technique lors de la connexion par email.');
+      setError('Technical error while signing in with email.');
     } finally {
       setLoading(false);
     }
@@ -133,7 +133,7 @@ export default function PasswordLoginForm({ onLoginSuccess }: PasswordLoginFormP
               setSuccess(null);
             }}
           >
-            Connexion
+            Sign In
           </button>
 
           <button
@@ -149,7 +149,7 @@ export default function PasswordLoginForm({ onLoginSuccess }: PasswordLoginFormP
               setSuccess(null);
             }}
           >
-            Inscription
+            Sign Up
           </button>
         </div>
       </div>
@@ -164,7 +164,7 @@ export default function PasswordLoginForm({ onLoginSuccess }: PasswordLoginFormP
             className={`input input-bordered h-12 w-full rounded-xl bg-base-200 focus:input-primary ${
               email && !emailValid ? 'input-error' : ''
             }`}
-            placeholder="vous@exemple.com"
+            placeholder="you@example.com"
             value={email}
             onChange={(e) => handleEmailChange(e.target.value)}
             required
@@ -173,7 +173,7 @@ export default function PasswordLoginForm({ onLoginSuccess }: PasswordLoginFormP
 
         <div className="form-control w-full gap-1">
           <label className="label pb-1">
-            <span className="label-text font-bold">Mot de passe</span>
+            <span className="label-text font-bold">Password</span>
           </label>
           <input
             type="password"
@@ -182,27 +182,27 @@ export default function PasswordLoginForm({ onLoginSuccess }: PasswordLoginFormP
                 ? 'input-error'
                 : ''
             }`}
-            placeholder="Votre mot de passe"
+            placeholder="Your password"
             value={password}
             onChange={(e) => handlePasswordChange(e.target.value)}
             required
           />
           {passwordFlow === 'signup' && (
             <div className="text-xs opacity-70 space-y-1 mt-2">
-              <p className="font-semibold">Le mot de passe doit contenir :</p>
+              <p className="font-semibold">Your password must contain:</p>
 
               <ul className="list-disc ml-4 space-y-1">
                 <li className={password.length >= 8 ? 'text-success' : ''}>
-                  Minimum 8 caractères
+                  At least 8 characters
                 </li>
                 <li className={/[A-Z]/.test(password) ? 'text-success' : ''}>
-                  Une majuscule
+                  An uppercase letter
                 </li>
                 <li className={/[a-z]/.test(password) ? 'text-success' : ''}>
-                  Une minuscule
+                  A lowercase letter
                 </li>
                 <li className={/\d/.test(password) ? 'text-success' : ''}>
-                  Un chiffre
+                  A digit
                 </li>
               </ul>
             </div>
@@ -221,8 +221,8 @@ export default function PasswordLoginForm({ onLoginSuccess }: PasswordLoginFormP
         )}
 
         {passwordFlow === 'signup'
-          ? "Demande d'inscription"
-          : 'Connexion au Homelab'}
+          ? "Sign Up Request"
+          : 'Sign In to Homelab'}
       </button>
     </form>
   );

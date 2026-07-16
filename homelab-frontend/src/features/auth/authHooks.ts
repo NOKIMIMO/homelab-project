@@ -80,7 +80,7 @@ export async function requestPasswordReset(email: string): Promise<SimpleResult>
     body: JSON.stringify({ email }),
   });
   if (!res.ok) {
-    let message = 'Échec de la demande';
+    let message = 'Request failed';
     try {
       const data = await res.json() as SimpleResult;
       message = data.message || message;

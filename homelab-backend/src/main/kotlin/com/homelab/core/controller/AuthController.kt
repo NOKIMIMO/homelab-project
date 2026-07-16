@@ -190,7 +190,7 @@ class AuthController(
                 val recoveryCode = recoveryCodeService.generateNewCode()
                 ResponseEntity.ok(mapOf(
                     "success" to true,
-                    "message" to "Compte administrateur créé et activé immédiatement : vous êtes le premier utilisateur du système.",
+                    "message" to "Administrator account created and activated immediately: you are the first user of the system.",
                     "user" to user.toDto(),
                     "recoveryCode" to recoveryCode
                 ))
@@ -208,7 +208,7 @@ class AuthController(
         signupRequestRepository.save(signup)
         // Non-empty body: the frontend used to call res.json() on an empty 200 here, which threw
         // and made a successfully-recorded signup request look like a failure to the user.
-        return ResponseEntity.ok(mapOf("success" to true, "message" to "Demande d'inscription envoyée, en attente de validation par un administrateur."))
+        return ResponseEntity.ok(mapOf("success" to true, "message" to "Signup request submitted, pending approval by an administrator."))
     }
 
     // Small reset: a logged-out user asks for their password back. An admin reviews and
@@ -268,7 +268,7 @@ class AuthController(
         if (user.isAdmin) {
             return ResponseEntity.status(403).body(mapOf(
                 "success" to false,
-                "message" to "Un administrateur doit d'abord transférer son rôle avant de supprimer son compte"
+                "message" to "An administrator must first transfer their role before deleting their account"
             ))
         }
         userService.deleteUser(user.id!!)

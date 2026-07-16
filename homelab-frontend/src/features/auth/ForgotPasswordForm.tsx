@@ -19,7 +19,7 @@ export default function ForgotPasswordForm({ onBack }: ForgotPasswordFormProps) 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!emailValid) {
-      setError('Email invalide');
+      setError('Invalid email');
       return;
     }
 
@@ -32,10 +32,10 @@ export default function ForgotPasswordForm({ onBack }: ForgotPasswordFormProps) 
         setSuccess(true);
         return;
       }
-      setError(result.message || 'Échec de la demande');
+      setError(result.message || 'Request failed');
     } catch (err) {
       console.error(err);
-      setError('Erreur technique lors de la demande.');
+      setError('Technical error while submitting the request.');
     } finally {
       setLoading(false);
     }
@@ -47,11 +47,11 @@ export default function ForgotPasswordForm({ onBack }: ForgotPasswordFormProps) 
         <div className="alert alert-success border border-success/20 shadow-sm">
           <CheckCircle2 size={18} />
           <span className="text-xs font-bold">
-            Demande envoyée. Un administrateur doit l'approuver avant qu'un mot de passe temporaire ne soit disponible.
+            Request sent. An administrator must approve it before a temporary password becomes available.
           </span>
         </div>
         <button type="button" className="btn btn-ghost btn-sm w-full" onClick={onBack}>
-          Retour à la connexion
+          Back to sign in
         </button>
       </div>
     );
@@ -60,7 +60,7 @@ export default function ForgotPasswordForm({ onBack }: ForgotPasswordFormProps) 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <p className="text-sm text-base-content/60">
-        Indiquez votre email. Un administrateur devra valider la demande avant que vous puissiez vous reconnecter avec un mot de passe temporaire.
+        Enter your email. An administrator will need to approve the request before you can sign back in with a temporary password.
       </p>
 
       {error && (
@@ -79,7 +79,7 @@ export default function ForgotPasswordForm({ onBack }: ForgotPasswordFormProps) 
           className={`input input-bordered h-12 w-full rounded-xl bg-base-200 focus:input-primary ${
             email && !emailValid ? 'input-error' : ''
           }`}
-          placeholder="vous@exemple.com"
+          placeholder="you@example.com"
           value={email}
           onChange={(e) => { setEmail(e.target.value); setError(null); }}
           required
@@ -91,11 +91,11 @@ export default function ForgotPasswordForm({ onBack }: ForgotPasswordFormProps) 
         disabled={loading || !emailValid}
       >
         {loading ? <Loader2 size={20} className="animate-spin" /> : <Mail size={20} />}
-        Demander un reset
+        Request a Reset
       </button>
 
       <button type="button" className="btn btn-ghost btn-xs w-full opacity-60" onClick={onBack}>
-        Retour à la connexion
+        Back to sign in
       </button>
     </form>
   );

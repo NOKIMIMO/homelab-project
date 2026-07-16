@@ -22,7 +22,7 @@ class UserService(
         // Role handed to an admin who transfers away their admin status (see transferAdmin):
         // keeps every administration permission so they don't lose all capability, without
         // holding the isAdmin flag itself.
-        private const val MODERATOR_ROLE_NAME = "Modérateur"
+        private const val MODERATOR_ROLE_NAME = "Moderator"
     }
 
     private val secureRandom = SecureRandom()
@@ -55,14 +55,14 @@ class UserService(
 
     fun deleteAllUsers() = repository.deleteAll()
 
-    // Hands full admin status to [toId] and demotes [fromId] to a "Modérateur" role that keeps
+    // Hands full admin status to [toId] and demotes [fromId] to a "Moderator" role that keeps
     // every AdminPermission, so the outgoing admin doesn't lose all capability. The caller's
     // existing JWT still carries the old isAdmin claim until they log in again - the frontend
     // forces a re-login right after a successful transfer to pick up the new role/permissions.
     fun transferAdmin(fromId: Long, toId: Long) {
         val from = repository.findById(fromId).orElseThrow { NotFoundException("User with id $fromId not found") }
         val to = repository.findById(toId).orElseThrow { NotFoundException("User with id $toId not found") }
-        if (!from.isAdmin) throw IllegalArgumentException("Seul un administrateur peut transférer son rôle")
+        if (!from.isAdmin) throw IllegalArgumentException("Only an administrator can transfer their role")
 
         to.isAdmin = true
         from.isAdmin = false

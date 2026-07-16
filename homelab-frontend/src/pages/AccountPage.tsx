@@ -8,7 +8,7 @@ export default function AccountPage() {
       <div className="mb-8">
         <h2 className="text-2xl font-bold flex items-center gap-2">
           <Settings2 className="text-primary w-8 h-8" />
-          Mon compte
+          My Account
         </h2>
       </div>
       <ChangePasswordForm />

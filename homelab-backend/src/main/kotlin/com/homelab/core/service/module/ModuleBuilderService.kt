@@ -476,44 +476,44 @@ class ModuleBuilderService(
 
         functions += mapOf(
             "name" to "list$cap",
-            "description" to "Lister les lignes de ${table.name}.",
-            "parameters" to table.columns.map { functionParam(it.name, ModuleActionParameterType.EQUAL, "Filtrer par ${it.name}", true) } +
-                extraFkParams.map { functionParam(it, ModuleActionParameterType.EQUAL, "Filtrer par $it", true) },
+            "description" to "List rows of ${table.name}.",
+            "parameters" to table.columns.map { functionParam(it.name, ModuleActionParameterType.EQUAL, "Filter by ${it.name}", true) } +
+                extraFkParams.map { functionParam(it, ModuleActionParameterType.EQUAL, "Filter by $it", true) },
             "logic" to listOf(mapOf("type" to "LIST")),
             "actUponObject" to xmlFile
         )
 
         functions += mapOf(
             "name" to "get$cap",
-            "description" to "Obtenir une ligne de ${table.name} par id.",
-            "parameters" to listOf(functionParam("id", ModuleActionParameterType.EQUAL, "Identifiant de la ligne", false)),
+            "description" to "Get a row of ${table.name} by id.",
+            "parameters" to listOf(functionParam("id", ModuleActionParameterType.EQUAL, "Row identifier", false)),
             "logic" to listOf(mapOf("type" to "READ")),
             "actUponObject" to xmlFile
         )
 
         functions += mapOf(
             "name" to "create$cap",
-            "description" to "Créer une ligne dans ${table.name}.",
-            "parameters" to table.columns.map { functionParam(it.name, ModuleActionParameterType.NONE, "Valeur de ${it.name}", it.nullable) } +
-                extraFkParams.map { functionParam(it, ModuleActionParameterType.NONE, "Référence vers $it", true) },
+            "description" to "Create a row in ${table.name}.",
+            "parameters" to table.columns.map { functionParam(it.name, ModuleActionParameterType.NONE, "Value of ${it.name}", it.nullable) } +
+                extraFkParams.map { functionParam(it, ModuleActionParameterType.NONE, "Reference to $it", true) },
             "logic" to listOf(mapOf("type" to "CREATE")),
             "actUponObject" to xmlFile
         )
 
         functions += mapOf(
             "name" to "update$cap",
-            "description" to "Mettre à jour une ligne de ${table.name}.",
-            "parameters" to listOf(functionParam("id", ModuleActionParameterType.EQUAL, "Identifiant de la ligne à modifier", false)) +
-                table.columns.map { functionParam(it.name, ModuleActionParameterType.NONE, "Nouvelle valeur de ${it.name}", true) } +
-                extraFkParams.map { functionParam(it, ModuleActionParameterType.NONE, "Référence vers $it", true) },
+            "description" to "Update a row of ${table.name}.",
+            "parameters" to listOf(functionParam("id", ModuleActionParameterType.EQUAL, "Identifier of the row to update", false)) +
+                table.columns.map { functionParam(it.name, ModuleActionParameterType.NONE, "New value of ${it.name}", true) } +
+                extraFkParams.map { functionParam(it, ModuleActionParameterType.NONE, "Reference to $it", true) },
             "logic" to listOf(mapOf("type" to "UPDATE")),
             "actUponObject" to xmlFile
         )
 
         functions += mapOf(
             "name" to "delete$cap",
-            "description" to "Supprimer une ligne de ${table.name}.",
-            "parameters" to listOf(functionParam("id", ModuleActionParameterType.EQUAL, "Identifiant de la ligne à supprimer", false)),
+            "description" to "Delete a row of ${table.name}.",
+            "parameters" to listOf(functionParam("id", ModuleActionParameterType.EQUAL, "Identifier of the row to delete", false)),
             "logic" to listOf(mapOf("type" to "DELETE")),
             "actUponObject" to xmlFile
         )
@@ -521,15 +521,15 @@ class ModuleBuilderService(
         if (table.enableFileStorage) {
             functions += mapOf(
                 "name" to "upload${cap}File",
-                "description" to "Ajouter un fichier à ${table.name}.",
-                "parameters" to listOf(functionParam("filePath", ModuleActionParameterType.EQUAL, "Chemin du fichier", false)),
+                "description" to "Add a file to ${table.name}.",
+                "parameters" to listOf(functionParam("filePath", ModuleActionParameterType.EQUAL, "File path", false)),
                 "logic" to listOf(mapOf("type" to "UPLOAD_FILE")),
                 "actUponObject" to xmlFile
             )
             functions += mapOf(
                 "name" to "get${cap}File",
-                "description" to "Récupérer le fichier d'une ligne de ${table.name}.",
-                "parameters" to listOf(functionParam("id", ModuleActionParameterType.EQUAL, "Identifiant de la ligne", false)),
+                "description" to "Retrieve the file of a row of ${table.name}.",
+                "parameters" to listOf(functionParam("id", ModuleActionParameterType.EQUAL, "Row identifier", false)),
                 "logic" to listOf(mapOf("type" to "GET_FILE")),
                 "actUponObject" to xmlFile
             )
@@ -538,9 +538,9 @@ class ModuleBuilderService(
         for (fetch in table.externalFetches) {
             functions += mapOf(
                 "name" to fetch.functionName,
-                "description" to fetch.description.ifBlank { "Récupérer des données externes pour ${table.name}." },
+                "description" to fetch.description.ifBlank { "Retrieve external data for ${table.name}." },
                 "parameters" to fetch.queryParams.map {
-                    functionParam(it, ModuleActionParameterType.NONE, "Paramètre de requête $it", false)
+                    functionParam(it, ModuleActionParameterType.NONE, "Query parameter $it", false)
                 },
                 "logic" to listOf(
                     mapOf(
@@ -624,7 +624,7 @@ class ModuleBuilderService(
             }
             formInputs += mapOf(
                 "type" to "Button",
-                "props" to mapOf("label" to "Ajouter", "icon" to "plus"),
+                "props" to mapOf("label" to "Add", "icon" to "plus"),
                 "action" to listOf(
                     mapOf("action" to createFn, "method" to "POST", "params" to createParams),
                     mapOf("action" to listFn, "method" to "POST")
@@ -637,7 +637,7 @@ class ModuleBuilderService(
                 "components" to listOf(
                     mapOf(
                         "type" to "Button",
-                        "props" to mapOf("label" to "Rafraîchir", "icon" to "refresh"),
+                        "props" to mapOf("label" to "Refresh", "icon" to "refresh"),
                         "action" to mapOf("action" to listFn, "method" to "POST")
                     )
                 )
@@ -646,7 +646,7 @@ class ModuleBuilderService(
             val titleField = table.columns.firstOrNull()?.name ?: "id"
             components += mapOf(
                 "type" to "List",
-                "props" to mapOf("emptyMessage" to "Aucune ligne."),
+                "props" to mapOf("emptyMessage" to "No rows."),
                 "source" to mapOf("binding" to listFn, "method" to "POST"),
                 "item" to mapOf(
                     "type" to "ListItem",
@@ -654,7 +654,7 @@ class ModuleBuilderService(
                     "actions" to listOf(
                         mapOf(
                             "type" to "IconButton",
-                            "props" to mapOf("icon" to "trash", "tooltip" to "Supprimer"),
+                            "props" to mapOf("icon" to "trash", "tooltip" to "Delete"),
                             "action" to listOf(
                                 mapOf("action" to deleteFn, "method" to "POST", "params" to mapOf("id" to "{{id}}")),
                                 mapOf("action" to listFn, "method" to "POST")

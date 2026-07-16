@@ -17,6 +17,10 @@ services:
       - .env.all-in-one
     volumes:
       - db-data:/var/lib/postgresql/data
+      # fichiers écrits par l'app elle-même (uploads de modules, icône du homelab, ...) : doit
+      # être un volume nommé, sans quoi ils sont perdus à chaque recréation du conteneur (pas
+      # juste un redémarrage), voir HomelabConfig.storagePath
+      - app-storage:/data
       - ./modules:/app_root/modules:ro
       # requis par OSHI pour identifier le vrai OS hôte (CPU/RAM/disque sont
       # déjà identiques dans le conteneur sous Docker Desktop/WSL2, donc pas
@@ -31,9 +35,11 @@ services:
     environment:
       - JAVA_OPTS=-Doshi.os.windows.osRelease.path=/host/etc/os-release
       - HOMELAB_ENV_FILE_PATH=/app_root/.env
+      - HOMELAB_STORAGE_PATH=/data
       # -Xmx n'est PAS fixé ici : entrypoint.sh le lit directement depuis le .env monté à chaque
       # démarrage (restart inclus), voir docker/all-in-one/entrypoint.sh et ResourceLimitsService.
     restart: unless-stopped
 
 volumes:
   db-data:
+  app-storage:

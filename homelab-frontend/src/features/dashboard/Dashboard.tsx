@@ -75,7 +75,7 @@ export default function Dashboard({ modules, onRefresh, isModulesRefreshing }: D
     <div className="flex h-full w-full items-center justify-center">
       <div className="flex flex-col items-center gap-4">
         <span className="loading loading-bars loading-lg text-primary"></span>
-        <p className="text-base-content/50 font-medium">Connexion au Hub Central...</p>
+        <p className="text-base-content/50 font-medium">Connecting to Central Hub...</p>
       </div>
     </div>
   );
@@ -87,17 +87,17 @@ export default function Dashboard({ modules, onRefresh, isModulesRefreshing }: D
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl font-bold flex items-center gap-2">
               <Settings2 className="text-primary w-8 h-8" />
-              Gestion des Modules
+              Module Management
             </h2>
             <div className="flex items-center gap-3">
               <span className="text-xs font-semibold uppercase tracking-wide text-base-content/60">
-                Prochain refresh: {countdown}s
+                Next refresh: {countdown}s
               </span>
               {
                 isModulesRefreshing ? (
                   <button className="btn btn-outline btn-sm gap-2" disabled>
                     <span className="loading loading-spinner loading-xs"></span>
-                    Rafraîchissement...
+                    Refreshing...
                   </button>
                 ) : (
                   <button
@@ -105,7 +105,7 @@ export default function Dashboard({ modules, onRefresh, isModulesRefreshing }: D
                     onClick={fetchTelemetry}
                   >
                     <RefreshCw className="w-4 h-4" />
-                    Rafraîchir les Modules
+                    Refresh Modules
                   </button>
                 )
               }
@@ -115,7 +115,7 @@ export default function Dashboard({ modules, onRefresh, isModulesRefreshing }: D
             {modules.length === 0 ? (
               <div className="col-span-full py-10 text-center bg-base-100/30 rounded-3xl border-2 border-dashed border-base-content/10">
                 <p className="text-base-content/50 font-medium italic">
-                  Aucun module dynamique découvert. Vérifiez vos fichiers homelab-module.json.
+                  No dynamic modules discovered. Check your homelab-module.json files.
                 </p>
               </div>
             ) : (
@@ -132,7 +132,7 @@ export default function Dashboard({ modules, onRefresh, isModulesRefreshing }: D
           </div>
           
 
-          <div className="divider opacity-50 mb-10 text-xs font-bold uppercase tracking-[.3em] text-base-content/20">Ressources Système</div>
+          <div className="divider opacity-50 mb-10 text-xs font-bold uppercase tracking-[.3em] text-base-content/20">System Resources</div>
           
           {/* different telemetry cards */}
           <TelemetryPanel telemetry={telemetry} />

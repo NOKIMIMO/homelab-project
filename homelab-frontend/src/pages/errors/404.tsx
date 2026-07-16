@@ -8,11 +8,11 @@ export default function Error404Page() {
           </h1>
 
           <h2 className="text-2xl font-bold mt-4 text-base-content">
-            Page non trouvée
+            Page not found
           </h2>
 
           <p className="text-base-content/60 mt-2 text-sm leading-relaxed">
-            La page que vous recherchez n'existe pas.
+            The page you are looking for does not exist.
             <br />
           </p>
 
@@ -21,7 +21,7 @@ export default function Error404Page() {
             href="/"
             className="btn btn-primary w-full rounded-xl shadow-lg shadow-primary/20"
           >
-            Retour à l'accueil
+            Back to home
           </a>
         </div>
 

@@ -98,8 +98,8 @@ export const FileUploadZone: React.FC<FileUploadZoneProps> = ({
         onClick={handleClick}
       >
         <UploadCloud size={48} className={`mx-auto mb-4 ${isDragOver ? 'text-primary' : 'text-base-content/40'}`} />
-        <p className="text-lg font-medium">Glissez-déposez vos fichiers ici</p>
-        <p className="text-sm opacity-60 mt-2">ou cliquez pour sélectionner depuis votre ordinateur</p>
+        <p className="text-lg font-medium">Drag and drop your files here</p>
+        <p className="text-sm opacity-60 mt-2">or click to select from your computer</p>
       </div>
       <input 
         ref={inputRef}

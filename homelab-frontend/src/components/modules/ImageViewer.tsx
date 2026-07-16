@@ -30,7 +30,7 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({
     return (
       <div className="flex justify-center items-center w-full h-80 bg-base-200 rounded-xl">
         <span className="loading loading-spinner text-primary"></span>
-        <p className="ml-2">Chargement...</p>
+        <p className="ml-2">Loading...</p>
       </div>
     );
   }
@@ -49,7 +49,7 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({
   if (!imageUrl) {
     return (
       <div className="flex justify-center items-center w-full h-80 bg-base-200 rounded-xl text-base-content/50">
-        <p>Image non disponible</p>
+        <p>Image not available</p>
       </div>
     );
   }

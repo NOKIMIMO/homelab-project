@@ -29,7 +29,7 @@ interface ModuleStorageBarProps {
 }
 
 function formatMo(gb: number): string {
-    return `${(gb * 1024).toFixed(gb * 1024 < 10 ? 1 : 0)} Mo`;
+    return `${(gb * 1024).toFixed(gb * 1024 < 10 ? 1 : 0)} MB`;
 }
 
 export function ModuleStorageBar({ coreStorageGb, modules }: ModuleStorageBarProps) {
@@ -54,7 +54,7 @@ export function ModuleStorageBar({ coreStorageGb, modules }: ModuleStorageBarPro
     if (overflowModules.length > 0) {
         segments.push({
             key: "__other",
-            label: `Autres (${overflowModules.length})`,
+            label: `Other (${overflowModules.length})`,
             valueGb: overflowGb,
             colorClass: MODULE_COLORS[MODULE_COLORS.length - 1],
         });
@@ -63,7 +63,7 @@ export function ModuleStorageBar({ coreStorageGb, modules }: ModuleStorageBarPro
     const total = segments.reduce((sum, s) => sum + s.valueGb, 0);
 
     if (total <= 0) {
-        return <p className="text-xs text-base-content/40">Aucune donnée de stockage disponible.</p>;
+        return <p className="text-xs text-base-content/40">No storage data available.</p>;
     }
 
     return (

@@ -9,8 +9,8 @@ package com.homelab.core.model.alert
  * because OSHI does not expose it portably (see project alert design decision).
  */
 enum class MetricType(val label: String, val unit: String) {
-    CPU("Charge CPU", "%"),
-    RAM("Mémoire RAM", "%"),
-    DISK("Stockage disque", "%"),
-    // GPU("Charge GPU", "%") — à brancher quand une source GPU fiable sera disponible
+    CPU("CPU load", "%"),
+    RAM("RAM usage", "%"),
+    DISK("Disk storage", "%"),
+    // GPU("GPU load", "%") — to wire up once a reliable GPU source is available
 }

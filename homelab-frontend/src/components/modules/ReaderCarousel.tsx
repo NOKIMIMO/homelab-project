@@ -168,7 +168,7 @@ export const ReaderCarousel: React.FC<ReaderCarouselProps> = ({
     return (
       <div className="flex justify-center items-center w-full h-80 bg-base-200 rounded-xl">
         <span className="loading loading-spinner text-primary"></span>
-        <p className="ml-2">Chargement...</p>
+        <p className="ml-2">Loading...</p>
       </div>
     );
   }
@@ -198,7 +198,7 @@ export const ReaderCarousel: React.FC<ReaderCarouselProps> = ({
           ›
         </button>
       </div>
-      <div className="text-sm opacity-60">{items && items.length > 0 ? `${currentIndex + 1} / ${items.length}` : 'Aucune image'}</div>
+      <div className="text-sm opacity-60">{items && items.length > 0 ? `${currentIndex + 1} / ${items.length}` : 'No image'}</div>
     </div>
   );
 };

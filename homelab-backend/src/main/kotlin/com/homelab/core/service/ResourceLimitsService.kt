@@ -63,16 +63,16 @@ class ResourceLimitsService(
     }
 
     fun updateLimits(maxRamGb: Double, maxDiskGb: Double): Map<String, Any> {
-        if (maxRamGb <= 0.0) throw BadRequestException("La limite de RAM doit être positive")
-        if (maxDiskGb <= 0.0) throw BadRequestException("La limite de disque doit être positive")
+        if (maxRamGb <= 0.0) throw BadRequestException("RAM limit must be positive")
+        if (maxDiskGb <= 0.0) throw BadRequestException("Disk limit must be positive")
 
         val machineMaxRam = machineMaxRamGb()
         val machineMaxDisk = machineMaxDiskGb()
         if (maxRamGb > machineMaxRam) {
-            throw BadRequestException("La limite de RAM (${maxRamGb} Go) dépasse la RAM de la machine (${machineMaxRam} Go)")
+            throw BadRequestException("RAM limit (${maxRamGb} GB) exceeds the machine's RAM (${machineMaxRam} GB)")
         }
         if (maxDiskGb > machineMaxDisk) {
-            throw BadRequestException("La limite de disque (${maxDiskGb} Go) dépasse le disque de la machine (${machineMaxDisk} Go)")
+            throw BadRequestException("Disk limit (${maxDiskGb} GB) exceeds the machine's disk (${machineMaxDisk} GB)")
         }
 
         val limits = current()
@@ -81,7 +81,7 @@ class ResourceLimitsService(
         limits.updatedAt = LocalDateTime.now()
         repository.save(limits)
         writeJavaXmxToEnvFile(maxRamGb)
-        log.info("Limites de ressources mises à jour: RAM=${maxRamGb}Go, Disque=${maxDiskGb}Go")
+        log.info("Resource limits updated: RAM=${maxRamGb}GB, Disk=${maxDiskGb}GB")
         return status()
     }
 
@@ -99,7 +99,7 @@ class ResourceLimitsService(
 
         val path = Path.of(envFilePath)
         if (!Files.exists(path)) {
-            log.warn("Fichier .env introuvable à $envFilePath, JAVA_XMX_GB non mis à jour")
+            log.warn("Env file not found at $envFilePath, JAVA_XMX_GB not updated")
             return
         }
 
@@ -111,7 +111,7 @@ class ResourceLimitsService(
             if (index >= 0) lines[index] = newLine else lines.add(newLine)
             Files.write(path, lines)
         } catch (e: IOException) {
-            log.warn("Échec de l'écriture de JAVA_XMX_GB dans $envFilePath: ${e.message}")
+            log.warn("Failed to write JAVA_XMX_GB to $envFilePath: ${e.message}")
         }
     }
 
@@ -122,9 +122,9 @@ class ResourceLimitsService(
         val usedBytes = DiskUsage.current().totalBytes
         if (usedBytes + additionalBytes > maxBytes) {
             val usedGb = Formater.round(Formater.bytesToGigabytes(usedBytes), 2)
-            log.warn("Quota disque dépassé: ${usedGb}Go utilisés / ${limits.maxDiskGb}Go, écriture refusée")
+            log.warn("Disk quota exceeded: ${usedGb}GB used / ${limits.maxDiskGb}GB, write refused")
             throw BadRequestException(
-                "Limite de stockage atteinte (${usedGb} / ${limits.maxDiskGb} Go) : opération refusée."
+                "Storage limit reached (${usedGb} / ${limits.maxDiskGb} GB): operation refused."
             )
         }
     }

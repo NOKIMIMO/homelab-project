@@ -135,7 +135,7 @@ export default function SettingsTab() {
 
   const uploadAppIcon = async (file: File) => {
     if (!file.type.startsWith('image/')) {
-      setIconError('Le fichier doit être une image.');
+      setIconError('The file must be an image.');
       return;
     }
     setIconError(null);
@@ -155,7 +155,7 @@ export default function SettingsTab() {
         applyBranding({ appName: savedAppName, hasAppIcon: true }, bust);
       } else {
         const err = await res.json().catch(() => null) as { error?: string } | null;
-        setIconError(err?.error ?? "Échec de l'envoi de l'image");
+        setIconError(err?.error ?? "Failed to upload image");
       }
     } finally {
       setUploadingIcon(false);
@@ -192,11 +192,11 @@ export default function SettingsTab() {
     const maxRamGb = parseFloat(ramInput);
     const maxDiskGb = parseFloat(diskInput);
     if (!Number.isFinite(maxRamGb) || maxRamGb <= 0 || !Number.isFinite(maxDiskGb) || maxDiskGb <= 0) {
-      setLimitsError('Valeurs invalides : les deux limites doivent être des nombres positifs.');
+      setLimitsError('Invalid values: both limits must be positive numbers.');
       return;
     }
     if (limits && (maxRamGb > limits.machineMaxRamGb || maxDiskGb > limits.machineMaxDiskGb)) {
-      setLimitsError(`Valeurs invalides : max ${limits.machineMaxRamGb} Go de RAM et ${limits.machineMaxDiskGb} Go de disque sur cette machine.`);
+      setLimitsError(`Invalid values: max ${limits.machineMaxRamGb} GB of RAM and ${limits.machineMaxDiskGb} GB of disk on this machine.`);
       return;
     }
     setSavingLimits(true);
@@ -214,7 +214,7 @@ export default function SettingsTab() {
         setTimeout(() => setLimitsSavedOk(false), 2500);
       } else {
         const err = await res.json().catch(() => null) as { message?: string } | null;
-        setLimitsError(err?.message ?? 'Échec de la sauvegarde');
+        setLimitsError(err?.message ?? 'Failed to save');
       }
     } finally {
       setSavingLimits(false);
@@ -263,11 +263,11 @@ export default function SettingsTab() {
         setRestartOpen(false);
       } else {
         const err = await res.json().catch(() => null) as { message?: string } | null;
-        setRestartError(err?.message ?? 'Échec du redémarrage');
+        setRestartError(err?.message ?? 'Failed to restart');
       }
     } catch {
-      // La connexion peut être coupée par le redémarrage lui-même avant la réponse : on le
-      // traite comme un succès plutôt que comme une erreur.
+      // The connection can be cut by the restart itself before the response arrives: treat
+      // that as a success rather than an error.
       setRestartTriggered(true);
       setRestartOpen(false);
     } finally {
@@ -304,11 +304,11 @@ export default function SettingsTab() {
   return (
     <div className="h-full overflow-y-auto space-y-6 max-w-2xl pr-1">
 
-      {/* ── Chemins runtime ── */}
+      {/* ── Runtime paths ── */}
       <div className="card bg-base-300">
         <div className="card-body gap-4">
           <div className="flex items-center justify-between">
-            <h2 className="card-title text-base">Configuration Runtime</h2>
+            <h2 className="card-title text-base">Runtime Configuration</h2>
             <button
               className="btn btn-xs btn-ghost gap-1"
               onClick={fetchConfig}
@@ -335,19 +335,19 @@ export default function SettingsTab() {
         </div>
       </div>
 
-      {/* ── Limites de ressources ── */}
+      {/* ── Resource limits ── */}
       <div className="card bg-base-300">
         <div className="card-body gap-4">
           <h2 className="card-title text-base flex items-center gap-2">
-            <Gauge size={16} className="opacity-60" /> Limites de ressources
+            <Gauge size={16} className="opacity-60" /> Resource limits
           </h2>
           <p className="text-xs text-base-content/50 -mt-2">
-            Plafonds appliqués au homelab (core + modules), pas à la machine hôte entière.
+            Caps applied to the homelab (core + modules), not to the entire host machine.
           </p>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="flex flex-col gap-1">
-              <label className="text-xs font-semibold text-base-content/70">RAM max (Go)</label>
+              <label className="text-xs font-semibold text-base-content/70">Max RAM (GB)</label>
               <div className="join">
                 <input
                   type="number"
@@ -362,7 +362,7 @@ export default function SettingsTab() {
                   <button
                     type="button"
                     className="btn btn-sm join-item"
-                    title={`Utiliser le maximum de la machine (${limits.machineMaxRamGb} Go)`}
+                    title={`Use the machine maximum (${limits.machineMaxRamGb} GB)`}
                     onClick={() => setRamInput(String(limits.machineMaxRamGb))}
                   >
                     Max
@@ -370,11 +370,11 @@ export default function SettingsTab() {
                 )}
               </div>
               {limits && (
-                <span className="text-[11px] text-base-content/40">Machine : {limits.machineMaxRamGb} Go</span>
+                <span className="text-[11px] text-base-content/40">Machine: {limits.machineMaxRamGb} GB</span>
               )}
             </div>
             <div className="flex flex-col gap-1">
-              <label className="text-xs font-semibold text-base-content/70">Disque max (Go)</label>
+              <label className="text-xs font-semibold text-base-content/70">Max disk (GB)</label>
               <div className="join">
                 <input
                   type="number"
@@ -389,7 +389,7 @@ export default function SettingsTab() {
                   <button
                     type="button"
                     className="btn btn-sm join-item"
-                    title={`Utiliser le maximum de la machine (${limits.machineMaxDiskGb} Go)`}
+                    title={`Use the machine maximum (${limits.machineMaxDiskGb} GB)`}
                     onClick={() => setDiskInput(String(limits.machineMaxDiskGb))}
                   >
                     Max
@@ -397,7 +397,7 @@ export default function SettingsTab() {
                 )}
               </div>
               {limits && (
-                <span className="text-[11px] text-base-content/40">Machine : {limits.machineMaxDiskGb} Go</span>
+                <span className="text-[11px] text-base-content/40">Machine: {limits.machineMaxDiskGb} GB</span>
               )}
             </div>
           </div>
@@ -412,15 +412,15 @@ export default function SettingsTab() {
             {savingLimits
               ? <span className="loading loading-spinner loading-xs" />
               : <Save size={14} />}
-            {limitsSavedOk ? 'Sauvegardé !' : 'Appliquer'}
+            {limitsSavedOk ? 'Saved!' : 'Apply'}
           </button>
 
           {limits && (
             <>
               <div className="flex flex-col gap-1">
                 <div className="flex items-center justify-between text-xs text-base-content/60">
-                  <span>Disque utilisé (homelab)</span>
-                  <span className="font-mono">{limits.usedDiskGb.toFixed(2)} / {limits.maxDiskGb} Go</span>
+                  <span>Disk used (homelab)</span>
+                  <span className="font-mono">{limits.usedDiskGb.toFixed(2)} / {limits.maxDiskGb} GB</span>
                 </div>
                 <progress
                   className={`progress w-full h-2 ${limits.usedDiskGb / limits.maxDiskGb > 0.8 ? 'progress-error' : 'progress-accent'}`}
@@ -428,24 +428,24 @@ export default function SettingsTab() {
                   max={limits.maxDiskGb}
                 />
                 <p className="text-[11px] text-base-content/40">
-                  Appliqué immédiatement : les installations de modules et uploads sont refusés au-delà.
+                  Applied immediately: module installs and uploads are refused beyond this limit.
                 </p>
               </div>
 
               <div className="flex flex-col gap-1">
                 <div className="flex items-center justify-between text-xs text-base-content/60">
                   <span>RAM (JVM)</span>
-                  <span className="font-mono">actif {limits.activeMaxRamGb} Go / configuré {limits.maxRamGb} Go</span>
+                  <span className="font-mono">active {limits.activeMaxRamGb} GB / configured {limits.maxRamGb} GB</span>
                 </div>
                 {limits.ramRestartRequired && (
                   <div className="alert bg-warning/10 border border-warning/30 text-xs py-2 px-3 flex items-start gap-2">
                     <AlertTriangle size={14} className="text-warning shrink-0 mt-0.5" />
                     <span>
-                      Redémarrage requis pour appliquer cette limite : le fichier{' '}
-                      <code className="font-mono bg-base-200 px-1 rounded">.env</code> a été mis à jour
-                      automatiquement (<code className="font-mono bg-base-200 px-1 rounded">JAVA_XMX_GB</code>),
-                      il ne reste qu'à redémarrer le conteneur avec le bouton
-                      "Redémarrer le projet" ci-dessous.
+                      Restart required to apply this limit: the{' '}
+                      <code className="font-mono bg-base-200 px-1 rounded">.env</code> file has been updated
+                      automatically (<code className="font-mono bg-base-200 px-1 rounded">JAVA_XMX_GB</code>),
+                      all that remains is to restart the container with the
+                      "Restart project" button below.
                     </span>
                   </div>
                 )}
@@ -455,29 +455,28 @@ export default function SettingsTab() {
         </div>
       </div>
 
-      {/* ── Redémarrage ── */}
+      {/* ── Restart ── */}
       <div className="card bg-base-300">
         <div className="card-body gap-4">
           <h2 className="card-title text-base flex items-center gap-2">
-            <Power size={16} className="opacity-60" /> Redémarrage
+            <Power size={16} className="opacity-60" /> Restart
           </h2>
           <p className="text-xs text-base-content/50 -mt-2">
-            Redémarre le conteneur de l'application (backend + frontend). Courte interruption
-            pendant le redémarrage. Applique la limite de RAM configurée ci-dessus. Ne recrée pas
-            le conteneur : un changement de chemins runtime ou d'autres variables définies dans
-            docker-compose nécessite toujours un <code className="font-mono">docker compose up -d</code>{' '}
-            manuel.
+            Restarts the application container (backend + frontend). Brief interruption
+            during the restart. Applies the RAM limit configured above. Does not recreate
+            the container: a change to runtime paths or other variables defined in
+            docker-compose still requires a manual <code className="font-mono">docker compose up -d</code>.
           </p>
 
           {!config.restartAvailable && (
             <p className="text-xs text-warning">
-              Indisponible : le socket Docker n'est pas monté sur ce déploiement.
+              Unavailable: the Docker socket is not mounted on this deployment.
             </p>
           )}
           {restartError && <p className="text-xs text-error">{restartError}</p>}
           {restartTriggered && (
             <p className="text-xs text-success">
-              Redémarrage en cours... l'application sera de nouveau disponible dans quelques secondes.
+              Restarting... the application will be available again in a few seconds.
             </p>
           )}
 
@@ -487,17 +486,17 @@ export default function SettingsTab() {
             disabled={!config.restartAvailable || restartTriggered}
           >
             <Power size={14} />
-            Redémarrer le projet
+            Restart project
           </button>
         </div>
       </div>
 
-      {/* ── Niveau de log ── */}
+      {/* ── Log level ── */}
       <div className="card bg-base-300">
         <div className="card-body gap-4">
-          <h2 className="card-title text-base">Niveau de Log</h2>
+          <h2 className="card-title text-base">Log Level</h2>
           <p className="text-xs text-base-content/50 -mt-2">
-            Modifie la verbosité en temps réel, sans redémarrage.
+            Changes verbosity in real time, without a restart.
           </p>
 
           <div className="flex items-center gap-3">
@@ -518,12 +517,12 @@ export default function SettingsTab() {
               {saving
                 ? <span className="loading loading-spinner loading-xs" />
                 : <Save size={14} />}
-              {savedOk ? 'Sauvegardé !' : 'Appliquer'}
+              {savedOk ? 'Saved!' : 'Apply'}
             </button>
           </div>
 
           <p className="text-xs text-base-content/50">
-            Niveau actuel :&nbsp;
+            Current level:&nbsp;
             <span className={`font-mono font-bold ${LEVEL_COLOR[config.logLevel] ?? ''}`}>
               {config.logLevel}
             </span>
@@ -531,14 +530,14 @@ export default function SettingsTab() {
         </div>
       </div>
 
-      {/* ── Identité de l'application ── */}
+      {/* ── App identity ── */}
       <div className="card bg-base-300">
         <div className="card-body gap-4">
           <h2 className="card-title text-base flex items-center gap-2">
-            <Sparkles size={16} className="opacity-60" /> Identité de l'application
+            <Sparkles size={16} className="opacity-60" /> Application identity
           </h2>
           <p className="text-xs text-base-content/50 -mt-2">
-            Le nom et l'icône affichés dans l'onglet du navigateur.
+            The name and icon shown in the browser tab.
           </p>
 
           <div className="flex items-center gap-4">
@@ -547,7 +546,7 @@ export default function SettingsTab() {
                 {hasAppIcon ? (
                   <img
                     src={appIconUrl(iconCacheBust)}
-                    alt="Icône de l'application"
+                    alt="Application icon"
                     className="w-full h-full object-contain"
                   />
                 ) : (
@@ -571,7 +570,7 @@ export default function SettingsTab() {
                     className="btn btn-xs btn-ghost text-error gap-1"
                     onClick={() => void removeAppIcon()}
                     disabled={uploadingIcon || removingIcon}
-                    title="Supprimer l'icône"
+                    title="Remove icon"
                   >
                     {removingIcon
                       ? <span className="loading loading-spinner loading-xs" />
@@ -593,7 +592,7 @@ export default function SettingsTab() {
             </div>
 
             <div className="flex flex-col gap-1 flex-1">
-              <label className="text-xs font-semibold text-base-content/70">Nom</label>
+              <label className="text-xs font-semibold text-base-content/70">Name</label>
               <input
                 type="text"
                 className="input input-bordered input-sm w-full"
@@ -611,7 +610,7 @@ export default function SettingsTab() {
                 {savingName
                   ? <span className="loading loading-spinner loading-xs" />
                   : <Save size={14} />}
-                {nameSavedOk ? 'Sauvegardé !' : 'Enregistrer'}
+                {nameSavedOk ? 'Saved!' : 'Save'}
               </button>
             </div>
           </div>
@@ -620,15 +619,15 @@ export default function SettingsTab() {
         </div>
       </div>
 
-      {/* ── Description page de connexion ── */}
+      {/* ── Login page description ── */}
       <div className="card bg-base-300">
         <div className="card-body gap-4">
           <h2 className="card-title text-base flex items-center gap-2">
-            <MessageSquareText size={16} className="opacity-60" /> Description de la page de connexion
+            <MessageSquareText size={16} className="opacity-60" /> Login page description
           </h2>
           <p className="text-xs text-base-content/50 -mt-2">
-            Le message affiché sur la card de connexion, visible par tous (comme la description
-            d'un serveur Minecraft).
+            The message shown on the login card, visible to everyone (like the description
+            of a Minecraft server).
           </p>
 
           <textarea
@@ -637,7 +636,7 @@ export default function SettingsTab() {
             maxLength={LOGIN_DESCRIPTION_MAX_LENGTH}
             value={loginDescription}
             onChange={e => setLoginDescription(e.target.value)}
-            placeholder="Votre espace personnel, hébergé chez vous."
+            placeholder="Your personal space, hosted at home."
           />
 
           <div className="flex items-center justify-between">
@@ -652,28 +651,28 @@ export default function SettingsTab() {
               {savingDescription
                 ? <span className="loading loading-spinner loading-xs" />
                 : <Save size={14} />}
-              {descriptionSavedOk ? 'Sauvegardé !' : 'Enregistrer'}
+              {descriptionSavedOk ? 'Saved!' : 'Save'}
             </button>
           </div>
         </div>
       </div>
 
-      {/* ── Code de récupération ── */}
+      {/* ── Recovery code ── */}
       <div className="card bg-base-300">
         <div className="card-body gap-4">
           <h2 className="card-title text-base flex items-center gap-2">
-            <KeyRound size={16} className="opacity-60" /> Code de récupération
+            <KeyRound size={16} className="opacity-60" /> Recovery code
           </h2>
           <p className="text-xs text-base-content/50 -mt-2">
-            Ce code d'urgence permet de réinitialiser tous les comptes et de recréer un compte admin
-            en cas de perte d'accès. Régénérer ce code invalide immédiatement l'ancien.
+            This emergency code lets you reset all accounts and recreate an admin account
+            if access is lost. Regenerating this code immediately invalidates the old one.
           </p>
 
           {recoveryStatus && (
             <p className="text-sm">
               {recoveryStatus.exists
-                ? <>Code configuré{recoveryStatus.createdAt && <> le <span className="font-mono">{new Date(recoveryStatus.createdAt).toLocaleString()}</span></>}.</>
-                : 'Aucun code configuré.'}
+                ? <>Code configured{recoveryStatus.createdAt && <> on <span className="font-mono">{new Date(recoveryStatus.createdAt).toLocaleString()}</span></>}.</>
+                : 'No code configured.'}
             </p>
           )}
 
@@ -686,7 +685,7 @@ export default function SettingsTab() {
               {regenerating
                 ? <span className="loading loading-spinner loading-xs" />
                 : <KeyRound size={14} />}
-              Régénérer le code
+              Regenerate code
             </button>
           </div>
         </div>
@@ -695,8 +694,8 @@ export default function SettingsTab() {
       {/* ── Info ── */}
       <div className="alert bg-base-300 border border-base-content/10 text-xs text-base-content/60">
         <span>
-          Les chemins de scan et la configuration base de données sont définis via variables
-          d'environnement et nécessitent un redémarrage pour être modifiés.
+          The scan paths and database configuration are defined via environment
+          variables and require a restart to be changed.
         </span>
       </div>
 
@@ -704,25 +703,25 @@ export default function SettingsTab() {
         <RecoveryCodeReveal code={revealedCode} onClose={() => setRevealedCode(null)} />
       )}
 
-      {/* ── Modal confirmation redémarrage ── */}
+      {/* ── Restart confirmation modal ── */}
       {restartOpen && (
         <div className="modal modal-open">
           <div className="modal-box">
-            <h3 className="font-bold text-lg mb-1">Redémarrer le projet ?</h3>
+            <h3 className="font-bold text-lg mb-1">Restart the project?</h3>
             <p className="text-xs opacity-60 mb-4">
-              Le conteneur va redémarrer immédiatement. L'application sera indisponible pendant
-              quelques secondes pour tous les utilisateurs connectés.
+              The container will restart immediately. The application will be unavailable for
+              a few seconds for all connected users.
             </p>
             <div className="modal-action">
               <button className="btn btn-sm btn-ghost" onClick={() => setRestartOpen(false)} disabled={restarting}>
-                Annuler
+                Cancel
               </button>
               <button
                 className="btn btn-sm btn-error"
                 onClick={() => void confirmRestart()}
                 disabled={restarting}
               >
-                {restarting ? <span className="loading loading-spinner loading-xs" /> : 'Redémarrer'}
+                {restarting ? <span className="loading loading-spinner loading-xs" /> : 'Restart'}
               </button>
             </div>
           </div>

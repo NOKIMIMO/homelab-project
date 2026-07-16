@@ -51,7 +51,7 @@ function ParamField({
           <input
             type={revealed ? 'text' : 'password'}
             className="input input-bordered input-sm join-item flex-1"
-            placeholder={value === '' ? '(non défini)' : '••••••••'}
+            placeholder={value === '' ? '(not set)' : '••••••••'}
             value={value}
             onChange={e => onChange(decl.key, e.target.value)}
           />
@@ -138,7 +138,7 @@ export default function ModuleParamsModal({ moduleId, moduleName, onClose }: Pro
         {/* header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-base-content/10">
           <div>
-            <h2 className="text-lg font-black">Paramètres</h2>
+            <h2 className="text-lg font-black">Settings</h2>
             <p className="text-xs text-base-content/50 font-mono">{moduleName}</p>
           </div>
           <button className="btn btn-ghost btn-sm btn-square" onClick={onClose}>
@@ -154,7 +154,7 @@ export default function ModuleParamsModal({ moduleId, moduleName, onClose }: Pro
             </div>
           ) : data.declarations.length === 0 ? (
             <p className="text-sm text-base-content/50 text-center py-8">
-              Aucun paramètre déclaré pour ce module.
+              No parameters declared for this module.
             </p>
           ) : (
             data.declarations.map(decl => (
@@ -172,7 +172,7 @@ export default function ModuleParamsModal({ moduleId, moduleName, onClose }: Pro
         {data && data.declarations.length > 0 && (
           <div className="flex justify-end gap-3 px-6 py-4 border-t border-base-content/10">
             <button className="btn btn-ghost btn-sm" onClick={onClose}>
-              Annuler
+              Cancel
             </button>
             <button
               className={`btn btn-sm gap-2 min-w-28 ${savedOk ? 'btn-success' : 'btn-primary'}`}
@@ -182,7 +182,7 @@ export default function ModuleParamsModal({ moduleId, moduleName, onClose }: Pro
               {saving
                 ? <span className="loading loading-spinner loading-xs" />
                 : <Save size={14} />}
-              {savedOk ? 'Sauvegardé !' : 'Sauvegarder'}
+              {savedOk ? 'Saved!' : 'Save'}
             </button>
           </div>
         )}

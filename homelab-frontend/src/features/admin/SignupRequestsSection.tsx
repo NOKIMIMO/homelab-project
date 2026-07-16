@@ -20,7 +20,7 @@ const STATUS_BADGE: Record<string, string> = {
   REJECTED: 'badge-error',
 };
 
-// Reachable both by full admins (Accès tab) and by MANAGE_ROLES holders (Rôles tab) — the backend
+// Reachable both by full admins (Access tab) and by MANAGE_ROLES holders (Roles tab) — the backend
 // grants both the same access to the signup-requests endpoints (see AdminController.kt).
 export default function SignupRequestsSection() {
   const { token } = useAuth();
@@ -83,7 +83,7 @@ export default function SignupRequestsSection() {
         body: JSON.stringify({ roleIds: Array.from(draftApproveRoles) }),
       });
       if (!res.ok) {
-        alert("Échec de l'approbation de la demande.");
+        alert("Failed to approve the request.");
         return;
       }
       setApprovingRequest(null);
@@ -98,11 +98,11 @@ export default function SignupRequestsSection() {
 
   return (
     <>
-      {/* ── Demandes en attente ── */}
+      {/* ── Pending requests ── */}
       {pending.length > 0 && (
         <section>
           <h2 className="text-lg font-bold mb-3 flex items-center gap-2">
-            Demandes en attente
+            Pending requests
             <span className="badge badge-warning badge-sm">{pending.length}</span>
           </h2>
           <div className="space-y-2">
@@ -115,7 +115,7 @@ export default function SignupRequestsSection() {
                   <p className="font-semibold truncate">{r.name ?? r.email}</p>
                   <p className="text-xs opacity-60 font-mono truncate">{r.email}</p>
                   <p className="text-xs opacity-40 mt-1">
-                    Demandé le {new Date(r.createdAt).toLocaleString('fr-FR')}
+                    Requested on {new Date(r.createdAt).toLocaleString('en-US')}
                   </p>
                 </div>
                 <div className="flex gap-2 shrink-0">
@@ -125,7 +125,7 @@ export default function SignupRequestsSection() {
                     onClick={() => openApprove(r)}
                   >
                     <Check size={14} />
-                    Approuver
+                    Approve
                   </button>
                   <button
                     className="btn btn-sm btn-error btn-outline gap-1"
@@ -135,7 +135,7 @@ export default function SignupRequestsSection() {
                     {actionId === r.id
                       ? <span className="loading loading-spinner loading-xs" />
                       : <X size={14} />}
-                    Rejeter
+                    Reject
                   </button>
                 </div>
               </div>
@@ -147,22 +147,22 @@ export default function SignupRequestsSection() {
       {pending.length === 0 && (
         <div className="alert bg-base-300 text-sm">
           <Check size={16} className="text-success" />
-          <span>Aucune demande d'accès en attente.</span>
+          <span>No pending access requests.</span>
         </div>
       )}
 
-      {/* ── Historique ── */}
+      {/* ── History ── */}
       {processed.length > 0 && (
         <section>
-          <h2 className="text-lg font-bold mb-3">Historique des demandes</h2>
+          <h2 className="text-lg font-bold mb-3">Request history</h2>
           <div className="overflow-x-auto rounded-xl border border-base-content/10">
             <table className="table table-sm w-full">
               <thead>
                 <tr className="bg-base-300 text-xs uppercase tracking-wide">
                   <th>Email</th>
-                  <th>Statut</th>
-                  <th>Demandé le</th>
-                  <th>Traité le</th>
+                  <th>Status</th>
+                  <th>Requested on</th>
+                  <th>Processed on</th>
                 </tr>
               </thead>
               <tbody>
@@ -175,11 +175,11 @@ export default function SignupRequestsSection() {
                       </span>
                     </td>
                     <td className="text-xs opacity-60">
-                      {new Date(r.createdAt).toLocaleDateString('fr-FR')}
+                      {new Date(r.createdAt).toLocaleDateString('en-US')}
                     </td>
                     <td className="text-xs opacity-60">
                       {r.processedAt
-                        ? new Date(r.processedAt).toLocaleDateString('fr-FR')
+                        ? new Date(r.processedAt).toLocaleDateString('en-US')
                         : '---'}
                     </td>
                   </tr>
@@ -190,19 +190,19 @@ export default function SignupRequestsSection() {
         </section>
       )}
 
-      {/* ── Modal approbation de demande ── */}
+      {/* ── Request approval modal ── */}
       {approvingRequest && (
         <div className="modal modal-open">
           <div className="modal-box">
             <h3 className="font-bold text-lg mb-1">
-              Approuver {approvingRequest.name ?? approvingRequest.email}
+              Approve {approvingRequest.name ?? approvingRequest.email}
             </h3>
             <p className="text-xs opacity-60 mb-4">
-              Au moins un rôle doit être attribué pour créer le compte.
+              At least one role must be assigned to create the account.
             </p>
             <div className="space-y-2 max-h-96 overflow-y-auto">
               {roles.length === 0 ? (
-                <p className="text-sm opacity-40 italic">Aucun rôle n'a encore été créé.</p>
+                <p className="text-sm opacity-40 italic">No role has been created yet.</p>
               ) : (
                 roles.map(role => (
                   <label key={role.id} className="flex items-center gap-3 bg-base-300 rounded-lg px-3 py-2 cursor-pointer">
@@ -215,7 +215,7 @@ export default function SignupRequestsSection() {
                     <div className="flex-1 min-w-0">
                       <span className="font-semibold text-sm truncate block">{role.name}</span>
                       <span className="text-xs opacity-50">
-                        {role.moduleIds.length === 0 ? 'aucun module' : `${role.moduleIds.length} module(s)`}
+                        {role.moduleIds.length === 0 ? 'no modules' : `${role.moduleIds.length} module(s)`}
                       </span>
                     </div>
                   </label>
@@ -224,14 +224,14 @@ export default function SignupRequestsSection() {
             </div>
             <div className="modal-action">
               <button className="btn btn-sm btn-ghost" onClick={() => setApprovingRequest(null)} disabled={approving}>
-                Annuler
+                Cancel
               </button>
               <button
                 className="btn btn-sm btn-success"
                 onClick={() => void confirmApprove()}
                 disabled={approving || draftApproveRoles.size === 0}
               >
-                {approving ? <span className="loading loading-spinner loading-xs" /> : 'Approuver'}
+                {approving ? <span className="loading loading-spinner loading-xs" /> : 'Approve'}
               </button>
             </div>
           </div>

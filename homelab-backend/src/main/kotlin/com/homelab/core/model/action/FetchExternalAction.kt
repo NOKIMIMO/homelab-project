@@ -26,12 +26,12 @@ class FetchExternalAction(private val globalParametersService: GlobalParametersS
         declaration: ModuleActionDeclaration
     ): Any? {
         val city = mergedParams["city"] as? String
-            ?: return mapOf("error" to "Paramètre 'city' manquant")
+            ?: return mapOf("error" to "Missing 'city' parameter")
 
         val baseUrl = globalParametersService.getParam(moduleId, "baseUrl")
-            ?: return mapOf("error" to "Paramètre 'baseUrl' non configuré (ouvrir les paramètres du module)")
+            ?: return mapOf("error" to "'baseUrl' parameter not configured (open the module settings)")
         val apiKey = globalParametersService.getParam(moduleId, "apiKey")
-            ?: return mapOf("error" to "Paramètre 'apiKey' non configuré (ouvrir les paramètres du module)")
+            ?: return mapOf("error" to "'apiKey' parameter not configured (open the module settings)")
         val units = globalParametersService.getParam(moduleId, "units") ?: "metric"
 
         val encodedCity = URLEncoder.encode(city, "UTF-8")
@@ -68,7 +68,7 @@ class FetchExternalAction(private val globalParametersService: GlobalParametersS
             weatherRecord
         } catch (e: Exception) {
             log.error("[$moduleId] Failed to fetch data for city='$city': ${e.message}", e)
-            mapOf("error" to (e.message ?: "Erreur inconnue"), "city" to city)
+            mapOf("error" to (e.message ?: "Unknown error"), "city" to city)
         }
     }
 

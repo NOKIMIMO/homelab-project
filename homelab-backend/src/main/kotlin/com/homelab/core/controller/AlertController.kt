@@ -62,7 +62,7 @@ class AlertController(private val alertService: AlertService) {
     fun events(@RequestParam(required = false) since: String?): Map<String, Any> {
         val sinceDt = since?.let {
             runCatching { LocalDateTime.parse(it) }.getOrElse {
-                throw BadRequestException("Paramètre 'since' invalide (format ISO-8601 attendu)")
+                throw BadRequestException("Invalid 'since' parameter (expected ISO-8601 format)")
             }
         }
         return mapOf(

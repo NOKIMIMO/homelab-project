@@ -44,14 +44,14 @@ export default function AddColumnModal({ moduleId, schema, onClose, onUpdated }:
 
       if (!res.ok) {
         const errBody = await res.json().catch(() => null) as { error?: string } | null;
-        setError(errBody?.error ?? `Échec de l'ajout (${res.status})`);
+        setError(errBody?.error ?? `Failed to add (${res.status})`);
         return;
       }
 
       onUpdated();
       onClose();
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Erreur inconnue');
+      setError(e instanceof Error ? e.message : 'Unknown error');
     } finally {
       setSubmitting(false);
     }
@@ -63,7 +63,7 @@ export default function AddColumnModal({ moduleId, schema, onClose, onUpdated }:
 
         <div className="flex items-center justify-between px-6 py-4 border-b border-base-content/10">
           <div>
-            <h2 className="text-lg font-black">Ajouter une colonne</h2>
+            <h2 className="text-lg font-black">Add a column</h2>
             <p className="text-xs text-base-content/50 font-mono">{schema.name}</p>
           </div>
           <button className="btn btn-ghost btn-sm btn-square" onClick={onClose}>
@@ -84,7 +84,7 @@ export default function AddColumnModal({ moduleId, schema, onClose, onUpdated }:
           </div>
 
           <div className="flex flex-col gap-1">
-            <label className="text-sm font-semibold">Nom de la colonne</label>
+            <label className="text-sm font-semibold">Column name</label>
             <input
               className="input input-bordered input-sm w-full font-mono"
               value={columnName}
@@ -115,22 +115,22 @@ export default function AddColumnModal({ moduleId, schema, onClose, onUpdated }:
           </div>
 
           <p className="text-xs text-base-content/50">
-            Les colonnes ajoutées après la création d'une table sont toujours facultatives :
-            Postgres refuse une contrainte "requise" sur une table qui contient déjà des lignes.
+            Columns added after a table is created are always optional:
+            Postgres refuses a "required" constraint on a table that already contains rows.
           </p>
 
           {error && <p className="text-sm text-error">{error}</p>}
         </div>
 
         <div className="flex justify-end gap-3 px-6 py-4 border-t border-base-content/10">
-          <button className="btn btn-ghost btn-sm" onClick={onClose}>Annuler</button>
+          <button className="btn btn-ghost btn-sm" onClick={onClose}>Cancel</button>
           <button
             className="btn btn-sm btn-primary gap-2 min-w-28"
             onClick={handleSubmit}
             disabled={submitting || !columnName.trim() || !tableName}
           >
             {submitting ? <span className="loading loading-spinner loading-xs" /> : <Save size={14} />}
-            Ajouter
+            Add
           </button>
         </div>
       </div>

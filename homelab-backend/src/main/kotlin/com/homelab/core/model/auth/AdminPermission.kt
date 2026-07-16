@@ -5,7 +5,7 @@ package com.homelab.core.model.auth
 // installed module - they gate admin-panel sections and module lifecycle actions directly.
 // A user with isAdmin=true implicitly holds every one of these (see PermissionService).
 enum class AdminPermission {
-    // Access to the "Gestion de rôle" admin section: create/edit/delete roles. Does not include
+    // Access to the "Role management" admin section: create/edit/delete roles. Does not include
     // granting/revoking a user's isAdmin status, which stays reserved to full admins.
     MANAGE_ROLES,
 

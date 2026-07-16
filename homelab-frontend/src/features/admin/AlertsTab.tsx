@@ -90,7 +90,7 @@ export default function AlertsTab() {
         void fetchRules();
       } else {
         const body = await res.json().catch(() => null) as { error?: string } | null;
-        setError(body?.error ?? 'Création impossible');
+        setError(body?.error ?? 'Unable to create');
       }
     } finally {
       setSaving(false);
@@ -127,29 +127,29 @@ export default function AlertsTab() {
   return (
     <div className="h-full overflow-y-auto space-y-6 max-w-3xl pr-1">
 
-      {/* ── Créer une alerte ── */}
+      {/* ── Create alert ── */}
       <div className="card bg-base-300">
         <div className="card-body gap-4">
           <h2 className="card-title text-base flex items-center gap-2">
-            <BellRing size={16} className="opacity-60" /> Nouvelle alerte
+            <BellRing size={16} className="opacity-60" /> New alert
           </h2>
           <p className="text-xs text-base-content/50 -mt-2">
-            Surveille une métrique système et déclenche un événement quand le seuil est franchi.
+            Monitors a system metric and triggers an event when the threshold is crossed.
           </p>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <label className="form-control">
-              <span className="label-text text-xs mb-1">Nom</span>
+              <span className="label-text text-xs mb-1">Name</span>
               <input
                 className="input input-bordered input-sm"
                 value={form.name}
                 onChange={e => setForm({ ...form, name: e.target.value })}
-                placeholder="Ex. RAM presque pleine"
+                placeholder="E.g. RAM almost full"
               />
             </label>
 
             <label className="form-control">
-              <span className="label-text text-xs mb-1">Gravité</span>
+              <span className="label-text text-xs mb-1">Severity</span>
               <select
                 className="select select-bordered select-sm"
                 value={form.severity}
@@ -160,7 +160,7 @@ export default function AlertsTab() {
             </label>
 
             <label className="form-control">
-              <span className="label-text text-xs mb-1">Métrique</span>
+              <span className="label-text text-xs mb-1">Metric</span>
               <select
                 className="select select-bordered select-sm"
                 value={form.metric}
@@ -182,7 +182,7 @@ export default function AlertsTab() {
                 </select>
               </label>
               <label className="form-control">
-                <span className="label-text text-xs mb-1">Seuil ({metricUnit(form.metric)})</span>
+                <span className="label-text text-xs mb-1">Threshold ({metricUnit(form.metric)})</span>
                 <input
                   type="number"
                   min={0}
@@ -204,24 +204,24 @@ export default function AlertsTab() {
               disabled={saving || form.name.trim() === ''}
             >
               {saving ? <span className="loading loading-spinner loading-xs" /> : <Plus size={14} />}
-              Créer l'alerte
+              Create alert
             </button>
           </div>
         </div>
       </div>
 
-      {/* ── Alertes configurées ── */}
+      {/* ── Configured alerts ── */}
       <div className="card bg-base-300">
         <div className="card-body gap-3">
           <div className="flex items-center justify-between">
-            <h2 className="card-title text-base">Alertes configurées</h2>
+            <h2 className="card-title text-base">Configured alerts</h2>
             <button className="btn btn-xs btn-ghost gap-1" onClick={() => void refreshAll()} disabled={refreshing}>
               <RefreshCw size={12} className={refreshing ? 'animate-spin' : ''} />
             </button>
           </div>
 
           {rules.length === 0 ? (
-            <p className="text-sm text-base-content/50 italic">Aucune alerte configurée.</p>
+            <p className="text-sm text-base-content/50 italic">No alerts configured.</p>
           ) : (
             <div className="flex flex-col gap-2">
               {rules.map(rule => (
@@ -244,7 +244,7 @@ export default function AlertsTab() {
                   <button
                     className="btn btn-xs btn-ghost text-error"
                     onClick={() => void deleteRule(rule.id)}
-                    aria-label="Supprimer"
+                    aria-label="Delete"
                   >
                     <Trash2 size={14} />
                   </button>
@@ -255,14 +255,14 @@ export default function AlertsTab() {
         </div>
       </div>
 
-      {/* ── Événements récents ── */}
+      {/* ── Recent events ── */}
       <div className="card bg-base-300">
         <div className="card-body gap-3">
           <h2 className="card-title text-base flex items-center gap-2">
-            <History size={16} className="opacity-60" /> Événements récents
+            <History size={16} className="opacity-60" /> Recent events
           </h2>
           {events.length === 0 ? (
-            <p className="text-sm text-base-content/50 italic">Aucun événement déclenché.</p>
+            <p className="text-sm text-base-content/50 italic">No events triggered.</p>
           ) : (
             <div className="flex flex-col gap-2">
               {events.map(ev => (
