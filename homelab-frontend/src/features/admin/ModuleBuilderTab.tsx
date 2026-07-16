@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Columns3, Pencil, Plus, RefreshCw, Trash2, Upload } from 'lucide-react';
+import { Columns3, Download, Pencil, Plus, RefreshCw, Trash2, Upload } from 'lucide-react';
 import { useAuth } from '@auth/AuthContext';
 import { getApiUrl } from '@lib/api';
 import type { ModuleBuilderRequest, ModuleBuilderSummary, ModuleSchemaResponse } from '@app/types';
@@ -17,6 +17,7 @@ export default function ModuleBuilderTab() {
   const [pendingDelete, setPendingDelete] = useState<ModuleBuilderSummary | null>(null);
   const [dropData, setDropData] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [exportingId, setExportingId] = useState<string | null>(null);
   const [installing, setInstalling] = useState(false);
   const [installMessage, setInstallMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -45,6 +46,23 @@ export default function ModuleBuilderTab() {
     } finally {
       setInstalling(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  const exportModule = async (id: string) => {
+    setExportingId(id);
+    try {
+      const res = await fetch(getApiUrl(`/api/modules/${id}/export`), { headers });
+      if (!res.ok) return;
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${id}.zip`;
+      link.click();
+      URL.revokeObjectURL(url);
+    } finally {
+      setExportingId(null);
     }
   };
 
@@ -168,6 +186,17 @@ export default function ModuleBuilderTab() {
                     </span>
                   </td>
                   <td className="flex items-center gap-2 justify-end">
+                    <button
+                      className="btn btn-xs btn-outline gap-1"
+                      disabled={exportingId === mod.id}
+                      onClick={() => void exportModule(mod.id)}
+                      title={`Export ${mod.id} as a .zip`}
+                    >
+                      {exportingId === mod.id
+                        ? <span className="loading loading-spinner loading-xs" />
+                        : <Download size={12} />}
+                      Export
+                    </button>
                     {mod.custom ? (
                       <>
                         <button

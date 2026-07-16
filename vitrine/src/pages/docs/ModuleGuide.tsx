@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { Download } from 'lucide-react'
 import { Link } from 'react-router'
 import CodeBlock from '../../components/CodeBlock'
 import FieldTable from '../../components/FieldTable'
@@ -11,14 +12,23 @@ import {
 } from '../../data/snippets'
 import { useLanguage, type Lang } from '../../i18n/LanguageContext'
 
+const EXAMPLE_MODULES_RELEASE_TAG = 'modV1'
+const EXAMPLE_MODULES = ['photos', 'reader', 'weather'].map(id => ({
+  id,
+  url: `https://github.com/NOKIMIMO/homelab-project/releases/download/${EXAMPLE_MODULES_RELEASE_TAG}/${id}.zip`,
+}))
+
 const TEXT: Record<
   Lang,
   {
     title: string
+    examplesTitle: string
+    examplesIntro: ReactNode
     section1Title: string
     section1Intro: ReactNode
     endpointsColumns: string[]
     endpointsRows: (string | ReactNode)[][]
+    standaloneApiNote: ReactNode
     afterRequest: ReactNode
     builderExtrasIntro: ReactNode
     section2Title: string
@@ -40,6 +50,15 @@ const TEXT: Record<
 > = {
   fr: {
     title: 'Créer un module',
+    examplesTitle: 'Exemples prêts à l’emploi',
+    examplesIntro: (
+      <>
+        Trois modules exportés (<code>.zip</code>) --- galerie photo, lecteur
+        de séries (UI standalone) et météo --- à télécharger puis installer
+        tels quels via le bouton « Installer un module (.zip) » du panel
+        admin, pour voir un module fonctionnel avant d'en créer un soi-même.
+      </>
+    ),
     section1Title: '1. Le créateur de module (recommandé)',
     section1Intro: (
       <>
@@ -79,6 +98,21 @@ const TEXT: Record<
       ['PUT', '/api/admin/module-settings/{id}', <>Réserve l'écriture et/ou la suppression du module aux administrateurs (par défaut : ouvert à tout utilisateur authentifié)</>],
       ['POST', '/api/modules/scan', 'Recharge tous les modules depuis le disque (bouton « Rescanner »)'],
     ],
+    standaloneApiNote: (
+      <>
+        <strong>Piège fréquent (uIFormat: "STANDALONE")</strong> : le frontend
+        uploadé est chargé dans une iframe, mais servi depuis une origine qui
+        change selon le déploiement (port 80 en image tout-en-un, port 8080
+        en services séparés, IP du LAN, domaine derrière un reverse proxy...).
+        Ne codez jamais en dur une URL absolue comme{' '}
+        <code>http://localhost:8080</code> dans son code --- utilisez des
+        chemins <strong>relatifs</strong>, au format{' '}
+        <code>/api/&lt;id&gt;/&lt;fonction&gt;</code> (ex.{' '}
+        <code>/api/reader/listSeries</code>), qui se résolvent automatiquement
+        contre l'origine réelle de la page --- exactement comme{' '}
+        <code>homelab-frontend</code> le fait déjà lui-même.
+      </>
+    ),
     afterRequest: (
       <>
         Ce corps de requête suffit à générer <code>manifest.json</code>,{' '}
@@ -236,6 +270,15 @@ const TEXT: Record<
   },
   en: {
     title: 'Create a module',
+    examplesTitle: 'Ready-to-use examples',
+    examplesIntro: (
+      <>
+        Three exported modules (<code>.zip</code>) --- a photo gallery, a
+        series reader (standalone UI), and weather --- to download and
+        install as-is via the "Install a module (.zip)" button in the admin
+        panel, to see a working module before building your own.
+      </>
+    ),
     section1Title: '1. The module builder (recommended)',
     section1Intro: (
       <>
@@ -275,6 +318,21 @@ const TEXT: Record<
       ['PUT', '/api/admin/module-settings/{id}', <>Restricts writes and/or deletes on the module to admins (default: open to any authenticated user)</>],
       ['POST', '/api/modules/scan', 'Reloads every module from disk (the "Rescan" button)'],
     ],
+    standaloneApiNote: (
+      <>
+        <strong>Common gotcha (uIFormat: "STANDALONE")</strong>: the uploaded
+        frontend is loaded in an iframe, but served from an origin that
+        changes depending on the deployment (port 80 in the all-in-one image,
+        port 8080 in split services, a LAN IP, a domain behind a reverse
+        proxy...). Never hardcode an absolute URL like{' '}
+        <code>http://localhost:8080</code> in its code --- use{' '}
+        <strong>relative</strong> paths, in the form{' '}
+        <code>/api/&lt;id&gt;/&lt;function&gt;</code> (e.g.{' '}
+        <code>/api/reader/listSeries</code>), which resolve automatically
+        against the page's real origin --- exactly like{' '}
+        <code>homelab-frontend</code> already does itself.
+      </>
+    ),
     afterRequest: (
       <>
         This request body is enough to generate <code>manifest.json</code>,{' '}
@@ -438,10 +496,24 @@ function ModuleGuide() {
     <div>
       <h1 className="text-4xl font-bold mb-6">{t.title}</h1>
 
-      <h2 className="text-2xl font-semibold mt-2 mb-2">{t.section1Title}</h2>
+      <h2 className="text-2xl font-semibold mt-2 mb-2">{t.examplesTitle}</h2>
+      <p className="text-base-content/70 max-w-2xl">{t.examplesIntro}</p>
+      <div className="flex flex-wrap gap-3 my-4">
+        {EXAMPLE_MODULES.map(m => (
+          <a key={m.id} href={m.url} className="btn btn-outline btn-sm gap-2">
+            <Download size={14} /> {m.id}.zip
+          </a>
+        ))}
+      </div>
+
+      <h2 className="text-2xl font-semibold mt-10 mb-2">{t.section1Title}</h2>
       <p className="text-base-content/70 max-w-2xl">{t.section1Intro}</p>
 
       <FieldTable columns={t.endpointsColumns} rows={t.endpointsRows} />
+
+      <div className="alert alert-warning text-sm my-4 max-w-2xl">
+        <span>{t.standaloneApiNote}</span>
+      </div>
 
       <CodeBlock lang="http">{BUILDER_REQUEST}</CodeBlock>
 
