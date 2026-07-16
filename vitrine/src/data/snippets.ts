@@ -5,7 +5,7 @@ export const DOCKER_RUN = `docker run -d --name homelab \\
   -e POSTGRES_USER=user \\
   -e POSTGRES_PASSWORD=change-me \\
   -v homelab-data:/var/lib/postgresql/data \\
-  -v ./modules:/app_root/modules:ro \\
+  -v ./modules:/app_root/modules:rw \\
   ghcr.io/nokimimo/homelab-project:v1.0.2`
 
 export const DOCKER_COMPOSE_ALL_IN_ONE_YML = `# docker-compose.all-in-one.yml
@@ -19,7 +19,7 @@ services:
       - .env.all-in-one
     volumes:
       - db-data:/var/lib/postgresql/data
-      - ./modules:/app_root/modules:ro
+      - ./modules:/app_root/modules:rw
       - /etc/os-release:/host/etc/os-release:ro
     environment:
       - JAVA_OPTS=-Doshi.os.windows.osRelease.path=/host/etc/os-release

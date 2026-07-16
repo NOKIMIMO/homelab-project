@@ -39,7 +39,7 @@ const TEXT: Record<
       ],
       [<code>POSTGRES_PASSWORD</code>, 'Mot de passe Postgres associé.'],
       [
-        <code>-v ./modules:/app_root/modules:ro</code>,
+        <code>-v ./modules:/app_root/modules:rw</code>,
         <>
           Dossier hôte scanné par le backend (
           <code>HOMELAB_MODULES_SCAN_PATH=/app_root/modules</code>) ---
@@ -89,7 +89,7 @@ const TEXT: Record<
       ],
       [<code>POSTGRES_PASSWORD</code>, 'Matching Postgres password.'],
       [
-        <code>-v ./modules:/app_root/modules:ro</code>,
+        <code>-v ./modules:/app_root/modules:rw</code>,
         <>
           Host folder scanned by the backend (
           <code>HOMELAB_MODULES_SCAN_PATH=/app_root/modules</code>) -drop
