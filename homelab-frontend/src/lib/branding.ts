@@ -1,7 +1,7 @@
 import { getApiUrl } from '@lib/api';
 
 export const DEFAULT_APP_NAME = 'Homelab Core';
-const DEFAULT_FAVICON = '/favicon.svg';
+const DEFAULT_FAVICON = '/public/icon.svg';
 
 export interface BrandingSettings {
   appName?: string | null;

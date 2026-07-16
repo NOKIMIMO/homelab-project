@@ -1,0 +1,104 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+
+    <defs>
+        <linearGradient id="hubGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#264474"/>
+            <stop offset="100%" stop-color="#0E2547"/>
+        </linearGradient>
+
+        <linearGradient id="moduleGradientTop" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#4F9DFF"/>
+            <stop offset="100%" stop-color="#2467C7"/>
+        </linearGradient>
+
+        <linearGradient id="moduleGradientTopRight" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#4FE0FF"/>
+            <stop offset="100%" stop-color="#1596C4"/>
+        </linearGradient>
+
+        <linearGradient id="moduleGradientBottomRight" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#59E6A8"/>
+            <stop offset="100%" stop-color="#17A467"/>
+        </linearGradient>
+
+        <linearGradient id="moduleGradientBottom" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#FFC24F"/>
+            <stop offset="100%" stop-color="#E0891A"/>
+        </linearGradient>
+
+        <linearGradient id="moduleGradientBottomLeft" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#FF6F91"/>
+            <stop offset="100%" stop-color="#D63862"/>
+        </linearGradient>
+
+        <linearGradient id="moduleGradientTopLeft" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#B98CFF"/>
+            <stop offset="100%" stop-color="#7C4FE0"/>
+        </linearGradient>
+
+    </defs>
+
+    <!-- Connections -->
+    <g stroke="#5F6A8F" stroke-width="12" stroke-linecap="round">
+        <line x1="256" y1="156" x2="256" y2="122"/>
+        <!-- haut milieu-->
+        <line x1="256" y1="356" x2="256" y2="390"/>
+        <!-- bas milieu -->
+
+        <line x1="340.5" y1="212.8" x2="370.7" y2="197.3"/>
+        <!-- haut droite -->
+        <line x1="171.5" y1="212.8" x2="141.3" y2="197.3"/>
+        <!-- haut gauche -->
+
+        <line x1="340.5" y1="299.2" x2="370.7" y2="314.7"/>
+        <!-- bas droite-->
+        <line x1="171.5" y1="299.2" x2="141.3" y2="314.7"/>
+        <!-- bas gauche -->
+    </g>
+
+    <!-- circle linking all module -->
+    <g stroke="#5F6A8F" stroke-width="12" stroke-linecap="round">
+        <line x1="300.35" y1="95.69" x2="387.65" y2="142.31"/>
+        <!-- haut -> haut droite -->
+        <line x1="432" y1="212" x2="432" y2="300"/>
+        <!-- haut droite -> bas droite -->
+        <line x1="387.65" y1="369.69" x2="300.35" y2="416.31"/>
+        <!-- bas droite -> bas -->
+        <line x1="211.65" y1="416.31" x2="124.35" y2="369.69"/>
+        <!-- bas -> bas gauche -->
+        <line x1="80" y1="300" x2="80" y2="212"/>
+        <!-- bas gauche -> haut gauche -->
+        <line x1="124.35" y1="142.31" x2="211.65" y2="95.69"/>
+        <!-- haut gauche -> haut -->
+    </g>
+
+    <!-- Center Hexagon -->
+    <polygon
+        points="
+        256,170
+        328,213
+        328,299
+        256,342
+        184,299
+        184,213"
+        fill="url(#hubGradient)"
+    />
+
+    <!-- Modules -->
+    <g>
+
+        <rect x="224" y="40" width="64" height="64" rx="14" fill="url(#moduleGradientTop)"/>
+
+        <rect x="48" y="134" width="64" height="64" rx="14" fill="url(#moduleGradientTopLeft)"/>
+
+        <rect x="400" y="134" width="64" height="64" rx="14" fill="url(#moduleGradientTopRight)"/>
+
+        <rect x="48" y="314" width="64" height="64" rx="14" fill="url(#moduleGradientBottomLeft)"/>
+
+        <rect x="400" y="314" width="64" height="64" rx="14" fill="url(#moduleGradientBottomRight)"/>
+
+        <rect x="224" y="408" width="64" height="64" rx="14" fill="url(#moduleGradientBottom)"/>
+
+    </g>
+
+</svg>
