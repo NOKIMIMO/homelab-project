@@ -13,6 +13,15 @@ class LoginSettings(
     @Column(nullable = true, length = 500)
     var description: String? = null,
 
+    // Displayed as the browser tab title (falls back to a default when unset).
+    @Column(nullable = true, length = 100)
+    var appName: String? = null,
+
+    // File name of the uploaded image stored on disk (branding_storage/), rendered as the
+    // browser tab favicon. Falls back to the default favicon when unset.
+    @Column(nullable = true, length = 255)
+    var appIcon: String? = null,
+
     @Column(nullable = false)
     var updatedAt: LocalDateTime = LocalDateTime.now()
 )

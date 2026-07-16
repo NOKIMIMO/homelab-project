@@ -18,10 +18,12 @@ import com.homelab.core.service.SystemRestartService
 import com.homelab.core.service.UserService
 import com.homelab.core.service.module.ModuleConfigService
 import com.homelab.sdk.helper.AppLogger
+import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.web.bind.annotation.*
+import org.springframework.web.multipart.MultipartFile
 import java.time.LocalDateTime
 
 @RestController
@@ -96,9 +98,26 @@ class AdminController(
         return ResponseEntity.ok(resourceLimitsService.updateLimits(maxRamGb, maxDiskGb))
     }
 
+    // Partial update: only keys present in the body are changed, so e.g. saving a new app name
+    // doesn't clobber an already-configured description. The app icon is managed separately
+    // below since it's an uploaded file, not a plain string field.
     @PutMapping("/login-settings")
-    fun updateLoginSettings(@RequestBody body: Map<String, String?>): Map<String, Any?> =
-        mapOf("description" to loginSettingsService.setDescription(body["description"]))
+    fun updateLoginSettings(@RequestBody body: Map<String, String?>): Map<String, Any?> = mapOf(
+        "description" to (if (body.containsKey("description")) loginSettingsService.setDescription(body["description"]) else loginSettingsService.getDescription()),
+        "appName" to (if (body.containsKey("appName")) loginSettingsService.setAppName(body["appName"]) else loginSettingsService.getAppName())
+    )
+
+    @PostMapping("/login-settings/icon", consumes = [MediaType.MULTIPART_FORM_DATA_VALUE])
+    fun uploadAppIcon(@RequestPart("file") file: MultipartFile): Map<String, Any> {
+        loginSettingsService.setAppIcon(file)
+        return mapOf("success" to true, "hasAppIcon" to true)
+    }
+
+    @DeleteMapping("/login-settings/icon")
+    fun deleteAppIcon(): Map<String, Any> {
+        loginSettingsService.clearAppIcon()
+        return mapOf("success" to true, "hasAppIcon" to false)
+    }
 
     @GetMapping("/recovery-code/status")
     fun recoveryCodeStatus(): Map<String, Any?> = recoveryCodeService.status()
@@ -151,11 +170,15 @@ class AdminController(
         return ResponseEntity.ok().build()
     }
 
+    // Validating new accounts is delegated to MANAGE_ROLES holders too (not just full admins):
+    // approval already requires picking a role, which they're trusted to assign anyway.
+    @PreAuthorize("hasRole('ADMIN') or @permissionService.currentUserHasAdminPermission('MANAGE_ROLES')")
     @GetMapping("/signup-requests")
     fun getSignupRequests(): List<SignupRequestDto> = signupRequestRepository.findAll().map { it.toDto() }
 
     // A role must be assigned as part of approval so the account isn't left roleless (and thus
     // moduleless) until an admin remembers to circle back and set one via the Accès tab.
+    @PreAuthorize("hasRole('ADMIN') or @permissionService.currentUserHasAdminPermission('MANAGE_ROLES')")
     @PutMapping("/signup-requests/{id}/approve")
     fun approveSignupRequest(@PathVariable id: Long, @RequestBody(required = false) body: ApproveSignupRequest?): ResponseEntity<Any> {
         val opt = signupRequestRepository.findById(id)
@@ -179,6 +202,7 @@ class AdminController(
         }
     }
 
+    @PreAuthorize("hasRole('ADMIN') or @permissionService.currentUserHasAdminPermission('MANAGE_ROLES')")
     @PutMapping("/signup-requests/{id}/reject")
     fun rejectSignupRequest(@PathVariable id: Long): ResponseEntity<Any> {
         val opt = signupRequestRepository.findById(id)

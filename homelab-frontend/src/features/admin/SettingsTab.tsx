@@ -1,8 +1,9 @@
-import { useState, useEffect, useCallback } from 'react';
-import { Save, RefreshCw, FolderOpen, Puzzle, Home, KeyRound, MessageSquareText, Gauge, AlertTriangle, Power } from 'lucide-react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { Save, RefreshCw, FolderOpen, Puzzle, Home, KeyRound, MessageSquareText, Gauge, AlertTriangle, Power, Sparkles, Image as ImageIcon, Upload, Trash2 } from 'lucide-react';
 import { useAuth } from '@auth/AuthContext';
 import { getApiUrl } from '@lib/api';
 import RecoveryCodeReveal from '@ui/RecoveryCodeReveal';
+import { applyBranding, appIconUrl, DEFAULT_APP_NAME } from '@lib/branding';
 import type { ResourceLimitsStatus } from '@app/types';
 
 const LOGIN_DESCRIPTION_MAX_LENGTH = 500;
@@ -50,6 +51,16 @@ export default function SettingsTab() {
   const [savedLoginDescription, setSavedLoginDescription] = useState('');
   const [savingDescription, setSavingDescription] = useState(false);
   const [descriptionSavedOk, setDescriptionSavedOk] = useState(false);
+  const [appName, setAppName] = useState('');
+  const [savedAppName, setSavedAppName] = useState('');
+  const [savingName, setSavingName] = useState(false);
+  const [nameSavedOk, setNameSavedOk] = useState(false);
+  const [hasAppIcon, setHasAppIcon] = useState(false);
+  const [iconCacheBust, setIconCacheBust] = useState(0);
+  const [uploadingIcon, setUploadingIcon] = useState(false);
+  const [removingIcon, setRemovingIcon] = useState(false);
+  const [iconError, setIconError] = useState<string | null>(null);
+  const iconFileInputRef = useRef<HTMLInputElement>(null);
   const [limits, setLimits] = useState<ResourceLimitsStatus | null>(null);
   const [ramInput, setRamInput] = useState('');
   const [diskInput, setDiskInput] = useState('');
@@ -91,13 +102,79 @@ export default function SettingsTab() {
   const fetchLoginDescription = useCallback(async () => {
     const res = await fetch(getApiUrl('/api/auth/login-settings'));
     if (res.ok) {
-      const data = await res.json() as { description?: string | null };
+      const data = await res.json() as { description?: string | null; appName?: string | null; hasAppIcon?: boolean };
       setLoginDescription(data.description ?? '');
       setSavedLoginDescription(data.description ?? '');
+      setAppName(data.appName ?? '');
+      setSavedAppName(data.appName ?? '');
+      setHasAppIcon(data.hasAppIcon ?? false);
     }
   }, []);
 
   useEffect(() => { void fetchLoginDescription(); }, [fetchLoginDescription]);
+
+  const saveAppName = async () => {
+    setSavingName(true);
+    try {
+      const res = await fetch(getApiUrl('/api/admin/login-settings'), {
+        method: 'PUT',
+        headers,
+        body: JSON.stringify({ appName }),
+      });
+      if (res.ok) {
+        const data = await res.json() as { appName?: string | null };
+        setSavedAppName(data.appName ?? '');
+        applyBranding({ appName: data.appName, hasAppIcon }, iconCacheBust);
+        setNameSavedOk(true);
+        setTimeout(() => setNameSavedOk(false), 2500);
+      }
+    } finally {
+      setSavingName(false);
+    }
+  };
+
+  const uploadAppIcon = async (file: File) => {
+    if (!file.type.startsWith('image/')) {
+      setIconError('Le fichier doit être une image.');
+      return;
+    }
+    setIconError(null);
+    setUploadingIcon(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await fetch(getApiUrl('/api/admin/login-settings/icon'), {
+        method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        body: formData,
+      });
+      if (res.ok) {
+        const bust = Date.now();
+        setHasAppIcon(true);
+        setIconCacheBust(bust);
+        applyBranding({ appName: savedAppName, hasAppIcon: true }, bust);
+      } else {
+        const err = await res.json().catch(() => null) as { error?: string } | null;
+        setIconError(err?.error ?? "Échec de l'envoi de l'image");
+      }
+    } finally {
+      setUploadingIcon(false);
+    }
+  };
+
+  const removeAppIcon = async () => {
+    setRemovingIcon(true);
+    try {
+      const res = await fetch(getApiUrl('/api/admin/login-settings/icon'), { method: 'DELETE', headers });
+      if (res.ok) {
+        setHasAppIcon(false);
+        setIconError(null);
+        applyBranding({ appName: savedAppName, hasAppIcon: false });
+      }
+    } finally {
+      setRemovingIcon(false);
+    }
+  };
 
   const fetchResourceLimits = useCallback(async () => {
     const res = await fetch(getApiUrl('/api/admin/resource-limits'), { headers });
@@ -451,6 +528,95 @@ export default function SettingsTab() {
               {config.logLevel}
             </span>
           </p>
+        </div>
+      </div>
+
+      {/* ── Identité de l'application ── */}
+      <div className="card bg-base-300">
+        <div className="card-body gap-4">
+          <h2 className="card-title text-base flex items-center gap-2">
+            <Sparkles size={16} className="opacity-60" /> Identité de l'application
+          </h2>
+          <p className="text-xs text-base-content/50 -mt-2">
+            Le nom et l'icône affichés dans l'onglet du navigateur.
+          </p>
+
+          <div className="flex items-center gap-4">
+            <div className="flex flex-col items-center gap-1.5">
+              <div className="w-16 h-16 rounded-xl bg-base-200 border border-base-content/10 flex items-center justify-center overflow-hidden shrink-0">
+                {hasAppIcon ? (
+                  <img
+                    src={appIconUrl(iconCacheBust)}
+                    alt="Icône de l'application"
+                    className="w-full h-full object-contain"
+                  />
+                ) : (
+                  <ImageIcon size={22} className="opacity-30" />
+                )}
+              </div>
+              <div className="flex gap-1">
+                <button
+                  type="button"
+                  className="btn btn-xs btn-ghost gap-1"
+                  onClick={() => iconFileInputRef.current?.click()}
+                  disabled={uploadingIcon || removingIcon}
+                >
+                  {uploadingIcon
+                    ? <span className="loading loading-spinner loading-xs" />
+                    : <Upload size={12} />}
+                </button>
+                {hasAppIcon && (
+                  <button
+                    type="button"
+                    className="btn btn-xs btn-ghost text-error gap-1"
+                    onClick={() => void removeAppIcon()}
+                    disabled={uploadingIcon || removingIcon}
+                    title="Supprimer l'icône"
+                  >
+                    {removingIcon
+                      ? <span className="loading loading-spinner loading-xs" />
+                      : <Trash2 size={12} />}
+                  </button>
+                )}
+              </div>
+              <input
+                ref={iconFileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={e => {
+                  const file = e.target.files?.[0];
+                  e.target.value = '';
+                  if (file) void uploadAppIcon(file);
+                }}
+              />
+            </div>
+
+            <div className="flex flex-col gap-1 flex-1">
+              <label className="text-xs font-semibold text-base-content/70">Nom</label>
+              <input
+                type="text"
+                className="input input-bordered input-sm w-full"
+                value={appName}
+                onChange={e => setAppName(e.target.value)}
+                placeholder={DEFAULT_APP_NAME}
+                maxLength={100}
+              />
+              <button
+                type="button"
+                className={`btn btn-sm gap-2 min-w-28 w-fit mt-1 ${nameSavedOk ? 'btn-success' : 'btn-primary'}`}
+                onClick={() => void saveAppName()}
+                disabled={savingName || appName === savedAppName}
+              >
+                {savingName
+                  ? <span className="loading loading-spinner loading-xs" />
+                  : <Save size={14} />}
+                {nameSavedOk ? 'Sauvegardé !' : 'Enregistrer'}
+              </button>
+            </div>
+          </div>
+
+          {iconError && <p className="text-xs text-error">{iconError}</p>}
         </div>
       </div>
 

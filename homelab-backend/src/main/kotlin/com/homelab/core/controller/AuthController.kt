@@ -20,10 +20,14 @@ import com.homelab.core.service.RecoveryCodeService
 import com.homelab.core.service.UserService
 import com.homelab.sdk.helper.AppLogger
 import jakarta.servlet.http.HttpServletResponse
+import org.springframework.core.io.FileSystemResource
+import org.springframework.core.io.Resource
+import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.bind.annotation.*
+import java.nio.file.Files
 import java.time.LocalDateTime
 
 @RestController
@@ -58,10 +62,28 @@ class AuthController(
         return ResponseEntity.ok(user.toDto())
     }
 
-    // Owner-configurable description shown on the login card. Public since the login page
-    // itself is unauthenticated.
+    // Owner-configurable description, app name and app icon (browser tab title/favicon). Public
+    // since the login page itself is unauthenticated and the tab branding must apply there too.
     @GetMapping("/login-settings")
-    fun getLoginSettings(): Map<String, Any?> = mapOf("description" to loginSettingsService.getDescription())
+    fun getLoginSettings(): Map<String, Any?> = mapOf(
+        "description" to loginSettingsService.getDescription(),
+        "appName" to loginSettingsService.getAppName(),
+        "hasAppIcon" to loginSettingsService.hasAppIcon()
+    )
+
+    // Serves the uploaded app icon image (used as the browser tab favicon). Public for the same
+    // reason as /login-settings above.
+    @GetMapping("/app-icon")
+    fun getAppIcon(): ResponseEntity<Resource> {
+        val file = loginSettingsService.getAppIconFile() ?: return ResponseEntity.notFound().build()
+        val contentType = Files.probeContentType(file.toPath()) ?: MediaType.APPLICATION_OCTET_STREAM_VALUE
+        return ResponseEntity.ok()
+            .header("Cache-Control", "max-age=3600, public")
+            .header("Content-Disposition", "inline; filename=\"${file.name}\"")
+            .contentLength(file.length())
+            .contentType(MediaType.parseMediaType(contentType))
+            .body(FileSystemResource(file))
+    }
 
     //TODO: Move repository call into service
     @PostMapping("/login")
@@ -166,7 +188,12 @@ class AuthController(
                 signup.processedAt = LocalDateTime.now()
                 signupRequestRepository.save(signup)
                 val recoveryCode = recoveryCodeService.generateNewCode()
-                ResponseEntity.ok(mapOf("success" to true, "user" to user.toDto(), "recoveryCode" to recoveryCode))
+                ResponseEntity.ok(mapOf(
+                    "success" to true,
+                    "message" to "Compte administrateur créé et activé immédiatement : vous êtes le premier utilisateur du système.",
+                    "user" to user.toDto(),
+                    "recoveryCode" to recoveryCode
+                ))
             } catch (e: Exception) {
                 // Catches more than IllegalArgumentException on purpose: registerUser's DB insert
                 // above may already have committed before signup/recovery-code bookkeeping throws,

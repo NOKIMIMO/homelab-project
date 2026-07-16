@@ -3,6 +3,7 @@ import { ShieldPlus, Plus, Trash2, RefreshCw, Pencil, X, Clock, Shield } from 'l
 import type { Role, RoleRequest, Module, DayOfWeek, AdminPermission } from '@app/types';
 import { useAuth } from '@auth/AuthContext';
 import { getApiUrl } from '@lib/api';
+import SignupRequestsSection from './SignupRequestsSection';
 
 const EMPTY_FORM: RoleRequest = { name: '', moduleIds: [], blockedWindows: [], adminPermissions: [] };
 
@@ -188,6 +189,11 @@ export default function RolesTab() {
 
   return (
     <div className="h-full overflow-y-auto space-y-6 max-w-3xl pr-1">
+
+      {/* ── Validation des comptes ── */}
+      {/* Reachable here (and not just from the Accès tab) because approving a signup request
+          already requires assigning a role, so MANAGE_ROLES holders are trusted to do it. */}
+      <SignupRequestsSection />
 
       {/* ── Créer / éditer un rôle ── */}
       <div className="card bg-base-300">

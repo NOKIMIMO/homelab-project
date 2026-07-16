@@ -12,6 +12,9 @@ import App from '@app/App';
 import Error403Page from '@pages/errors/403';
 import RequireAdmin from '@auth/RequireAdmin';
 import Error404Page from '@pages/errors/404';
+import { loadAndApplyBranding } from '@lib/branding';
+
+void loadAndApplyBranding();
 
 const router = createBrowserRouter([
   {

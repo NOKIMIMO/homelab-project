@@ -43,7 +43,10 @@ export default function PasswordLoginForm({ onLoginSuccess }: PasswordLoginFormP
       const result = await registerUser(email, password);
 
       if (result.success) {
-        setSuccess("Inscription réussie. L'administrateur vous contactera pour valider votre compte.");
+        setSuccess(
+          result.message ||
+            "Inscription réussie. Votre compte de devra être validé par un administrateur."
+        );
         return;
       }
       setError(result.message || "Echec de l'enregistrement");
