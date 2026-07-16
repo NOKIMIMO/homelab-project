@@ -18,6 +18,9 @@ services:
       # monté en lecture/écriture séparément : le panel admin (Limites de ressources)
       # réécrit JAVA_XMX_GB dedans directement, voir HOMELAB_ENV_FILE_PATH ci-dessous
       - ./.env.production:/app_root/.env:rw
+      # monté en lecture/écriture séparément : "Installer un module (.zip)" et l'export de module
+      # doivent pouvoir écrire dans ce dossier (voir ModuleService.installModuleZip/exportModuleZip)
+      - ./modules:/app_root/modules:rw
       # fichiers écrits par l'app elle-même (uploads de modules, icône du homelab, ...) : doit
       # être un volume nommé, sans quoi ils sont perdus à chaque recréation du conteneur (pas
       # juste un redémarrage), voir HomelabConfig.storagePath

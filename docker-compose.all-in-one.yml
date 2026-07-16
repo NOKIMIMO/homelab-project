@@ -21,7 +21,9 @@ services:
       # être un volume nommé, sans quoi ils sont perdus à chaque recréation du conteneur (pas
       # juste un redémarrage), voir HomelabConfig.storagePath
       - app-storage:/data
-      - ./modules:/app_root/modules:ro
+      # rw : "Installer un module (.zip)" et l'export de module doivent pouvoir écrire ici
+      # (voir ModuleService.installModuleZip/exportModuleZip)
+      - ./modules:/app_root/modules:rw
       # requis par OSHI pour identifier le vrai OS hôte (CPU/RAM/disque sont
       # déjà identiques dans le conteneur sous Docker Desktop/WSL2, donc pas
       # besoin de monter /proc et /sys en plus)
