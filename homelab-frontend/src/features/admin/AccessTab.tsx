@@ -216,7 +216,6 @@ export default function AccessTab() {
           <table className="table table-sm w-full">
             <thead>
               <tr className="bg-base-300 text-xs uppercase tracking-wide">
-                <th>ID</th>
                 <th>Name</th>
                 <th>Email</th>
                 <th>Admin</th>
@@ -228,15 +227,14 @@ export default function AccessTab() {
             <tbody>
               {users.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="text-center text-base-content/40 italic py-8">
+                  <td colSpan={6} className="text-center text-base-content/40 italic py-8">
                     No users
                   </td>
                 </tr>
               ) : (
                 users.map(u => (
                   <tr key={u.id} className="hover">
-                    <td className="text-xs opacity-40 tabular-nums">{u.id} {u.email  === userName ? " (you)" : ""}</td>
-                    <td>{u.name ?? <span className="opacity-30 italic">---</span>}</td>
+                    <td>{u.name ?? <span className="opacity-30 italic">---</span>}{u.email === userName ? " (you)" : ""}</td>
                     <td className="font-mono text-xs">{u.email}</td>
                     <td>
                       <div className="flex flex-col items-center gap-1">

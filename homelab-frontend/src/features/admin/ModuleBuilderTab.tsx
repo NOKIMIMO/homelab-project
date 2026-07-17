@@ -39,7 +39,7 @@ export default function ModuleBuilderTab() {
       if (!res.ok) {
         throw new Error(body?.error ?? body?.message ?? "Failed to install the module");
       }
-      setInstallMessage({ type: 'success', text: `Module '${body?.id ?? ''}' installed successfully.` });
+      setInstallMessage({ type: 'success', text: `Module '${body?.name ?? ''}' installed successfully.` });
       void fetchModules();
     } catch (err) {
       setInstallMessage({ type: 'error', text: err instanceof Error ? err.message : "Failed to install the module" });
@@ -160,7 +160,6 @@ export default function ModuleBuilderTab() {
         <table className="table table-sm w-full">
           <thead>
             <tr className="bg-base-300 text-xs uppercase tracking-wide">
-              <th>ID</th>
               <th>Name</th>
               <th>Description</th>
               <th>Type</th>
@@ -170,14 +169,13 @@ export default function ModuleBuilderTab() {
           <tbody>
             {modules.length === 0 ? (
               <tr>
-                <td colSpan={5} className="text-center text-base-content/40 italic py-8">
+                <td colSpan={4} className="text-center text-base-content/40 italic py-8">
                   No modules found.
                 </td>
               </tr>
             ) : (
               modules.map(mod => (
                 <tr key={mod.id} className="hover">
-                  <td className="font-mono text-xs">{mod.id}</td>
                   <td>{mod.name}</td>
                   <td className="text-xs opacity-60">{mod.description ?? <span className="opacity-30 italic">---</span>}</td>
                   <td>
@@ -190,7 +188,7 @@ export default function ModuleBuilderTab() {
                       className="btn btn-xs btn-outline gap-1"
                       disabled={exportingId === mod.id}
                       onClick={() => void exportModule(mod.id)}
-                      title={`Export ${mod.id} as a .zip`}
+                      title={`Export ${mod.name} as a .zip`}
                     >
                       {exportingId === mod.id
                         ? <span className="loading loading-spinner loading-xs" />
@@ -262,7 +260,7 @@ export default function ModuleBuilderTab() {
           <div className="bg-base-300 rounded-2xl shadow-2xl w-full max-w-sm p-6 space-y-4">
             <h2 className="text-lg font-black">Delete the module?</h2>
             <p className="text-sm text-base-content/70">
-              The module <span className="font-mono">{pendingDelete.id}</span> will be removed from disk and from the dashboard.
+              The module <span className="font-mono">{pendingDelete.name}</span> will be removed from disk and from the dashboard.
             </p>
             <label className="flex items-center gap-2 text-sm">
               <input

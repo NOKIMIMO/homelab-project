@@ -228,7 +228,6 @@ export default function RolesTab() {
                     />
                     <div className="flex-1 min-w-0">
                       <span className="font-semibold text-sm truncate block">{m.name}</span>
-                      <span className="text-xs text-base-content/40 font-mono">{m.id}</span>
                     </div>
                   </label>
                 ))}

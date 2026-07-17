@@ -18,7 +18,7 @@ export function TelemetryPanel({ telemetry }: DashboardProps) {
                   <div className="flex items-center gap-2"><div className="badge badge-primary badge-xs"></div><span className="text-base-content/70">Homelab Core: <span className="font-bold text-primary">{telemetry.cpu.coreUsed}%</span></span></div>
                 </div>
                 <progress className={`progress w-full h-2 mt-auto ${telemetry.cpu.total > 80 ? 'progress-error' : 'progress-primary'}`} value={telemetry.cpu.total} max="100"></progress>
-                <p className="text-xs text-base-content/40 mt-2">Total = Docker VM (WSL2), not all of Windows; "Homelab Core" is scoped to the process and not normalized by core count (can exceed the Total)</p>
+                <p className="text-xs text-base-content/40 mt-2">Total = Docker VM , not all of host; "Homelab Core" is scoped to the process and not normalized by core count (can exceed the Total)</p>
               </div>
             </div>
 
