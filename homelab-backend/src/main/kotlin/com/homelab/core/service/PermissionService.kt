@@ -49,6 +49,21 @@ class PermissionService(private val userRepository: UserRepository) {
         return user.permissions.containsAll(required)
     }
 
+    /**
+     * Whether [user] should currently see/reach [module] at all. Mirrors [canInvoke]'s access model
+     * at the module level so a module a user cannot use never shows up for them: a full admin and a
+     * module that declares no permissions are always visible; otherwise a role granting the module
+     * makes it visible unless that role is inside a blocked time window right now, with direct
+     * per-user permissions on the module as an always-open fallback.
+     */
+    fun canAccessModule(user: User, module: ModuleConfig): Boolean {
+        if (user.isAdmin) return true
+        if (module.permissions.isEmpty()) return true
+        val now = LocalDateTime.now()
+        if (user.roles.any { module.id in it.moduleIds && !it.isBlockedAt(now) }) return true
+        return user.permissions.any { it.endsWith(":${module.id}") }
+    }
+
     // A full admin implicitly holds every administration permission; otherwise it must be
     // granted by at least one of the user's roles.
     fun hasAdminPermission(user: User, permission: AdminPermission): Boolean =

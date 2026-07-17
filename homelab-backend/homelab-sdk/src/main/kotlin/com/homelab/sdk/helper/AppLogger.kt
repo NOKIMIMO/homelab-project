@@ -26,6 +26,17 @@ object AppLogger {
 	fun setLevel(l: Level) { level = l }
 	fun getLevel(): Level = level
 
+	/**
+	 * Optional sink notified on every [error] call (tag, message). Lets a higher layer (e.g. the
+	 * backend's alert pipeline) turn server errors into a user notification without the SDK having to
+	 * know about it. Kept as a single nullable callback so the SDK stays framework-free; the listener
+	 * is responsible for its own throttling/coalescing and must not throw (failures are swallowed).
+	 */
+	@Volatile
+	private var errorListener: ((tag: String, msg: String) -> Unit)? = null
+
+	fun setErrorListener(l: ((tag: String, msg: String) -> Unit)?) { errorListener = l }
+
 	private fun now(): String = LocalDateTime.now().format(timeFormatter)
 
 	private fun shouldLog(l: Level): Boolean = when (level) {
@@ -95,6 +106,9 @@ object AppLogger {
 		System.err.println("${now()} [ERROR] $prefix($caller) $msg")
 		if (level == Level.ERROR_DETAILED) t?.printStackTrace()
 		store("ERROR", tag, msg, caller)
+		// Notify the optional sink last, guarded: a throwing/logging listener must never break logging
+		// or recurse back into error().
+		errorListener?.let { listener -> runCatching { listener(tag, msg) } }
 	}
 
 	/** Lightweight logger bound to a tag (typically a class/file name). */

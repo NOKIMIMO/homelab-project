@@ -20,8 +20,8 @@ const STATUS_BADGE: Record<string, string> = {
   REJECTED: 'badge-error',
 };
 
-// Reachable both by full admins (Access tab) and by MANAGE_ROLES holders (Roles tab) — the backend
-// grants both the same access to the signup-requests endpoints (see AdminController.kt).
+// Rendered in the Access tab. Full admins and ADMIN_ACCESS holders alike may approve/reject signup
+// requests - the backend grants both the same access to the endpoints (see AdminController.kt).
 export default function SignupRequestsSection() {
   const { token } = useAuth();
   const [requests, setRequests] = useState<SignupRequest[]>([]);

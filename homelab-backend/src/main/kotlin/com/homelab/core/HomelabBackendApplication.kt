@@ -2,12 +2,14 @@ package com.homelab.core
 
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.runApplication
+import org.springframework.scheduling.annotation.EnableAsync
 import org.springframework.scheduling.annotation.EnableScheduling
 import java.nio.file.Files
 import java.nio.file.Paths
 
 @SpringBootApplication
 @EnableScheduling
+@EnableAsync
 class HomelabBackendApplication
 
 fun main(args: Array<String>) {

@@ -9,11 +9,10 @@ import org.springframework.web.bind.annotation.*
 
 @RestController
 @RequestMapping("/api/admin/roles")
-// Full admins always pass; otherwise the caller must hold the MANAGE_ROLES administration
-// permission via one of their roles (see PermissionService.currentUserHasAdminPermission).
-// This does not grant the ability to change a user's isAdmin flag - granting isAdmin only ever
-// happens via AdminController.transferAdmin - i.e. "change roles, except the administrator's".
-@PreAuthorize("hasRole('ADMIN') or @permissionService.currentUserHasAdminPermission('MANAGE_ROLES')")
+// Role definitions are managed by full admins and by ADMIN_ACCESS holders alike. This never
+// touches the administrator's own account: granting isAdmin only ever happens via
+// AdminController.transferAdmin (admin-only), and the admin's roles are guarded in UserService.
+@PreAuthorize("hasRole('ADMIN') or @permissionService.currentUserHasAdminPermission('ADMIN_ACCESS')")
 @CrossOrigin(origins = ["*"])
 class RoleController(private val roleService: RoleService) {
 
