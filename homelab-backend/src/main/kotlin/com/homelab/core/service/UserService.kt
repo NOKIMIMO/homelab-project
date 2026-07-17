@@ -51,7 +51,13 @@ class UserService(
         return repository.save(user)
     }
 
-    fun deleteUser(id: Long) = repository.deleteById(id)
+    // The administrator can never be deleted directly - they must transfer the admin role first
+    // (see transferAdmin). This is also what stops an ADMIN_ACCESS holder from ejecting the admin.
+    fun deleteUser(id: Long) {
+        val user = repository.findById(id).orElseThrow { NotFoundException("User with id $id not found") }
+        if (user.isAdmin) throw IllegalArgumentException("The administrator cannot be deleted; transfer the admin role first")
+        repository.deleteById(id)
+    }
 
     fun deleteAllUsers() = repository.deleteAll()
 
@@ -84,8 +90,12 @@ class UserService(
         repository.save(user)
     }
 
+    // The administrator's own roles are off-limits: this is the "change the admin's roles"
+    // operation an ADMIN_ACCESS holder must not be able to perform (the admin manages their own
+    // account via transferAdmin instead).
     fun updateUserRoles(id: Long, roleIds: Set<Long>) {
         val user = repository.findById(id).orElseThrow { NotFoundException("User with id $id not found") }
+        if (user.isAdmin) throw IllegalArgumentException("The administrator's roles cannot be changed")
         user.roles = roleRepository.findAllById(roleIds).toMutableSet()
         repository.save(user)
     }

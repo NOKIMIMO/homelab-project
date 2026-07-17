@@ -14,7 +14,7 @@ interface DashboardProps {
 
 export default function Dashboard({ modules, onRefresh, isModulesRefreshing }: DashboardProps) {
   const { token, isAdmin, adminPermissions } = useAuth();
-  const canManageModules = isAdmin || adminPermissions.includes('MODULE_START_STOP');
+  const canManageModules = isAdmin || adminPermissions.includes('ADMIN_ACCESS');
   const [telemetry, setTelemetry] = useState<TelemetryData | null>(null);
   const [countdown, setCountdown] = useState(30);
   const [actionLoading, setActionLoading] = useState<string | null>(null);

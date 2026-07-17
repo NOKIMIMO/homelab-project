@@ -1,0 +1,102 @@
+name: Tests & coverage
+
+# Blocking behaviour:
+#   - push to master/main OR pull request targeting master/main -> the test steps fail the job
+#     when a test fails. Combined with a branch-protection rule that marks the "backend" and
+#     "frontend" checks as required, this prevents merging/pushing broken code to the main branch.
+#   - any other branch -> the tests still run, but a failure does NOT fail the job
+#     (continue-on-error), so work-in-progress branches are never blocked.
+#
+# NOTE: the workflow alone cannot block a push/merge. You must enable the branch-protection rule
+# (see the "Required checks" instructions in the PR/commit) for the gating to take effect.
+#
+# Path filters are intentionally omitted: a required check that is skipped (because a commit
+# didn't touch the filtered paths) would leave a pull request waiting on a check that never runs.
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  backend:
+    name: Backend (Kotlin) unit tests + coverage
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      # -PexcludeIntegrationTests skips HomelabBackendApplicationTests (the Spring context test
+      # that needs a running Postgres). The 265 unit tests run without any external service.
+      # continue-on-error is true on non-main branches -> a failure there does not fail the job.
+      - name: Run unit tests + Kover coverage
+        working-directory: homelab-backend
+        continue-on-error: ${{ !(github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main' || github.base_ref == 'master' || github.base_ref == 'main') }}
+        run: |
+          chmod +x ./gradlew
+          ./gradlew test koverXmlReport koverHtmlReport -PexcludeIntegrationTests --no-daemon
+
+      - name: Print coverage summary
+        if: always()
+        working-directory: homelab-backend
+        run: |
+          python3 - <<'PY'
+          import re, pathlib
+          report = pathlib.Path("build/reports/kover/report.xml")
+          if not report.exists():
+              print("No coverage report (tests did not complete).")
+              raise SystemExit(0)
+          xml = report.read_text(encoding="utf-8")
+          tail = xml[xml.rfind("</package>"):]
+          for t, missed, covered in re.findall(r'<counter type="(\w+)" missed="(\d+)" covered="(\d+)"/>', tail):
+              missed, covered = int(missed), int(covered)
+              total = missed + covered
+              pct = covered / total * 100 if total else 0
+              print(f"{t:12} {pct:5.1f}%  ({covered}/{total})")
+          PY
+
+      - name: Upload backend test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-test-report
+          path: |
+            homelab-backend/build/reports/tests/test
+            homelab-backend/build/reports/kover/html
+
+  frontend:
+    name: Frontend (React/TS) unit tests + coverage
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: homelab-frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: homelab-frontend
+        run: npm ci
+
+      # continue-on-error is true on non-main branches -> a failure there does not fail the job.
+      - name: Run unit tests + coverage
+        working-directory: homelab-frontend
+        continue-on-error: ${{ !(github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main' || github.base_ref == 'master' || github.base_ref == 'main') }}
+        run: npm run test:coverage
+
+      - name: Upload frontend coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-coverage-report
+          path: homelab-frontend/coverage

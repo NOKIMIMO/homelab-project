@@ -165,11 +165,17 @@ export interface AlertRuleRequest {
   enabled: boolean;
 }
 
+// What produced an event. 'RULE' events are metric threshold breaches (metric/threshold/value
+// populated); 'ACCOUNT' (a sign-up awaiting validation) and 'ERROR' (a server error) reuse the
+// same list but carry no metric.
+export type AlertSource = 'RULE' | 'ACCOUNT' | 'ERROR';
+
 export interface AlertEvent {
   id: number;
+  source: AlertSource;
   ruleId: number | null;
   ruleName: string;
-  metric: MetricType;
+  metric: MetricType | null;
   severity: AlertSeverity;
   threshold: number;
   value: number;
@@ -195,8 +201,10 @@ export interface BlockedWindow {
   end: string;
 }
 
-// Global "administration" capabilities a role can grant, separate from its module access.
-export type AdminPermission = 'MANAGE_ROLES' | 'MOBILE_ACCESS' | 'MODULE_START_STOP' | 'MODULE_INSTALL';
+// The single "administration" capability a role can grant, separate from its module access.
+// A holder acts as an administrator-equivalent (everything except ejecting the administrator or
+// changing the administrator's account); it is also what the mobile app requires to sign in.
+export type AdminPermission = 'ADMIN_ACCESS';
 
 export interface Role {
   id: number;

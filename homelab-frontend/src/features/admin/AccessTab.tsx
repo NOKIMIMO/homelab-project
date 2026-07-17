@@ -269,11 +269,13 @@ export default function AccessTab() {
                       {new Date(u.createdAt).toLocaleDateString('en-US')}
                     </td>
                     <td>
+                      {/* The administrator can never be deleted (they must transfer the role
+                          first), so their row - like your own - offers no delete action. */}
                       <button
                         className={`btn btn-xs btn-error btn-ghost
-                          ${u.email === userName ? "cursor-not-allowed opacity-50 disabled" : ""}
+                          ${u.email === userName || u.isAdmin ? "cursor-not-allowed opacity-50 disabled" : ""}
                         `}
-                        disabled={actionId === u.id && u.email !== userName}
+                        disabled={u.isAdmin || (actionId === u.id && u.email !== userName)}
                         onClick={() => deleteUser(u.id, u.email)}
                       >
                         {actionId === u.id

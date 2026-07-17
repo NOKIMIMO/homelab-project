@@ -20,13 +20,14 @@ class ObjectRelationUpdater {
             val targetSchema =  SQLHelper.safeSqlName(relation.targetObject)
             return when (relation.cardinality) {
                 Cardinality.MANY_TO_MANY -> buildManyToManySql(schemaName, sourceTable, targetSchema, targetTable, relation)
-                Cardinality.ONE_TO_ONE -> buildOneToOneSql(schemaName, sourceTable, targetSchema, targetTable)
-                Cardinality.ONE_TO_MANY -> buildOneToManySql(schemaName, sourceTable, targetTable, targetSchema)
+                Cardinality.ONE_TO_ONE -> buildOneToOneSql(schemaName, sourceTable, targetSchema, targetTable, relation)
+                Cardinality.ONE_TO_MANY -> buildOneToManySql(schemaName, sourceTable, targetTable, targetSchema, relation)
                 Cardinality.MANY_TO_ONE -> buildOneToManySql(
                     schemaName,
                     targetTable,
                     sourceTable,
-                    targetSchema
+                    targetSchema,
+                    relation
                 ) // reverse of OneToMany
             }
         }
@@ -73,17 +74,22 @@ class ObjectRelationUpdater {
             schemaName: String,
             oneTable: String,
             manyTable: String,
-            targetSchema: String
+            targetSchema: String,
+            relation: RelationDefinition
         ): String {
             //TODO check for schemaTarget, unsure
 
             val constraintName =
                 "fk_${manyTable}_${oneTable}"
 
+            val deleteAction =
+                if (relation.cascadeDelete) "CASCADE"
+                else "NO ACTION"
+
             return """
                 ALTER TABLE "$schemaName"."$manyTable"
                 ADD COLUMN IF NOT EXISTS "${oneTable}_id" UUID;
-                
+
                 DO $$
                 BEGIN
                     IF NOT EXISTS (
@@ -94,7 +100,8 @@ class ObjectRelationUpdater {
                         ALTER TABLE "$schemaName"."$manyTable"
                         ADD CONSTRAINT "$constraintName"
                         FOREIGN KEY ("${oneTable}_id")
-                        REFERENCES "$targetSchema"."$oneTable"(id);
+                        REFERENCES "$targetSchema"."$oneTable"(id)
+                        ON DELETE $deleteAction;
                     END IF;
                 END $$;
             """.trimIndent()
@@ -104,10 +111,15 @@ class ObjectRelationUpdater {
             schemaName: String,
             sourceTable: String,
             targetSchema: String,
-            targetTable: String
+            targetTable: String,
+            relation: RelationDefinition
         ): String {
 
             val fkCol = "${targetTable}_id"
+
+            val deleteAction =
+                if (relation.cascadeDelete) "CASCADE"
+                else "NO ACTION"
 
             return """
         ALTER TABLE "$schemaName"."$sourceTable"
@@ -116,7 +128,8 @@ class ObjectRelationUpdater {
         ALTER TABLE "$schemaName"."$sourceTable"
         ADD CONSTRAINT fk_${sourceTable}_${targetTable}
         FOREIGN KEY ("$fkCol")
-        REFERENCES "$targetSchema"."$targetTable"(id);
+        REFERENCES "$targetSchema"."$targetTable"(id)
+        ON DELETE $deleteAction;
     """.trimIndent()
         }
     }

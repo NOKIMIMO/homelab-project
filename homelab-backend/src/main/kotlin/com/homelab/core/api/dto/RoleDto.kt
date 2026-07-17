@@ -17,7 +17,7 @@ data class RoleRequest(
     val name: String = "",
     val moduleIds: List<String> = emptyList(),
     val blockedWindows: List<BlockedWindowDto> = emptyList(),
-    // AdminPermission.name() values, e.g. "MANAGE_ROLES", "MODULE_START_STOP".
+    // AdminPermission.name() values. Today the only one is "ADMIN_ACCESS".
     val adminPermissions: List<String> = emptyList(),
 )
 

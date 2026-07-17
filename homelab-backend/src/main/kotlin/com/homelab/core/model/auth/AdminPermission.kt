@@ -1,22 +1,15 @@
 package com.homelab.core.model.auth
 
-// Fixed set of global "administration" capabilities a role can grant, distinct from the
-// per-module moduleIds a role also carries. Unlike module access, these aren't tied to any
-// installed module - they gate admin-panel sections and module lifecycle actions directly.
-// A user with isAdmin=true implicitly holds every one of these (see PermissionService).
+// The single "administration" capability a role can grant, distinct from the per-module moduleIds a
+// role also carries. Granting it makes the holder an administrator-equivalent: they can do
+// everything a full admin can, EXCEPT the two things reserved to the real administrator (isAdmin) -
+// ejecting the administrator (deleting/transferring the admin account) and changing the
+// administrator's own account (its roles). A user with isAdmin=true implicitly holds it (see
+// PermissionService). This deliberately replaces the previous fine-grained set (MANAGE_ROLES,
+// MOBILE_ACCESS, MODULE_START_STOP, MODULE_INSTALL) with one all-or-nothing grant.
 enum class AdminPermission {
-    // Access to the "Role management" admin section: create/edit/delete roles. Does not include
-    // granting/revoking a user's isAdmin status, which stays reserved to full admins.
-    MANAGE_ROLES,
-
-    // Access to the mobile app / mobile client.
-    MOBILE_ACCESS,
-
-    // Start/stop modules.
-    MODULE_START_STOP,
-
-    // Install (add) modules.
-    MODULE_INSTALL;
+    // Administrator-equivalent access (see above). Also what the mobile app requires to sign in.
+    ADMIN_ACCESS;
 
     companion object {
         private val byName = entries.associateBy { it.name }

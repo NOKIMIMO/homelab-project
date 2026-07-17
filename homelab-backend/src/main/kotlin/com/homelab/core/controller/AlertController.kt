@@ -7,15 +7,21 @@ import com.homelab.core.model.alert.AlertOperator
 import com.homelab.core.model.alert.AlertSeverity
 import com.homelab.core.model.alert.MetricType
 import com.homelab.core.service.AlertService
+import com.homelab.core.service.AlertStreamService
 import java.time.LocalDateTime
+import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.*
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter
 
 @RestController
 @RequestMapping("/api/alerts")
 @CrossOrigin(origins = ["*"])
-class AlertController(private val alertService: AlertService) {
+class AlertController(
+    private val alertService: AlertService,
+    private val alertStreamService: AlertStreamService,
+) {
 
     // ----- Rule management (admin only) -----
 
@@ -70,4 +76,13 @@ class AlertController(private val alertService: AlertService) {
             "events" to alertService.eventsSince(sinceDt).map { it.toDto() },
         )
     }
+
+    /**
+     * Opens a persistent Server-Sent Events stream that pushes alerts to the device in real time,
+     * as they fire. Held open by the mobile app's foreground service; the app also catches up via
+     * [events] on (re)connect for anything it missed while disconnected. Authenticated like the rest
+     * of the /api space (the client sends its bearer token on the streaming request).
+     */
+    @GetMapping("/stream", produces = [MediaType.TEXT_EVENT_STREAM_VALUE])
+    fun stream(): SseEmitter = alertStreamService.subscribe()
 }

@@ -17,6 +17,7 @@ import com.homelab.core.service.AuthService
 import com.homelab.core.service.JwtService
 import com.homelab.core.service.LoginSettingsService
 import com.homelab.core.service.RecoveryCodeService
+import com.homelab.core.service.SystemAlertService
 import com.homelab.core.service.UserService
 import com.homelab.sdk.helper.AppLogger
 import jakarta.servlet.http.HttpServletResponse
@@ -42,7 +43,8 @@ class AuthController(
     private val passwordResetRequestRepository: PasswordResetRequestRepository,
     private val jwtService: JwtService,
     private val recoveryCodeService: RecoveryCodeService,
-    private val loginSettingsService: LoginSettingsService
+    private val loginSettingsService: LoginSettingsService,
+    private val systemAlertService: SystemAlertService,
 ) {
     private val log = AppLogger.loggerFor(this::class)
 
@@ -206,6 +208,9 @@ class AuthController(
 
 
         signupRequestRepository.save(signup)
+        // Alert admins on their phone that someone is waiting to be validated (best-effort: a
+        // notification hiccup must not fail an otherwise-recorded request).
+        systemAlertService.raiseAccountPending(request.email, request.name)
         // Non-empty body: the frontend used to call res.json() on an empty 200 here, which threw
         // and made a successfully-recorded signup request look like a failure to the user.
         return ResponseEntity.ok(mapOf("success" to true, "message" to "Signup request submitted, pending approval by an administrator."))
