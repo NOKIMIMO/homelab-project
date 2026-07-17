@@ -20,26 +20,6 @@ export default defineConfig({
       '@features': resolve(__dirname, 'src/features'),
     }
   },
-  test: {
-    globals: true,
-    environment: 'jsdom',
-    setupFiles: ['./src/test/setup.ts'],
-    css: false,
-    include: ['src/**/*.{test,spec}.{ts,tsx}'],
-    coverage: {
-      provider: 'v8',
-      reporter: ['text-summary', 'text', 'html', 'lcov'],
-      include: ['src/**/*.{ts,tsx}'],
-      exclude: [
-        'src/**/*.{test,spec}.{ts,tsx}',
-        'src/test/**',
-        'src/main.tsx',
-        'src/**/*.d.ts',
-        'src/**/types.ts',
-        'src/app/types.ts',
-      ],
-    },
-  },
   server: {
     cors: true,
     host: true,
