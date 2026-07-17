@@ -39,7 +39,7 @@ const TEXT: Record<
       ],
       [<code>POSTGRES_PASSWORD</code>, 'Mot de passe Postgres associé.'],
       [
-        <code>-v ./modules:/app_root/modules:ro</code>,
+        <code>-v ./modules:/app_root/modules:rw</code>,
         <>
           Dossier hôte scanné par le backend (
           <code>HOMELAB_MODULES_SCAN_PATH=/app_root/modules</code>) ---
@@ -60,7 +60,7 @@ const TEXT: Record<
         fichiers à la racine du repo (ou d'un dossier vide) :
       </>
     ),
-    optionAcmd: 'docker compose -f docker-compose.all-in-one.yml up -d --build',
+    optionAcmd: 'docker compose -f docker-compose.all-in-one.yml up -d',
     optionBtitle: 'B. Services séparés (backend / frontend / Postgres)',
     optionBintro: (
       <>
@@ -89,7 +89,7 @@ const TEXT: Record<
       ],
       [<code>POSTGRES_PASSWORD</code>, 'Matching Postgres password.'],
       [
-        <code>-v ./modules:/app_root/modules:ro</code>,
+        <code>-v ./modules:/app_root/modules:rw</code>,
         <>
           Host folder scanned by the backend (
           <code>HOMELAB_MODULES_SCAN_PATH=/app_root/modules</code>) -drop
@@ -109,7 +109,7 @@ const TEXT: Record<
         the repo (or any empty folder):
       </>
     ),
-    optionAcmd: 'docker compose -f docker-compose.all-in-one.yml up -d --build',
+    optionAcmd: 'docker compose -f docker-compose.all-in-one.yml up -d',
     optionBtitle: 'B. Split services (backend / frontend / Postgres)',
     optionBintro: (
       <>

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate, Outlet } from 'react-router';
-import { BarChart, Camera, Box, Menu, Settings, ShieldCheck } from 'lucide-react';
+import { BarChart, Bug, Camera, Box, Menu, Settings, ShieldCheck } from 'lucide-react';
 import { useAuth } from '@auth/AuthContext';
 import type { AppOutletContext, Module } from '@app/types';
 import './index.css';
@@ -136,6 +136,14 @@ function AppLayout() {
             >
               <Settings size={16} /> Options
             </button>
+            <a
+              className="btn bg-base-100 btn-sm btn-outline w-full gap-2"
+              href="https://github.com/NOKIMIMO/homelab-project/issues"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <Bug size={16} /> Bug report
+            </a>
             <button
               className="btn btn-ghost btn-sm w-full gap-2 text-error"
               onClick={() => {

@@ -17,19 +17,25 @@ import com.homelab.core.model.module.UIFormat
 import com.homelab.core.parser.ModuleDataObjectParser
 import com.homelab.sdk.data.TableDefinition
 import com.homelab.core.exception.BadRequestException
+import com.homelab.core.exception.NotFoundException
 import jakarta.annotation.*
 import jakarta.servlet.http.HttpServletRequest
 import org.springframework.core.io.Resource
 import org.springframework.core.io.FileSystemResource
+import org.springframework.core.io.ByteArrayResource
 import org.springframework.http.MediaType
 import org.springframework.http.MediaTypeFactory
 import org.springframework.http.ResponseEntity
 import org.springframework.web.multipart.MultipartFile
+import java.io.ByteArrayOutputStream
 import java.io.File
+import java.io.IOException
 import java.util.concurrent.ConcurrentHashMap
 import org.springframework.stereotype.Service
 import java.nio.file.Files
+import java.util.zip.ZipEntry
 import java.util.zip.ZipInputStream
+import java.util.zip.ZipOutputStream
 
 @Service
 class ModuleService(
@@ -301,15 +307,20 @@ class ModuleService(
         if (file.isEmpty || file.originalFilename?.lowercase()?.endsWith(".zip") != true) {
             throw BadRequestException("A non-empty .zip file is required")
         }
+        log.debug("installModuleZip: received '${file.originalFilename}' (${file.size} bytes)")
 
         val tempDir = Files.createTempDirectory("homelab-install-").toFile().canonicalFile
         try {
             extractZip(file, tempDir)
+            log.debug("installModuleZip: extracted zip to $tempDir")
+
             val moduleRoot = findManifestRoot(tempDir)
                 ?: throw BadRequestException("No manifest.json found in uploaded zip")
+            log.debug("installModuleZip: manifest root resolved to $moduleRoot")
 
             val existingIds = modules.keys.toSet()
             val config = moduleConfigService.parseAndValidateManifest(moduleRoot, existingIds)
+            log.debug("installModuleZip: manifest parsed, module id='${config.id}'")
 
             val destination = File(File(homelabConfig.modulesScanPath).canonicalFile, config.id)
             if (destination.exists()) {
@@ -318,12 +329,78 @@ class ModuleService(
 
             resourceLimitsService.checkDiskQuota(DiskUsage.folderSizeBytes(moduleRoot.toPath()))
 
-            moduleRoot.copyRecursively(destination, overwrite = false)
+            log.debug("installModuleZip: copying '$moduleRoot' -> '$destination'")
+            copyModuleTree(moduleRoot, destination)
+            log.info("installModuleZip: module '${config.id}' installed at $destination")
+
             scanModules()
             return config
+        } catch (e: Exception) {
+            log.error("installModuleZip failed for '${file.originalFilename}': ${e.message}", e)
+            throw e
         } finally {
             tempDir.deleteRecursively()
         }
+    }
+
+    // Copies a module directory tree onto modulesScanPath, which in production is a bind-mounted
+    // Docker volume. Kotlin's File.copyRecursively() creates each directory with mkdirs() right
+    // before writing into it as it walks the tree; on Docker Desktop for Windows bind mounts that
+    // directory creation is not always immediately visible to the very next file write, which
+    // surfaced as a FileNotFoundException on an otherwise-valid install (e.g. "photos_ui.json" or
+    // "weather.svg" not found right after their parent directory was supposedly just created).
+    // Creating every directory upfront, then re-checking each file's parent right before writing,
+    // avoids relying on that same-instant visibility.
+    private fun copyModuleTree(source: File, destination: File) {
+        destination.mkdirs()
+        if (!destination.isDirectory) {
+            throw IOException("Failed to create destination directory: $destination")
+        }
+
+        source.walkTopDown().filter { it.isDirectory }.forEach { dir ->
+            val relPath = dir.toRelativeString(source)
+            if (relPath.isNotEmpty()) {
+                val dstDir = File(destination, relPath)
+                dstDir.mkdirs()
+                if (!dstDir.isDirectory) {
+                    throw IOException("Failed to create directory: $dstDir")
+                }
+            }
+        }
+
+        source.walkTopDown().filter { it.isFile }.forEach { srcFile ->
+            val relPath = srcFile.toRelativeString(source)
+            val dstFile = File(destination, relPath)
+            val parent = dstFile.parentFile
+            if (parent != null && !parent.exists() && !parent.mkdirs() && !parent.exists()) {
+                throw IOException("Failed to create directory: $parent")
+            }
+            log.debug("installModuleZip: copying $relPath (${srcFile.length()} bytes)")
+            srcFile.copyTo(dstFile, overwrite = false)
+        }
+    }
+
+    // Files that may hold secret param values (e.g. API keys) and must never leave the server.
+    private val exportExcludedFileNames = setOf("params.values.json", "params.values.bck.json")
+
+    fun exportModuleZip(id: String): ByteArrayResource {
+        val moduleDir = File(File(homelabConfig.modulesScanPath).canonicalFile, id)
+        if (!moduleDir.exists() || !moduleDir.isDirectory) {
+            throw NotFoundException("Module '$id' not found")
+        }
+
+        val buffer = ByteArrayOutputStream()
+        ZipOutputStream(buffer).use { zip ->
+            moduleDir.walkTopDown()
+                .filter { it.isFile && it.name !in exportExcludedFileNames }
+                .forEach { file ->
+                    val entryName = moduleDir.toPath().relativize(file.toPath()).joinToString("/")
+                    zip.putNextEntry(ZipEntry(entryName))
+                    file.inputStream().use { it.copyTo(zip) }
+                    zip.closeEntry()
+                }
+        }
+        return ByteArrayResource(buffer.toByteArray())
     }
 
     private fun extractZip(file: MultipartFile, tempDir: File) {

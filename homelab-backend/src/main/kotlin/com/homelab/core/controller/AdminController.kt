@@ -10,7 +10,9 @@ import com.homelab.core.model.auth.PasswordResetRequestRepository
 import com.homelab.core.model.auth.SignupRequestRepository
 import com.homelab.core.model.auth.UserRepository
 import com.homelab.core.service.AuthService
+import com.homelab.core.service.FrameworkLogLevelService
 import com.homelab.core.service.JwtService
+import com.homelab.core.service.LogFileService
 import com.homelab.core.service.LoginSettingsService
 import com.homelab.core.service.RecoveryCodeService
 import com.homelab.core.service.ResourceLimitsService
@@ -18,12 +20,15 @@ import com.homelab.core.service.SystemRestartService
 import com.homelab.core.service.UserService
 import com.homelab.core.service.module.ModuleConfigService
 import com.homelab.sdk.helper.AppLogger
+import org.springframework.core.io.FileSystemResource
+import org.springframework.core.io.Resource
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.web.bind.annotation.*
 import org.springframework.web.multipart.MultipartFile
+import java.nio.file.Files
 import java.time.LocalDateTime
 
 @RestController
@@ -44,6 +49,8 @@ class AdminController(
     private val moduleConfigService: ModuleConfigService,
     private val resourceLimitsService: ResourceLimitsService,
     private val systemRestartService: SystemRestartService,
+    private val frameworkLogLevelService: FrameworkLogLevelService,
+    private val logFileService: LogFileService,
 ) {
 
     @GetMapping("/logs")
@@ -60,6 +67,22 @@ class AdminController(
     fun clearLogs(): Map<String, Any> {
         AppLogger.clearLogs()
         return mapOf("success" to true)
+    }
+
+    @GetMapping("/logs/files")
+    fun listLogFiles(): List<LogFileService.LogFileInfo> = logFileService.list()
+
+    @PostMapping("/logs/files/manual")
+    fun createManualLogDump(): LogFileService.LogFileInfo = logFileService.createManualDump()
+
+    @GetMapping("/logs/files/{filename:.+}")
+    fun downloadLogFile(@PathVariable filename: String): ResponseEntity<Resource> {
+        val path = logFileService.resolveForDownload(filename)
+        return ResponseEntity.ok()
+            .header("Content-Disposition", "attachment; filename=\"${path.fileName}\"")
+            .contentLength(Files.size(path))
+            .contentType(MediaType.TEXT_PLAIN)
+            .body(FileSystemResource(path))
     }
 
     @GetMapping("/config")
@@ -84,6 +107,7 @@ class AdminController(
         return try {
             val newLevel = AppLogger.Level.valueOf(levelStr)
             AppLogger.setLevel(newLevel)
+            frameworkLogLevelService.apply(newLevel)
             ResponseEntity.ok(mapOf("success" to true, "level" to newLevel.name))
         } catch (_: IllegalArgumentException) {
             ResponseEntity.badRequest().body(mapOf("success" to false, "message" to "Invalid log level: $levelStr"))

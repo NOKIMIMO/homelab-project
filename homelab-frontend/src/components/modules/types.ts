@@ -164,6 +164,15 @@ export interface TextInputComponent {
   };
   action?: ActionConfig;
 }
+
+export interface CodeBlockComponent {
+  type: 'CodeBlock';
+  props?: {
+    lang?: string;
+  };
+  source?: BindingSource;
+  params?: Record<string, unknown>;
+}
 //
 
 export type RendererComponent =
@@ -178,7 +187,8 @@ export type RendererComponent =
   | ListItemComponent
   | ModalComponent
   | ImageViewerComponent
-  | TextInputComponent;
+  | TextInputComponent
+  | CodeBlockComponent;
 
 export type RendererComponentType = RendererComponent['type'];
 
