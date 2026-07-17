@@ -1,5 +1,5 @@
 import React from 'react';
-import { Maximize2, Trash2, Edit, Expand } from 'lucide-react';
+import { Maximize2, Trash2, Edit, Expand, CheckCircle2, RotateCcw } from 'lucide-react';
 
 interface IconButtonProps {
   icon: string;
@@ -16,6 +16,12 @@ const getIcon = (iconName: string) => {
     case 'trash':
     case 'delete': return <Trash2 size={18} />;
     case 'edit': return <Edit size={18} />;
+    case 'check':
+    case 'done':
+    case 'complete': return <CheckCircle2 size={18} />;
+    case 'undo':
+    case 'reopen':
+    case 'restore': return <RotateCcw size={18} />;
     default: return <Expand size={18} />; // Fallback
   }
 };
