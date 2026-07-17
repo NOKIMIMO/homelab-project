@@ -4,6 +4,7 @@ plugins {
     id("org.jetbrains.kotlin.plugin.jpa") version "2.1.21"
     id("org.springframework.boot") version "3.5.16"
     id("io.spring.dependency-management") version "1.1.6"
+    id("org.jetbrains.kotlinx.kover") version "0.9.1"
 }
 
 group = "com.homelab"
@@ -43,6 +44,7 @@ dependencies {
     annotationProcessor("org.projectlombok:lombok")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
+    testImplementation("org.mockito.kotlin:mockito-kotlin:5.4.0")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
     testImplementation(kotlin("test"))
 }
@@ -54,4 +56,28 @@ kotlin {
     }
 }
 
-tasks.withType<Test> { useJUnitPlatform() }
+tasks.withType<Test> {
+    useJUnitPlatform()
+    // Pass -PexcludeIntegrationTests to skip the Spring context integration test
+    // (HomelabBackendApplicationTests), which needs a running Postgres. Handy for unit-test-only
+    // runs / coverage on a machine without a database.
+    if (project.hasProperty("excludeIntegrationTests")) {
+        filter { excludeTestsMatching("*HomelabBackendApplicationTests*") }
+    }
+}
+
+// Aggregate the homelab-sdk subproject's coverage into the same report as the core app.
+dependencies {
+    kover(project(":homelab-sdk"))
+}
+
+kover {
+    reports {
+        filters {
+            excludes {
+                // Spring Boot entrypoint: untestable boilerplate that only boots the container.
+                classes("com.homelab.core.HomelabBackendApplication", "com.homelab.core.HomelabBackendApplicationKt")
+            }
+        }
+    }
+}

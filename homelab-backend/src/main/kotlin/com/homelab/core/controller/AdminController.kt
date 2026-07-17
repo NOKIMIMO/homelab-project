@@ -28,7 +28,11 @@ import java.time.LocalDateTime
 
 @RestController
 @RequestMapping("/api/admin")
-@PreAuthorize("hasRole('ADMIN')")
+// Full admins and ADMIN_ACCESS holders reach every endpoint here by default. The two operations
+// that would let an ADMIN_ACCESS holder eject or take over the administrator are individually
+// re-restricted below: transferAdmin (hasRole('ADMIN') only), plus deleteUser and setUserRoles,
+// which are guarded in UserService against targeting the administrator account.
+@PreAuthorize("hasRole('ADMIN') or @permissionService.currentUserHasAdminPermission('ADMIN_ACCESS')")
 @CrossOrigin(origins = ["*"])
 class AdminController(
     private val homelabConfig: HomelabConfig,
@@ -128,14 +132,23 @@ class AdminController(
     @GetMapping("/users") fun getUsers(): List<UserDto> = userService.getAllUsers().map { it.toDto() }
 
     @DeleteMapping("/users/{id}")
-    fun deleteUser(@PathVariable id: Long): ResponseEntity<Void> {
-        userService.deleteUser(id)
-        return ResponseEntity.ok().build()
-    }
+    fun deleteUser(@PathVariable id: Long): ResponseEntity<Any> =
+        // UserService refuses to delete the administrator (see its guard), so an ADMIN_ACCESS
+        // holder can never eject the admin this way - it surfaces as a 403 here.
+        try {
+            userService.deleteUser(id)
+            ResponseEntity.ok().build()
+        } catch (e: IllegalArgumentException) {
+            ResponseEntity.status(403).body(mapOf("success" to false, "message" to e.message))
+        }
+
     // The only way to grant isAdmin: the caller hands off their own admin status to another
     // account and is demoted to a "Moderator" role (see UserService.transferAdmin). There is
     // deliberately no standalone "make this user admin" endpoint - it always stays exactly one
     // isAdmin=true user, transferred atomically, never granted freestanding.
+    // Reserved to full admins: this is precisely the "eject the administrator" operation an
+    // ADMIN_ACCESS holder must not be able to perform.
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/users/{id}/transfer-admin")
     fun transferAdmin(@PathVariable id: Long): ResponseEntity<Any> {
         val callerEmail = SecurityContextHolder.getContext().authentication?.name
@@ -165,20 +178,23 @@ class AdminController(
     }
 
     @PutMapping("/users/{id}/roles")
-    fun setUserRoles(@PathVariable id: Long, @RequestBody roleIds: List<Long>): ResponseEntity<Void> {
-        userService.updateUserRoles(id, roleIds.toSet())
-        return ResponseEntity.ok().build()
-    }
+    fun setUserRoles(@PathVariable id: Long, @RequestBody roleIds: List<Long>): ResponseEntity<Any> =
+        // UserService refuses to change the administrator's roles (see its guard), so this stays
+        // reserved even though the endpoint itself is open to ADMIN_ACCESS holders.
+        try {
+            userService.updateUserRoles(id, roleIds.toSet())
+            ResponseEntity.ok().build()
+        } catch (e: IllegalArgumentException) {
+            ResponseEntity.status(403).body(mapOf("success" to false, "message" to e.message))
+        }
 
-    // Validating new accounts is delegated to MANAGE_ROLES holders too (not just full admins):
-    // approval already requires picking a role, which they're trusted to assign anyway.
-    @PreAuthorize("hasRole('ADMIN') or @permissionService.currentUserHasAdminPermission('MANAGE_ROLES')")
+    // Account approval (and the reset/reject variants below) is an ordinary admin-panel task, so
+    // it is available to ADMIN_ACCESS holders via the controller-level rule - no extra annotation.
     @GetMapping("/signup-requests")
     fun getSignupRequests(): List<SignupRequestDto> = signupRequestRepository.findAll().map { it.toDto() }
 
     // A role must be assigned as part of approval so the account isn't left roleless (and thus
     // moduleless) until an admin remembers to circle back and set one via the Access tab.
-    @PreAuthorize("hasRole('ADMIN') or @permissionService.currentUserHasAdminPermission('MANAGE_ROLES')")
     @PutMapping("/signup-requests/{id}/approve")
     fun approveSignupRequest(@PathVariable id: Long, @RequestBody(required = false) body: ApproveSignupRequest?): ResponseEntity<Any> {
         val opt = signupRequestRepository.findById(id)
@@ -202,7 +218,6 @@ class AdminController(
         }
     }
 
-    @PreAuthorize("hasRole('ADMIN') or @permissionService.currentUserHasAdminPermission('MANAGE_ROLES')")
     @PutMapping("/signup-requests/{id}/reject")
     fun rejectSignupRequest(@PathVariable id: Long): ResponseEntity<Any> {
         val opt = signupRequestRepository.findById(id)

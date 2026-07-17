@@ -3,15 +3,15 @@ import { ShieldPlus, Plus, Trash2, RefreshCw, Pencil, X, Clock, Shield } from 'l
 import type { Role, RoleRequest, Module, DayOfWeek, AdminPermission } from '@app/types';
 import { useAuth } from '@auth/AuthContext';
 import { getApiUrl } from '@lib/api';
-import SignupRequestsSection from './SignupRequestsSection';
 
 const EMPTY_FORM: RoleRequest = { name: '', moduleIds: [], blockedWindows: [], adminPermissions: [] };
 
 const ADMIN_PERMISSIONS: { key: AdminPermission; label: string; description: string }[] = [
-  { key: 'MANAGE_ROLES',      label: 'Manage roles',           description: "Create, edit, and delete roles (except administrator status)" },
-  { key: 'MOBILE_ACCESS',     label: 'Mobile app',             description: "Sign in from the mobile app" },
-  { key: 'MODULE_START_STOP', label: 'Stop / Start',           description: "Start and stop modules" },
-  { key: 'MODULE_INSTALL',    label: 'Add modules',            description: "Install new modules" },
+  {
+    key: 'ADMIN_ACCESS',
+    label: 'Administrator access',
+    description: "Full administrator rights (also required to sign in on mobile), except ejecting the administrator or changing the administrator's account",
+  },
 ];
 
 const DAYS: { key: DayOfWeek; label: string }[] = [
@@ -189,11 +189,6 @@ export default function RolesTab() {
 
   return (
     <div className="h-full overflow-y-auto space-y-6 max-w-3xl pr-1">
-
-      {/* ── Account approval ── */}
-      {/* Reachable here (and not just from the Access tab) because approving a signup request
-          already requires assigning a role, so MANAGE_ROLES holders are trusted to do it. */}
-      <SignupRequestsSection />
 
       {/* ── Create / edit role ── */}
       <div className="card bg-base-300">

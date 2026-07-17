@@ -76,19 +76,19 @@ fun getModuleAsset(
     }
 
     @PostMapping("/{id}/start")
-    @PreAuthorize("hasRole('ADMIN') or @permissionService.currentUserHasAdminPermission('MODULE_START_STOP')")
+    @PreAuthorize("hasRole('ADMIN') or @permissionService.currentUserHasAdminPermission('ADMIN_ACCESS')")
     fun startModule(@PathVariable id: String) = mapOf("success" to moduleService.startModule(id))
 
     @PostMapping("/{id}/stop")
-    @PreAuthorize("hasRole('ADMIN') or @permissionService.currentUserHasAdminPermission('MODULE_START_STOP')")
+    @PreAuthorize("hasRole('ADMIN') or @permissionService.currentUserHasAdminPermission('ADMIN_ACCESS')")
     fun stopModule(@PathVariable id: String) = mapOf("success" to moduleService.stopModule(id))
 
     @PostMapping("/{id}/install")
-    @PreAuthorize("hasRole('ADMIN') or @permissionService.currentUserHasAdminPermission('MODULE_INSTALL')")
+    @PreAuthorize("hasRole('ADMIN') or @permissionService.currentUserHasAdminPermission('ADMIN_ACCESS')")
     fun installModule(@PathVariable id: String) = mapOf("success" to moduleService.installModule(id))
 
     @PostMapping("/install", consumes = [MediaType.MULTIPART_FORM_DATA_VALUE])
-    @PreAuthorize("hasRole('ADMIN') or @permissionService.currentUserHasAdminPermission('MODULE_INSTALL')")
+    @PreAuthorize("hasRole('ADMIN') or @permissionService.currentUserHasAdminPermission('ADMIN_ACCESS')")
     fun installModuleZip(@RequestPart("file") file: MultipartFile) = moduleService.installModuleZip(file)
 
     //TODO: keep? not using docker anymore so....

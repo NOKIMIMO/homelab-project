@@ -195,8 +195,10 @@ export interface BlockedWindow {
   end: string;
 }
 
-// Global "administration" capabilities a role can grant, separate from its module access.
-export type AdminPermission = 'MANAGE_ROLES' | 'MOBILE_ACCESS' | 'MODULE_START_STOP' | 'MODULE_INSTALL';
+// The single "administration" capability a role can grant, separate from its module access.
+// A holder acts as an administrator-equivalent (everything except ejecting the administrator or
+// changing the administrator's account); it is also what the mobile app requires to sign in.
+export type AdminPermission = 'ADMIN_ACCESS';
 
 export interface Role {
   id: number;
