@@ -11,7 +11,7 @@ import {
 import { useLanguage, type Lang } from '../i18n/LanguageContext'
 
 const APK_RELEASE_TAG = 'APK'
-const APK_FILE_NAME = 'app-modulabs.apk'
+const APK_FILE_NAME = 'modulabs.apk'
 const APK_URL = `https://github.com/NOKIMIMO/homelab-project/releases/download/${APK_RELEASE_TAG}/${APK_FILE_NAME}`
 
 const TEXT: Record<
