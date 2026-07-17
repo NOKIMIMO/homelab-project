@@ -58,6 +58,27 @@ export interface ExternalFetchSpec {
   upsertKey?: string | null;
 }
 
+export type ModuleActionParameterType = 'EQUAL' | 'GREATER' | 'LESS' | 'GREATER_EQUAL' | 'LESS_EQUAL' | 'NONE';
+
+export interface LogicStepSpec {
+  actionType: string;
+  params: Record<string, string>;
+}
+
+export interface CustomFunctionParamSpec {
+  name: string;
+  type: ModuleActionParameterType;
+  description: string;
+  optional: boolean;
+}
+
+export interface CustomFunctionSpec {
+  name: string;
+  description: string;
+  parameters: CustomFunctionParamSpec[];
+  logic: LogicStepSpec[];
+}
+
 export interface ModuleParamSpec {
   key: string;
   label: string;
@@ -73,6 +94,7 @@ export interface TableSpec {
   relations: RelationSpec[];
   uniqueTogether: string[][];
   externalFetches: ExternalFetchSpec[];
+  customFunctions: CustomFunctionSpec[];
   // Only sent on an update request: the table's name before this edit.
   previousName?: string;
 }

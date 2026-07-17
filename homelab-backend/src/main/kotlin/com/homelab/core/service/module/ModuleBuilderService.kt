@@ -1,6 +1,7 @@
 package com.homelab.core.service.module
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.homelab.core.action.ActionFactory
 import com.homelab.core.api.dto.modulebuilder.AddColumnRequest
 import com.homelab.core.api.dto.modulebuilder.ColumnSpec
 import com.homelab.core.api.dto.modulebuilder.ExternalFetchSpec
@@ -36,7 +37,8 @@ class ModuleBuilderService(
     private val moduleService: ModuleService,
     private val moduleDatabaseService: ModuleDatabaseService,
     private val moduleConfigMemory: ModuleConfigMemory,
-    private val objectMapper: ObjectMapper
+    private val objectMapper: ObjectMapper,
+    private val actionFactory: ActionFactory
 ) {
     private val log = AppLogger.loggerFor(ModuleBuilderService::class)
 
@@ -402,6 +404,26 @@ class ModuleBuilderService(
                     throw BadRequestException("External fetch '${fetch.functionName}' needs at least one responseMapping entry")
                 }
             }
+
+            val availableActionTypes = actionFactory.getAvailableActionTypes()
+            for (fn in table.customFunctions) {
+                if (fn.name.isBlank()) {
+                    throw BadRequestException("Custom function name must not be empty (table '$tableName')")
+                }
+                if (!generatedNames.add(fn.name)) {
+                    throw BadRequestException("Function name '${fn.name}' collides with another function on table '$tableName'")
+                }
+                if (fn.logic.isEmpty()) {
+                    throw BadRequestException("Custom function '${fn.name}' needs at least one action step")
+                }
+                for (step in fn.logic) {
+                    if (step.actionType !in availableActionTypes) {
+                        throw BadRequestException(
+                            "Custom function '${fn.name}' uses unknown action type '${step.actionType}'"
+                        )
+                    }
+                }
+            }
         }
 
         for (table in request.tables) {
@@ -552,6 +574,16 @@ class ModuleBuilderService(
                         )
                     )
                 ),
+                "actUponObject" to xmlFile
+            )
+        }
+
+        for (fn in table.customFunctions) {
+            functions += mapOf(
+                "name" to fn.name,
+                "description" to fn.description.ifBlank { "Custom function." },
+                "parameters" to fn.parameters.map { functionParam(it.name, it.type, it.description, it.optional) },
+                "logic" to fn.logic.map { mapOf("type" to it.actionType, "params" to it.params) },
                 "actUponObject" to xmlFile
             )
         }

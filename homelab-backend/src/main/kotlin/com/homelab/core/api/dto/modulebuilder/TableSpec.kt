@@ -7,6 +7,7 @@ data class TableSpec(
     val relations: List<RelationSpec> = emptyList(),
     val uniqueTogether: List<List<String>> = emptyList(),
     val externalFetches: List<ExternalFetchSpec> = emptyList(),
+    val customFunctions: List<CustomFunctionSpec> = emptyList(),
     // Only meaningful on an update request: the table's name before this edit.
     val previousName: String? = null
 )

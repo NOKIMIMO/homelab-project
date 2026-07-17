@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { Download } from 'lucide-react'
 import CodeBlock from '../components/CodeBlock'
 import FieldTable from '../components/FieldTable'
 import {
@@ -9,6 +10,10 @@ import {
 } from '../data/snippets'
 import { useLanguage, type Lang } from '../i18n/LanguageContext'
 
+const APK_RELEASE_TAG = 'APK'
+const APK_FILE_NAME = 'app-modulabs.apk'
+const APK_URL = `https://github.com/NOKIMIMO/homelab-project/releases/download/${APK_RELEASE_TAG}/${APK_FILE_NAME}`
+
 const TEXT: Record<
   Lang,
   {
@@ -16,6 +21,8 @@ const TEXT: Record<
     intro: string
     columns: string[]
     rows: (string | ReactNode)[][]
+    mobileTitle: string
+    mobileIntro: ReactNode
     composeTitle: string
     composeIntro: string
     optionAtitle: string
@@ -39,16 +46,34 @@ const TEXT: Record<
       ],
       [<code>POSTGRES_PASSWORD</code>, 'Mot de passe Postgres associé.'],
       [
-        <code>-v ./modules:/app_root/modules:rw</code>,
+        <code>-v /root/modules:/app_root/modules:rw</code>,
         <>
           Dossier hôte scanné par le backend (
           <code>HOMELAB_MODULES_SCAN_PATH=/app_root/modules</code>) ---
           déposez-y vos modules (<code>manifest.json</code> + fichiers).
-          Remplacez <code>./modules</code> par un chemin absolu si la
-          commande n'est pas lancée depuis le dossier du repo.
+          Remplacez <code>/root/modules</code> par le dossier de votre choix
+          sur l'hôte.
+        </>,
+      ],
+      [
+        <code>-v homelab-storage:/data</code>,
+        <>
+          Volume nommé pour les fichiers écrits par l'application elle-même
+          (uploads des modules, icône du homelab, logs --- voir{' '}
+          <code>HOMELAB_STORAGE_PATH</code> et{' '}
+          <code>HOMELAB_LOGS_PATH</code>). Sans lui, ces fichiers sont perdus
+          à chaque recréation du conteneur (pas juste un redémarrage).
         </>,
       ],
     ],
+    mobileTitle: 'Application mobile (optionnel)',
+    mobileIntro: (
+      <>
+        Reçois les alertes du homelab (voir le panel admin) en temps réel sur
+        ton téléphone --- l'app ouvre une connexion SSE directement sur le
+        backend, aucun port supplémentaire à ouvrir.
+      </>
+    ),
     composeTitle: 'Alternative : Docker Compose',
     composeIntro:
       "Deux fichiers compose existent dans le repo, pour deux usages différents.",
@@ -89,16 +114,33 @@ const TEXT: Record<
       ],
       [<code>POSTGRES_PASSWORD</code>, 'Matching Postgres password.'],
       [
-        <code>-v ./modules:/app_root/modules:rw</code>,
+        <code>-v /root/modules:/app_root/modules:rw</code>,
         <>
           Host folder scanned by the backend (
           <code>HOMELAB_MODULES_SCAN_PATH=/app_root/modules</code>) -drop
           your modules there (<code>manifest.json</code> + files). Replace{' '}
-          <code>./modules</code> with an absolute path if you're not running
-          the command from the repo folder.
+          <code>/root/modules</code> with whichever host folder you want to
+          use.
+        </>,
+      ],
+      [
+        <code>-v homelab-storage:/data</code>,
+        <>
+          Named volume for files the app writes itself (module uploads, the
+          homelab icon, logs -see <code>HOMELAB_STORAGE_PATH</code> and{' '}
+          <code>HOMELAB_LOGS_PATH</code>). Without it, these files are lost
+          every time the container is recreated (not just restarted).
         </>,
       ],
     ],
+    mobileTitle: 'Mobile app (optional)',
+    mobileIntro: (
+      <>
+        Get homelab alerts (see the admin panel) in real time on your phone
+        --- the app opens an SSE connection directly to the backend, no extra
+        port to open.
+      </>
+    ),
     composeTitle: 'Alternative: Docker Compose',
     composeIntro: 'The repo has two compose files, for two different uses.',
     optionAtitle: 'All-in-one image, via Compose',
@@ -141,6 +183,14 @@ function Quickstart() {
       <CodeBlock lang="bash">{DOCKER_RUN}</CodeBlock>
 
       <FieldTable columns={t.columns} rows={t.rows} />
+
+      <h2 className="text-2xl font-semibold mt-10 mb-2">{t.mobileTitle}</h2>
+      <p className="text-base-content/70 max-w-2xl">{t.mobileIntro}</p>
+      <div className="flex flex-wrap gap-3 my-4">
+        <a href={APK_URL} className="btn btn-outline btn-sm gap-2">
+          <Download size={14} /> {APK_FILE_NAME}
+        </a>
+      </div>
 
       <h2 className="text-2xl font-semibold mt-10 mb-2">{t.composeTitle}</h2>
       {/* <p className="text-base-content/70 max-w-2xl">{t.composeIntro}</p> */}

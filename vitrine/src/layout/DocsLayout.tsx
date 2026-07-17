@@ -68,7 +68,7 @@ function SidebarContent() {
     { to: '/quickstart', label: t.quickstart, icon: Terminal },
     { to: '/docs/module', label: t.module, icon: Boxes },
     { to: '/docs/orm', label: t.orm, icon: GitBranch },
-    { to: '/docs/ui', label: t.ui, icon: LayoutTemplate, badge: 'WIP' },
+    { to: '/docs/ui', label: t.ui, icon: LayoutTemplate},
     { to: '/docs/sdk', label: t.sdk, icon: Package },
     { to: '/docs/plugin', label: t.plugin, icon: Puzzle },
   ]
@@ -100,14 +100,13 @@ function SidebarContent() {
           {t.docsGroup}
         </div>
 
-        {docsNav.map(({ to, label, icon: Icon, badge }) => (
+        {docsNav.map(({ to, label, icon: Icon }) => (
           <li key={to}>
             <NavLink to={to} className={navLinkClass}>
               <span className="flex items-center gap-3">
                 <Icon size={18} className="opacity-70" />
                 <span className="text-[15px]">{label}</span>
               </span>
-              {badge && <span className="badge badge-warning badge-xs">{badge}</span>}
             </NavLink>
           </li>
         ))}

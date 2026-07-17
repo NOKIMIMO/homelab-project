@@ -2,9 +2,13 @@ package com.homelab.core.service.module
 
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.homelab.core.action.ActionFactory
 import com.homelab.core.api.dto.modulebuilder.AddColumnRequest
 import com.homelab.core.api.dto.modulebuilder.ColumnSpec
+import com.homelab.core.api.dto.modulebuilder.CustomFunctionParamSpec
+import com.homelab.core.api.dto.modulebuilder.CustomFunctionSpec
 import com.homelab.core.api.dto.modulebuilder.ExternalFetchSpec
+import com.homelab.core.api.dto.modulebuilder.LogicStepSpec
 import com.homelab.core.api.dto.modulebuilder.ModuleBuilderRequest
 import com.homelab.core.api.dto.modulebuilder.RelationSpec
 import com.homelab.core.api.dto.modulebuilder.TableSpec
@@ -35,6 +39,7 @@ class ModuleBuilderServiceTest {
     private lateinit var moduleDatabaseService: ModuleDatabaseService
     private lateinit var moduleConfigMemory: ModuleConfigMemory
     private lateinit var homelabConfig: HomelabConfig
+    private lateinit var actionFactory: ActionFactory
     private lateinit var service: ModuleBuilderService
     private lateinit var scanRoot: File
 
@@ -51,9 +56,12 @@ class ModuleBuilderServiceTest {
         scanRoot = Files.createTempDirectory("module-builder-service-test").toFile()
         homelabConfig = HomelabConfig(mock(Environment::class.java))
         homelabConfig.modulesScanPath = scanRoot.absolutePath
+        actionFactory = mock(ActionFactory::class.java)
+        `when`(actionFactory.getAvailableActionTypes())
+            .thenReturn(listOf("CREATE", "LIST", "READ", "UPDATE", "DELETE", "UPLOAD_FILE", "GET_FILE", "FETCH_EXTERNAL_GENERIC"))
         service = ModuleBuilderService(
             homelabConfig, moduleService, moduleDatabaseService, moduleConfigMemory,
-            ObjectMapper().registerKotlinModule()
+            ObjectMapper().registerKotlinModule(), actionFactory
         )
     }
 
@@ -138,6 +146,48 @@ class ModuleBuilderServiceTest {
         )
 
         assertThrows(BadRequestException::class.java) { service.createModule(request) }
+    }
+
+    @Test
+    fun `createModule rejects a custom function using an unknown action type`() {
+        val request = simpleRequest().copy(
+            tables = listOf(
+                TableSpec(
+                    name = "notes",
+                    customFunctions = listOf(
+                        CustomFunctionSpec(name = "doStuff", logic = listOf(LogicStepSpec(actionType = "NOT_A_REAL_ACTION")))
+                    )
+                )
+            )
+        )
+
+        assertThrows(BadRequestException::class.java) { service.createModule(request) }
+    }
+
+    @Test
+    fun `createModule includes a valid custom function in the generated manifest`() {
+        val request = simpleRequest().copy(
+            tables = listOf(
+                TableSpec(
+                    name = "notes",
+                    columns = listOf(ColumnSpec(name = "title", type = ColumnTyping.string)),
+                    customFunctions = listOf(
+                        CustomFunctionSpec(
+                            name = "archiveNote",
+                            description = "Archives a note.",
+                            parameters = listOf(CustomFunctionParamSpec(name = "id", optional = false)),
+                            logic = listOf(LogicStepSpec(actionType = "UPDATE", params = mapOf("status" to "archived")))
+                        )
+                    )
+                )
+            )
+        )
+
+        service.createModule(request)
+
+        val manifestNode = ObjectMapper().readTree(File(scanRoot, "notes/manifest.json"))
+        val functionNames = manifestNode.get("actions").first().get("functions").map { it.get("name").asText() }
+        assertTrue(functionNames.contains("archiveNote"))
     }
 
     @Test

@@ -4,14 +4,17 @@ export const DOCKER_RUN = `docker run -d --name homelab \\
   -p 80:80 \\
   -e POSTGRES_USER=user \\
   -e POSTGRES_PASSWORD=change-me \\
+  -e HOMELAB_STORAGE_PATH=/data \\
+  -e HOMELAB_LOGS_PATH=/data/logs \\
   -v homelab-data:/var/lib/postgresql/data \\
-  -v ./modules:/app_root/modules:rw \\
-  ghcr.io/nokimimo/homelab-project:v1.0.2`
+  -v /root/modules:/app_root/modules:rw \\
+  -v homelab-storage:/data \\
+  ghcr.io/nokimimo/homelab-project:latest`
 
 export const DOCKER_COMPOSE_ALL_IN_ONE_YML = `# docker-compose.all-in-one.yml
 services:
   homelab:
-    image: ghcr.io/nokimimo/homelab-project:v1.0.2
+    image: ghcr.io/nokimimo/homelab-project:latest
     container_name: homelab-all-in-one
     ports:
       - "80:80"
@@ -19,14 +22,18 @@ services:
       - .env.all-in-one
     volumes:
       - db-data:/var/lib/postgresql/data
-      - ./modules:/app_root/modules:rw
+      - /root/modules:/app_root/modules:rw
+      - homelab-storage:/data
       - /etc/os-release:/host/etc/os-release:ro
     environment:
       - JAVA_OPTS=-Doshi.os.windows.osRelease.path=/host/etc/os-release
+      - HOMELAB_STORAGE_PATH=/data
+      - HOMELAB_LOGS_PATH=/data/logs
     restart: unless-stopped
 
 volumes:
-  db-data:`
+  db-data:
+  homelab-storage:`
 
 export const ENV_ALL_IN_ONE = `# .env.all-in-one
   POSTGRES_USER=user

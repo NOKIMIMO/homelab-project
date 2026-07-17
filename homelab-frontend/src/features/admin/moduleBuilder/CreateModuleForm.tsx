@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Plus, Trash2, X, Save } from 'lucide-react';
 import { useAuth } from '@auth/AuthContext';
 import { getApiUrl } from '@lib/api';
@@ -6,7 +6,11 @@ import type {
   Cardinality,
   ColumnSpec,
   ColumnType,
+  CustomFunctionParamSpec,
+  CustomFunctionSpec,
   ExternalFetchSpec,
+  LogicStepSpec,
+  ModuleActionParameterType,
   ModuleBuilderRequest,
   ModuleParamSpec,
   RelationSpec,
@@ -21,6 +25,7 @@ const CARDINALITIES: { value: Cardinality; label: string }[] = [
   { value: 'MANY_TO_MANY', label: 'Many to many' },
 ];
 const PARAM_TYPES: ModuleParamSpec['type'][] = ['string', 'secret', 'boolean', 'number'];
+const ACTION_PARAM_TYPES: ModuleActionParameterType[] = ['NONE', 'EQUAL', 'GREATER', 'LESS', 'GREATER_EQUAL', 'LESS_EQUAL'];
 
 const emptyColumn = (): ColumnSpec => ({ name: '', type: 'string', nullable: true, unique: false });
 const emptyRelation = (defaultTarget: string): RelationSpec => ({
@@ -38,6 +43,14 @@ const emptyFetch = (): ExternalFetchSpec => ({
   upsertKey: '',
 });
 const emptyParam = (): ModuleParamSpec => ({ key: '', label: '', type: 'string', defaultValue: '', description: '' });
+const emptyLogicStep = (defaultActionType: string): LogicStepSpec => ({ actionType: defaultActionType, params: {} });
+const emptyCustomFunctionParam = (): CustomFunctionParamSpec => ({ name: '', type: 'NONE', description: '', optional: true });
+const emptyCustomFunction = (defaultActionType: string): CustomFunctionSpec => ({
+  name: '',
+  description: '',
+  parameters: [],
+  logic: [emptyLogicStep(defaultActionType)],
+});
 const emptyTable = (): TableSpec => ({
   name: '',
   columns: [emptyColumn()],
@@ -45,6 +58,7 @@ const emptyTable = (): TableSpec => ({
   relations: [],
   uniqueTogether: [],
   externalFetches: [],
+  customFunctions: [],
 });
 
 // Stamps each table/column with its current name as previousName, frozen at load time, so the
@@ -73,12 +87,22 @@ export default function CreateModuleForm({ onClose, onCreated, initialSpec }: Pr
     initialSpec ? stampPreviousNames(initialSpec.tables) : [emptyTable()]
   );
   const [params, setParams] = useState<ModuleParamSpec[]>(initialSpec?.params ?? []);
+  const [availableActionTypes, setAvailableActionTypes] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   const headers: HeadersInit = token
     ? { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
     : { 'Content-Type': 'application/json' };
+  const authHeaders: HeadersInit = token ? { Authorization: `Bearer ${token}` } : {};
+
+  useEffect(() => {
+    void (async () => {
+      const res = await fetch(getApiUrl('/api/modules/actions'), { headers: authHeaders });
+      if (res.ok) setAvailableActionTypes(await res.json());
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token]);
 
   const otherTableNames = (idx: number) =>
     tables.filter((_, i) => i !== idx).map(t => t.name).filter(Boolean);
@@ -154,6 +178,59 @@ export default function CreateModuleForm({ onClose, onCreated, initialSpec }: Pr
     updateFetch(tIdx, fIdx, { responseMapping: Object.fromEntries(entries) });
   };
 
+  const updateFn = (tIdx: number, fnIdx: number, patch: Partial<CustomFunctionSpec>) => {
+    setTables(prev => prev.map((t, i) => {
+      if (i !== tIdx) return t;
+      return { ...t, customFunctions: t.customFunctions.map((f, j) => (j === fnIdx ? { ...f, ...patch } : f)) };
+    }));
+  };
+  const addFn = (tIdx: number) =>
+    updateTable(tIdx, { customFunctions: [...tables[tIdx].customFunctions, emptyCustomFunction(availableActionTypes[0] ?? '')] });
+  const removeFn = (tIdx: number, fnIdx: number) =>
+    updateTable(tIdx, { customFunctions: tables[tIdx].customFunctions.filter((_, j) => j !== fnIdx) });
+
+  const updateFnParam = (tIdx: number, fnIdx: number, pIdx: number, patch: Partial<CustomFunctionParamSpec>) => {
+    const fn = tables[tIdx].customFunctions[fnIdx];
+    updateFn(tIdx, fnIdx, { parameters: fn.parameters.map((p, j) => (j === pIdx ? { ...p, ...patch } : p)) });
+  };
+  const addFnParam = (tIdx: number, fnIdx: number) => {
+    const fn = tables[tIdx].customFunctions[fnIdx];
+    updateFn(tIdx, fnIdx, { parameters: [...fn.parameters, emptyCustomFunctionParam()] });
+  };
+  const removeFnParam = (tIdx: number, fnIdx: number, pIdx: number) => {
+    const fn = tables[tIdx].customFunctions[fnIdx];
+    updateFn(tIdx, fnIdx, { parameters: fn.parameters.filter((_, j) => j !== pIdx) });
+  };
+
+  const updateStep = (tIdx: number, fnIdx: number, sIdx: number, patch: Partial<LogicStepSpec>) => {
+    const fn = tables[tIdx].customFunctions[fnIdx];
+    updateFn(tIdx, fnIdx, { logic: fn.logic.map((s, j) => (j === sIdx ? { ...s, ...patch } : s)) });
+  };
+  const addStep = (tIdx: number, fnIdx: number) => {
+    const fn = tables[tIdx].customFunctions[fnIdx];
+    updateFn(tIdx, fnIdx, { logic: [...fn.logic, emptyLogicStep(availableActionTypes[0] ?? '')] });
+  };
+  const removeStep = (tIdx: number, fnIdx: number, sIdx: number) => {
+    const fn = tables[tIdx].customFunctions[fnIdx];
+    updateFn(tIdx, fnIdx, { logic: fn.logic.filter((_, j) => j !== sIdx) });
+  };
+
+  const stepParamRow = (tIdx: number, fnIdx: number, sIdx: number, rowIdx: number, key: string, value: string) => {
+    const step = tables[tIdx].customFunctions[fnIdx].logic[sIdx];
+    const entries = Object.entries(step.params);
+    entries[rowIdx] = [key, value];
+    updateStep(tIdx, fnIdx, sIdx, { params: Object.fromEntries(entries) });
+  };
+  const addStepParamRow = (tIdx: number, fnIdx: number, sIdx: number) => {
+    const step = tables[tIdx].customFunctions[fnIdx].logic[sIdx];
+    updateStep(tIdx, fnIdx, sIdx, { params: { ...step.params, '': '' } });
+  };
+  const removeStepParamRow = (tIdx: number, fnIdx: number, sIdx: number, key: string) => {
+    const step = tables[tIdx].customFunctions[fnIdx].logic[sIdx];
+    const entries = Object.entries(step.params).filter(([k]) => k !== key);
+    updateStep(tIdx, fnIdx, sIdx, { params: Object.fromEntries(entries) });
+  };
+
   const updateParam = (idx: number, patch: Partial<ModuleParamSpec>) =>
     setParams(prev => prev.map((p, i) => (i === idx ? { ...p, ...patch } : p)));
   const addParam = () => setParams(prev => [...prev, emptyParam()]);
@@ -181,6 +258,17 @@ export default function CreateModuleForm({ onClose, onCreated, initialSpec }: Pr
                 Object.entries(f.responseMapping).filter(([k]) => k.trim())
               ),
               upsertKey: f.upsertKey?.trim() || undefined,
+            })),
+          customFunctions: t.customFunctions
+            .filter(f => f.name.trim() && f.logic.length > 0)
+            .map(f => ({
+              ...f,
+              name: f.name.trim(),
+              parameters: f.parameters.filter(p => p.name.trim()).map(p => ({ ...p, name: p.name.trim() })),
+              logic: f.logic.map(s => ({
+                ...s,
+                params: Object.fromEntries(Object.entries(s.params).filter(([k]) => k.trim())),
+              })),
             })),
         })),
         params: params.filter(p => p.key.trim() && p.label.trim()).map(p => ({ ...p, key: p.key.trim() })),
@@ -509,6 +597,126 @@ export default function CreateModuleForm({ onClose, onCreated, initialSpec }: Pr
                   ))}
                   <button className="btn btn-xs btn-outline gap-1" onClick={() => addFetch(tIdx)}>
                     <Plus size={12} /> External API function
+                  </button>
+                </div>
+
+                {/* Custom functions: an ordered chain of any action type registered in the
+                    backend (CREATE, LIST, plugin-provided ones, ...), not just CRUD/fetch. */}
+                <div className="space-y-2">
+                  <p className="text-xs font-semibold opacity-60">Custom functions</p>
+                  {table.customFunctions.map((fn, fnIdx) => (
+                    <div key={fnIdx} className="border border-base-content/10 rounded-lg p-3 space-y-2">
+                      <div className="flex items-center gap-2">
+                        <input
+                          className="input input-bordered input-xs flex-1 font-mono"
+                          placeholder="functionName"
+                          value={fn.name}
+                          onChange={e => updateFn(tIdx, fnIdx, { name: e.target.value })}
+                        />
+                        <input
+                          className="input input-bordered input-xs flex-[2]"
+                          placeholder="Description"
+                          value={fn.description}
+                          onChange={e => updateFn(tIdx, fnIdx, { description: e.target.value })}
+                        />
+                        <button className="btn btn-xs btn-ghost btn-error" onClick={() => removeFn(tIdx, fnIdx)}>
+                          <Trash2 size={12} />
+                        </button>
+                      </div>
+
+                      {/* Declared input parameters */}
+                      <div className="space-y-1">
+                        <p className="text-[11px] opacity-50">Declared parameters (provided by the caller)</p>
+                        {fn.parameters.map((p, pIdx) => (
+                          <div key={pIdx} className="flex items-center gap-2">
+                            <input
+                              className="input input-bordered input-xs flex-1 font-mono"
+                              placeholder="name"
+                              value={p.name}
+                              onChange={e => updateFnParam(tIdx, fnIdx, pIdx, { name: e.target.value })}
+                            />
+                            <select
+                              className="select select-bordered select-xs"
+                              value={p.type}
+                              onChange={e => updateFnParam(tIdx, fnIdx, pIdx, { type: e.target.value as ModuleActionParameterType })}
+                            >
+                              {ACTION_PARAM_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                            </select>
+                            <label className="flex items-center gap-1 text-xs whitespace-nowrap">
+                              <input
+                                type="checkbox"
+                                className="checkbox checkbox-xs"
+                                checked={!p.optional}
+                                onChange={e => updateFnParam(tIdx, fnIdx, pIdx, { optional: !e.target.checked })}
+                              />
+                              required
+                            </label>
+                            <button className="btn btn-xs btn-ghost btn-error" onClick={() => removeFnParam(tIdx, fnIdx, pIdx)}>
+                              <Trash2 size={12} />
+                            </button>
+                          </div>
+                        ))}
+                        <button className="btn btn-xs btn-outline gap-1" onClick={() => addFnParam(tIdx, fnIdx)}>
+                          <Plus size={12} /> Parameter
+                        </button>
+                      </div>
+
+                      {/* Ordered sequence of action steps */}
+                      <div className="space-y-1">
+                        <p className="text-[11px] opacity-50">Action sequence (executed in order)</p>
+                        {fn.logic.map((step, sIdx) => (
+                          <div key={sIdx} className="border border-base-content/10 rounded-lg p-2 space-y-1">
+                            <div className="flex items-center gap-2">
+                              <span className="text-[11px] opacity-40 w-4">{sIdx + 1}.</span>
+                              <select
+                                className="select select-bordered select-xs flex-1"
+                                value={step.actionType}
+                                onChange={e => updateStep(tIdx, fnIdx, sIdx, { actionType: e.target.value })}
+                              >
+                                {availableActionTypes.map(t => <option key={t} value={t}>{t}</option>)}
+                              </select>
+                              <button className="btn btn-xs btn-ghost btn-error" onClick={() => removeStep(tIdx, fnIdx, sIdx)}>
+                                <Trash2 size={12} />
+                              </button>
+                            </div>
+                            {Object.entries(step.params).map(([key, value], rowIdx) => (
+                              <div key={rowIdx} className="flex items-center gap-2 pl-6">
+                                <input
+                                  className="input input-bordered input-xs flex-1 font-mono"
+                                  placeholder="key"
+                                  value={key}
+                                  onChange={e => stepParamRow(tIdx, fnIdx, sIdx, rowIdx, e.target.value, value)}
+                                />
+                                <input
+                                  className="input input-bordered input-xs flex-1 font-mono"
+                                  placeholder="value"
+                                  value={value}
+                                  onChange={e => stepParamRow(tIdx, fnIdx, sIdx, rowIdx, key, e.target.value)}
+                                />
+                                <button
+                                  className="btn btn-xs btn-ghost btn-error"
+                                  onClick={() => removeStepParamRow(tIdx, fnIdx, sIdx, key)}
+                                >
+                                  <Trash2 size={12} />
+                                </button>
+                              </div>
+                            ))}
+                            <button
+                              className="btn btn-xs btn-outline gap-1 ml-6"
+                              onClick={() => addStepParamRow(tIdx, fnIdx, sIdx)}
+                            >
+                              <Plus size={12} /> Fixed param
+                            </button>
+                          </div>
+                        ))}
+                        <button className="btn btn-xs btn-outline gap-1" onClick={() => addStep(tIdx, fnIdx)}>
+                          <Plus size={12} /> Step
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                  <button className="btn btn-xs btn-outline gap-1" onClick={() => addFn(tIdx)}>
+                    <Plus size={12} /> Custom function
                   </button>
                 </div>
               </div>

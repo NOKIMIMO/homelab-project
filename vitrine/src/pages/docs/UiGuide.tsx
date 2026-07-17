@@ -22,7 +22,7 @@ const TEXT: Record<
 > = {
   fr: {
     title: 'Interface en JSON',
-    badge: 'WIP --- usage bêta',
+    badge: '',
     intro: (
       <>
         L'interface pilotée par JSON (<code>uIFormat: "JSON"</code>) est en
@@ -77,7 +77,7 @@ const TEXT: Record<
   },
   en: {
     title: 'JSON-driven UI',
-    badge: 'WIP --- beta usage',
+    badge: '',
     intro: (
       <>
         The JSON-driven interface (<code>uIFormat: "JSON"</code>) is still
@@ -138,8 +138,7 @@ function UiGuide() {
   return (
     <div>
       <h1 className="text-4xl font-bold mb-3">{t.title}</h1>
-      <Badge tone="beta">{t.badge}</Badge>
-
+=
       <p className="text-base-content/70 max-w-2xl mt-3">{t.intro}</p>
 
       <p className="text-base-content/70 max-w-2xl">{t.keysIntro}</p>
