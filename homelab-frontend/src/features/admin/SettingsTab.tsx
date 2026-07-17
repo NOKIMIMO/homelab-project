@@ -470,7 +470,7 @@ export default function SettingsTab() {
 
           {!config.restartAvailable && (
             <p className="text-xs text-warning">
-              Unavailable: the Docker socket is not mounted on this deployment.
+              Unavailable: the Docker socket is not mounted on this deployment. (only docker compose deployments with the socket mounted can restart the container from the web UI)
             </p>
           )}
           {restartError && <p className="text-xs text-error">{restartError}</p>}

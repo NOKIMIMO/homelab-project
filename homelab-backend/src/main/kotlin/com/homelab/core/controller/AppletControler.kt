@@ -113,7 +113,7 @@ class AppletControler(
 		}
 
 		val resolvedLogic = decl.logic.map { logic ->
-			mapOf("type" to logic.type)
+			mapOf("type" to logic.type, "params" to (logic.params ?: emptyMap()))
 		}
 		log.debug("Resolved logic: $resolvedLogic")
 		val serviceResult: Map<String, Any?>

@@ -170,6 +170,13 @@ class AppletService(
                 }
             }
 
+            @Suppress("UNCHECKED_CAST")
+            val logicParams = actionDecl["params"] as? Map<String, Any> ?: emptyMap()
+            if (logicParams.isNotEmpty()) {
+                log.debug("Merging manifest-declared logic params for action $actionType: $logicParams")
+                paramsForAction = paramsForAction + logicParams
+            }
+
             val genericForAction = GenericTableLayer(
                 objectDefForAction,
                 moduleDatabaseService = moduleDatabaseService,
