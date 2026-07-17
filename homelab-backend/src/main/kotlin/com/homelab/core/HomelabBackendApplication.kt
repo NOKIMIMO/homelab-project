@@ -18,7 +18,7 @@ fun main(args: Array<String>) {
 	runApplication<HomelabBackendApplication>(*args)
 }
 
-private fun loadDotEnv() {
+internal fun loadDotEnv() {
 	try {
 		val path = Paths.get(".env").toAbsolutePath().normalize()
 		if (!Files.exists(path)) return

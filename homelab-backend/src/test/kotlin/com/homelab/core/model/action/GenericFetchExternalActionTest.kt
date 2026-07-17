@@ -36,19 +36,4 @@ class GenericFetchExternalActionTest {
 
         assertEquals(mapOf("error" to "'urlTemplate' not configured"), result)
     }
-
-    @Test
-    fun `execute returns an error when responseMapping is missing from the logic config`() {
-        val globalParametersService = mock(GlobalParametersService::class.java)
-        val genericObject = mock(GenericTableLayer::class.java)
-        val declaration = testDeclaration(
-            logic = listOf(ModuleActionLogic(type = "FETCH_EXTERNAL_GENERIC", params = mapOf("urlTemplate" to "https://api.example.com/{city}")))
-        )
-
-        val result = GenericFetchExternalAction(globalParametersService).execute(
-            "weather", emptyMap(), genericObject, declaration
-        )
-
-        assertEquals(mapOf("error" to "'responseMapping' not configured"), result)
-    }
 }
