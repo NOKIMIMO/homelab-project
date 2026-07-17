@@ -1,5 +1,4 @@
 import type { ReactNode } from 'react'
-import Badge from '../../components/Badge'
 import CodeBlock from '../../components/CodeBlock'
 import FieldTable from '../../components/FieldTable'
 import { CODEBLOCK_UI_EXAMPLE, UI_JSON_EXAMPLE } from '../../data/snippets'
