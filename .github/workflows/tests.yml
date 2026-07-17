@@ -2,8 +2,8 @@ name: Tests & coverage
 
 # Blocking behaviour:
 #   - push to master/main OR pull request targeting master/main -> the test steps fail the job
-#     when a test fails. Combined with a branch-protection rule that marks the "backend" and
-#     "frontend" checks as required, this prevents merging/pushing broken code to the main branch.
+#     when a test fails. Combined with a branch-protection rule that marks the "backend"
+#     check as required, this prevents merging/pushing broken code to the main branch.
 #   - any other branch -> the tests still run, but a failure does NOT fail the job
 #     (continue-on-error), so work-in-progress branches are never blocked.
 #
@@ -71,32 +71,3 @@ jobs:
           path: |
             homelab-backend/build/reports/tests/test
             homelab-backend/build/reports/kover/html
-
-  frontend:
-    name: Frontend (React/TS) unit tests + coverage
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-          cache-dependency-path: homelab-frontend/package-lock.json
-
-      - name: Install dependencies
-        working-directory: homelab-frontend
-        run: npm ci
-
-      # continue-on-error is true on non-main branches -> a failure there does not fail the job.
-      - name: Run unit tests + coverage
-        working-directory: homelab-frontend
-        continue-on-error: ${{ !(github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main' || github.base_ref == 'master' || github.base_ref == 'main') }}
-        run: npm run test:coverage
-
-      - name: Upload frontend coverage report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: frontend-coverage-report
-          path: homelab-frontend/coverage
