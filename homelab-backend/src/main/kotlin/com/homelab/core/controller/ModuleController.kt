@@ -1,10 +1,15 @@
 package com.homelab.core.controller
 
+import com.homelab.core.config.ModuleConfigMemory
+import com.homelab.core.exception.ForbiddenException
+import com.homelab.core.service.PermissionService
+import com.homelab.core.service.UserService
 import com.homelab.core.service.module.ModuleService
 import com.homelab.core.service.module.ModuleParamsService
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.security.access.prepost.PreAuthorize
+import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.web.bind.annotation.*
 import org.springframework.web.multipart.MultipartFile
 import jakarta.servlet.http.HttpServletRequest
@@ -16,13 +21,21 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder
 @CrossOrigin(origins = ["*"])
 class ModuleController(
     private val moduleService: ModuleService,
-    private val moduleParamsService: ModuleParamsService
+    private val moduleParamsService: ModuleParamsService,
+    private val permissionService: PermissionService,
+    private val userService: UserService,
+    private val moduleConfigMemory: ModuleConfigMemory
 ) {
 
     //TODO: move in it's service
+    // Only list modules the caller may currently reach: a module they have no access to - or one
+    // whose granting role is inside a blocked time window right now - is left out entirely so it
+    // never shows up in their sidebar or dashboard.
     @GetMapping
     fun getModules(request: HttpServletRequest) =
-        moduleService.getModules().map { dto ->
+        moduleService.getModules()
+            .filter { dto -> canSee(dto.id) }
+            .map { dto ->
 
             val absoluteIcon = dto.icon?.let { rel ->
                 if (rel.startsWith("http")) return@let rel
@@ -42,6 +55,23 @@ class ModuleController(
             dto.copy(icon = absoluteIcon)
         }
 
+    // A module is visible when the authenticated caller may currently access it. If we can't
+    // resolve the config (nothing declared) or the user, fall back to the config's own rule:
+    // a module with no declared permissions stays open, matching the default access behavior.
+    private fun canSee(moduleId: String): Boolean {
+        val config = moduleConfigMemory.getConfig(moduleId) ?: return true
+        val email = SecurityContextHolder.getContext().authentication?.name ?: return config.permissions.isEmpty()
+        val user = userService.findByEmail(email) ?: return config.permissions.isEmpty()
+        return permissionService.canAccessModule(user, config)
+    }
+
+    // Guard the endpoints that serve a single module's content: reaching /plugins/{id} directly (or
+    // hitting these routes by hand) must fail with 403 for a module the caller cannot currently
+    // access - including one hidden right now by a role's time block - not just be missing from the list.
+    private fun requireAccess(moduleId: String) {
+        if (!canSee(moduleId)) throw ForbiddenException("No access to module $moduleId")
+    }
+
     @PostMapping("/scan")
     fun scanModules() = moduleService.scanModules()
 
@@ -49,19 +79,19 @@ class ModuleController(
     fun getAvailableActions() = moduleService.getAvailableAction()
 
     @GetMapping("/{id}")
-    fun getModule(@PathVariable id: String) = moduleService.getModule(id)
+    fun getModule(@PathVariable id: String) = requireAccess(id).let { moduleService.getModule(id) }
 
     @GetMapping("/{id}/UI")
-    fun getModuleUiDeclaration(@PathVariable id: String) = moduleService.getModuleUiDeclaration(id)
+    fun getModuleUiDeclaration(@PathVariable id: String) = requireAccess(id).let { moduleService.getModuleUiDeclaration(id) }
 
     @GetMapping("/{id}/UI/page")
-    fun getModulePage(@PathVariable id: String) = moduleService.getModulePage(id)
+    fun getModulePage(@PathVariable id: String) = requireAccess(id).let { moduleService.getModulePage(id) }
 
 //    @GetMapping("/{id}/UI/router")
 //    fun getModuleRouter(@PathVariable id: String) = moduleService.getModuleRouter(id)
 
     @GetMapping("/{id}/UI/icon")
-    fun getModuleIcon(@PathVariable id: String) = moduleService.getModuleIcon(id)
+    fun getModuleIcon(@PathVariable id: String) = requireAccess(id).let { moduleService.getModuleIcon(id) }
 
 //    @GetMapping("/{id}/UI/{page}")
 //    fun getModulePage(@PathVariable id: String, @PathVariable page: String) = moduleService.getModulePage(id, page)
@@ -72,6 +102,7 @@ fun getModuleAsset(
         @PathVariable id: String,
         request: HttpServletRequest
     ): ResponseEntity<Resource> {
+        requireAccess(id)
         return moduleService.getModuleAsset(id, request)
     }
 

@@ -38,6 +38,7 @@ class AppletControler(
 	fun getModuleConfig(@PathVariable id: String): ResponseEntity<Any> {
 		val discovered = moduleConfigService.scanModuleConfigs(homelabConfig.modulesScanPath)
 		val found = discovered.find { it.config.id == id } ?: return ResponseEntity.status(HttpStatus.NOT_FOUND).body(mapOf("error" to "Module not found"))
+		requireAccess(found.config)
 		return ResponseEntity.ok(
 			mapOf(
 				"started" to moduleService.isModuleRunning(id),
@@ -49,8 +50,19 @@ class AppletControler(
 	fun getFunctionDeclaration(@PathVariable id: String, @PathVariable functionName: String): ResponseEntity<Any> {
 		val discovered = moduleConfigService.scanModuleConfigs(homelabConfig.modulesScanPath)
 		val found = discovered.find { it.config.id == id } ?: return ResponseEntity.status(HttpStatus.NOT_FOUND).body(mapOf("error" to "Module not found"))
+		requireAccess(found.config)
 		val decl = findFunction(found.config, functionName) ?: return ResponseEntity.status(HttpStatus.NOT_FOUND).body(mapOf("error" to "Function not found"))
 		return ResponseEntity.ok(decl)
+	}
+
+	// A module the caller cannot currently access - including one hidden right now by a role's time
+	// block - must not leak its config or function declarations, mirroring the invocation guard below.
+	private fun requireAccess(config: ModuleConfig) {
+		val email = SecurityContextHolder.getContext().authentication?.name ?: throw ForbiddenException("Not authenticated")
+		val user = userService.findByEmail(email) ?: throw ForbiddenException("Not authenticated")
+		if (!permissionService.canAccessModule(user, config)) {
+			throw ForbiddenException("No access to module ${config.id}")
+		}
 	}
 
  	@PostMapping("/{id}/{functionName}", consumes = [MediaType.APPLICATION_JSON_VALUE])

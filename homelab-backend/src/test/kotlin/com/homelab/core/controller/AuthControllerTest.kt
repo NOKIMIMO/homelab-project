@@ -13,6 +13,7 @@ import com.homelab.core.service.AuthService
 import com.homelab.core.service.JwtService
 import com.homelab.core.service.LoginSettingsService
 import com.homelab.core.service.RecoveryCodeService
+import com.homelab.core.service.SystemAlertService
 import com.homelab.core.service.UserService
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -40,6 +41,7 @@ class AuthControllerTest {
     private lateinit var jwtService: JwtService
     private lateinit var recoveryCodeService: RecoveryCodeService
     private lateinit var loginSettingsService: LoginSettingsService
+    private lateinit var systemAlertService: SystemAlertService
     private lateinit var controller: AuthController
     private lateinit var response: jakarta.servlet.http.HttpServletResponse
 
@@ -53,10 +55,12 @@ class AuthControllerTest {
         jwtService = mock(JwtService::class.java)
         recoveryCodeService = mock(RecoveryCodeService::class.java)
         loginSettingsService = mock(LoginSettingsService::class.java)
+        systemAlertService = mock(SystemAlertService::class.java)
         response = mock(jakarta.servlet.http.HttpServletResponse::class.java)
         controller = AuthController(
             authService, userService, userRepository, signupRequestRepository,
-            passwordResetRequestRepository, jwtService, recoveryCodeService, loginSettingsService
+            passwordResetRequestRepository, jwtService, recoveryCodeService, loginSettingsService,
+            systemAlertService
         )
     }
 

@@ -5,6 +5,7 @@ import com.homelab.core.model.alert.AlertOperator
 import com.homelab.core.model.alert.AlertSeverity
 import com.homelab.core.model.alert.MetricType
 import com.homelab.core.service.AlertService
+import com.homelab.core.service.AlertStreamService
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.BeforeEach
@@ -17,12 +18,14 @@ import java.time.LocalDateTime
 class AlertControllerTest {
 
     private lateinit var alertService: AlertService
+    private lateinit var alertStreamService: AlertStreamService
     private lateinit var controller: AlertController
 
     @BeforeEach
     fun setUp() {
         alertService = mock(AlertService::class.java)
-        controller = AlertController(alertService)
+        alertStreamService = mock(AlertStreamService::class.java)
+        controller = AlertController(alertService, alertStreamService)
     }
 
     @Test

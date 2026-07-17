@@ -28,6 +28,7 @@ class AlertService(
     private val ruleRepository: AlertRuleRepository,
     private val eventRepository: AlertEventRepository,
     private val telemetryService: TelemetryService,
+    private val alertStreamService: AlertStreamService,
 ) {
     private val log = AppLogger.loggerFor(AlertService::class)
 
@@ -108,7 +109,7 @@ class AlertService(
         val rounded = Formater.round(value, 1)
         val message = "${rule.metric.label} at $rounded${rule.metric.unit} " +
             "(threshold ${rule.operator.symbol} ${rule.threshold}${rule.metric.unit})"
-        eventRepository.save(
+        val saved = eventRepository.save(
             AlertEvent(
                 ruleId = rule.id,
                 ruleName = rule.name,
@@ -120,6 +121,9 @@ class AlertService(
             )
         )
         log.info("Alert '${rule.name}' [${rule.severity}] triggered: $message")
+        // Push to every device holding an open SSE stream; a briefly-disconnected device catches up
+        // on reconnect via GET /api/alerts/events, so no delivery is lost.
+        alertStreamService.broadcast(saved)
     }
 
     // ---------------------------------------------------------------- Validation

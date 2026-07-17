@@ -40,6 +40,13 @@ services:
       # démarrage (restart inclus), voir docker/all-in-one/entrypoint.sh et ResourceLimitsService.
     restart: unless-stopped
 
+# Notifications d'alertes Modulabs -> mobile : plus aucun service de push tiers.
+# L'app mobile ouvre une connexion SSE persistante directement sur le backend
+# (GET /api/alerts/stream, voir AlertStreamService) et le backend y pousse les
+# alertes en temps réel. Aucun port supplémentaire à ouvrir : il suffit que le
+# backend (port 80 ci-dessus) soit joignable hors du réseau domestique, comme il
+# l'est déjà pour que l'app fonctionne à distance.
+
 volumes:
   db-data:
   app-storage:

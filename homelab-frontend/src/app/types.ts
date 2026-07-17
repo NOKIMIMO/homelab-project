@@ -165,11 +165,17 @@ export interface AlertRuleRequest {
   enabled: boolean;
 }
 
+// What produced an event. 'RULE' events are metric threshold breaches (metric/threshold/value
+// populated); 'ACCOUNT' (a sign-up awaiting validation) and 'ERROR' (a server error) reuse the
+// same list but carry no metric.
+export type AlertSource = 'RULE' | 'ACCOUNT' | 'ERROR';
+
 export interface AlertEvent {
   id: number;
+  source: AlertSource;
   ruleId: number | null;
   ruleName: string;
-  metric: MetricType;
+  metric: MetricType | null;
   severity: AlertSeverity;
   threshold: number;
   value: number;

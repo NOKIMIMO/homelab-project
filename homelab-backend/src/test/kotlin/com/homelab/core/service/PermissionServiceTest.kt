@@ -1,6 +1,7 @@
 package com.homelab.core.service
 
 import com.homelab.core.model.auth.AdminPermission
+import com.homelab.core.model.auth.BlockedWindow
 import com.homelab.core.model.auth.Role
 import com.homelab.core.model.auth.User
 import com.homelab.core.model.auth.UserRepository
@@ -13,6 +14,8 @@ import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.mock
+import java.time.LocalDateTime
+import java.time.LocalTime
 
 class PermissionServiceTest {
 
@@ -99,6 +102,63 @@ class PermissionServiceTest {
         val user = User(email = "user@example.com", isAdmin = false)
 
         assertFalse(service.canInvoke(user, module(id = "photos", permissions = listOf("write:photos")), declaration(listOf("CREATE"))))
+    }
+
+    // A blocked window covering the whole current day of week, so the role is blocked "now".
+    private fun allDayBlock() = BlockedWindow(
+        dayOfWeek = LocalDateTime.now().dayOfWeek,
+        start = LocalTime.MIDNIGHT,
+        end = LocalTime.MAX
+    )
+
+    @Test
+    fun `canAccessModule always allows a full admin`() {
+        val admin = User(email = "admin@example.com", isAdmin = true)
+
+        assertTrue(service.canAccessModule(admin, module(permissions = listOf("write:photos"))))
+    }
+
+    @Test
+    fun `canAccessModule allows anyone when the module declares no permissions`() {
+        val user = User(email = "user@example.com", isAdmin = false)
+
+        assertTrue(service.canAccessModule(user, module(permissions = emptyList())))
+    }
+
+    @Test
+    fun `canAccessModule allows a user whose role grants the module and is not blocked`() {
+        val role = Role(name = "family", moduleIds = mutableSetOf("photos"))
+        val user = User(email = "user@example.com", isAdmin = false, roles = mutableSetOf(role))
+
+        assertTrue(service.canAccessModule(user, module(id = "photos", permissions = listOf("write:photos"))))
+    }
+
+    @Test
+    fun `canAccessModule hides the module while the granting role is inside a blocked time window`() {
+        val role = Role(name = "family", moduleIds = mutableSetOf("photos"), blockedWindows = mutableListOf(allDayBlock()))
+        val user = User(email = "user@example.com", isAdmin = false, roles = mutableSetOf(role))
+
+        assertFalse(service.canAccessModule(user, module(id = "photos", permissions = listOf("write:photos"))))
+    }
+
+    @Test
+    fun `canAccessModule still shows the module during a block when a direct permission grants it`() {
+        val role = Role(name = "family", moduleIds = mutableSetOf("photos"), blockedWindows = mutableListOf(allDayBlock()))
+        val user = User(
+            email = "user@example.com",
+            isAdmin = false,
+            roles = mutableSetOf(role),
+            permissions = mutableSetOf("read:photos")
+        )
+
+        assertTrue(service.canAccessModule(user, module(id = "photos", permissions = listOf("write:photos", "read:photos"))))
+    }
+
+    @Test
+    fun `canAccessModule hides a module the user has neither a granting role nor a direct permission for`() {
+        val user = User(email = "user@example.com", isAdmin = false)
+
+        assertFalse(service.canAccessModule(user, module(id = "photos", permissions = listOf("write:photos"))))
     }
 
     @Test

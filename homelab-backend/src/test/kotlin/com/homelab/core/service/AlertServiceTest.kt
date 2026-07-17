@@ -32,6 +32,7 @@ class AlertServiceTest {
     private lateinit var ruleRepository: AlertRuleRepository
     private lateinit var eventRepository: AlertEventRepository
     private lateinit var telemetryService: TelemetryService
+    private lateinit var alertStreamService: AlertStreamService
     private lateinit var service: AlertService
 
     @BeforeEach
@@ -39,7 +40,11 @@ class AlertServiceTest {
         ruleRepository = mock(AlertRuleRepository::class.java)
         eventRepository = mock(AlertEventRepository::class.java)
         telemetryService = mock(TelemetryService::class.java)
-        service = AlertService(ruleRepository, eventRepository, telemetryService)
+        alertStreamService = mock(AlertStreamService::class.java)
+        service = AlertService(ruleRepository, eventRepository, telemetryService, alertStreamService)
+        // save() now feeds its result to alertStreamService.broadcast(): return the entity so the
+        // (non-null) hand-off doesn't NPE on the default null a bare mock would otherwise return.
+        `when`(eventRepository.save(any<AlertEvent>())).thenAnswer { it.arguments[0] }
     }
 
     private fun telemetry(cpu: Double = 0.0, ramUsed: Double = 0.0, ramTotal: Double = 100.0) = TelemetryData(
