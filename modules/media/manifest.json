@@ -3,66 +3,11 @@
     "name": "Médiathèque",
     "version": "1.0.0",
     "icon": "media.svg",
-    "description": "Stockage et lecture de photos ainsi que de fichiers audio et vidéo.",
+    "description": "Stockage et lecture de fichiers audio et vidéo.",
     "actions": [
         {
-            "visual": "photos.xml",
+            "visual": "media.xml",
             "functions": [
-                {
-                    "name": "addPhoto",
-                    "description": "Ajouter une photo.",
-                    "parameters": [
-                        {"name": "filePath", "type": "EQUAL", "description": "Chemin du fichier photo."}
-                    ],
-                    "logic": [
-                        {"type": "UPLOAD_FILE"}
-                    ],
-                    "actUponObject": "photos.xml"
-                },
-                {
-                    "name": "getPhoto",
-                    "description": "Récupérer une photo par son ID.",
-                    "parameters": [
-                        {"name": "id", "type": "EQUAL", "description": "ID de la photo à récupérer."}
-                    ],
-                    "logic": [
-                        {"type": "GET_FILE"}
-                    ],
-                    "actUponObject": "photos.xml"
-                },
-                {
-                    "name": "listPhotos",
-                    "description": "Lister toutes les photos stockées.",
-                    "parameters": [],
-                    "logic": [
-                        {"type": "LIST"}
-                    ],
-                    "actUponObject": "photos.xml"
-                },
-                {
-                    "name": "getPhotoData",
-                    "description": "Récupérer les données d'une photo par son ID.",
-                    "parameters": [
-                        {"name": "id", "type": "EQUAL", "description": "ID de la photo à récupérer."},
-                        {"name": "file_name", "type": "EQUAL", "description": "Nom du fichier photo à récupérer."},
-                        {"name": "created_at", "type": "GREATER", "description": "Date de création de la photo à récupérer."}
-                    ],
-                    "logic": [
-                        {"type": "READ"}
-                    ],
-                    "actUponObject": "photos.xml"
-                },
-                {
-                    "name": "deletePhoto",
-                    "description": "Supprimer une photo par son ID.",
-                    "parameters": [
-                        {"name": "id", "type": "EQUAL", "description": "ID de la photo à supprimer."}
-                    ],
-                    "logic": [
-                        {"type": "DELETE"}
-                    ],
-                    "actUponObject": "photos.xml"
-                },
                 {
                     "name": "addMedia",
                     "description": "Ajouter un fichier audio ou vidéo.",
@@ -124,7 +69,6 @@
     "uIFormat": "JSON",
     "page": "media_ui.json",
     "dataObjects": [
-        "photos.xml",
         "media.xml"
     ],
     "permissions": [
