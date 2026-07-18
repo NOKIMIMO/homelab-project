@@ -4,17 +4,14 @@
     "layout": "vertical",
 
     "bindings": {
-      "photoList": "listPhotos",
-      "selectedPhoto": "getPhoto",
-      "uploadPhoto": "addPhoto",
-      "mediaList": "listMedia",
+      "list": "listMedia",
       "selectedMedia": "getMedia",
-      "uploadMedia": "addMedia"
+      "upload": "addMedia"
     },
 
     "state": {
-      "fullscreenPhotoId": null,
-      "fullscreenMediaId": null
+      "fullscreenMediaId": null,
+      "uploading": false
     },
 
     "components": [
@@ -22,179 +19,6 @@
         "type": "Header",
         "props": {
           "title": "Médiathèque"
-        }
-      },
-
-      {
-        "type": "Header",
-        "props": {
-          "title": "Photos"
-        }
-      },
-
-      {
-        "type": "ActionBar",
-        "components": [
-          {
-            "type": "Button",
-            "props": {
-              "label": "Ajouter une photo",
-              "icon": "upload",
-              "uploadTarget": "photos-upload"
-            }
-          },
-          {
-            "type": "Button",
-            "props": {
-              "label": "Rafraîchir",
-              "icon": "refresh"
-            },
-            "action": {
-              "action": "listPhotos",
-              "method": "POST"
-            }
-          }
-        ]
-      },
-
-      {
-        "type": "FileUploadZone",
-        "props": {
-          "id": "photos-upload",
-          "accept": "image/*",
-          "multiple": false
-        },
-        "action": [
-          {
-            "action": "addPhoto",
-            "method": "POST"
-          },
-          {
-            "action": "listPhotos",
-            "method": "POST"
-          }
-        ]
-      },
-
-      {
-        "type": "ElementList",
-        "props": {
-          "emptyMessage": "Aucune photo disponible."
-        },
-        "source": {
-          "binding": "listPhotos",
-          "method": "POST"
-        },
-        "preview": {
-          "type": "ImageViewer",
-          "source": {
-            "binding": "getPhoto",
-            "method": "POST"
-          },
-          "params": {
-            "id": "{{id}}"
-          },
-          "props": {
-            "alt": "{{file_name}}"
-          }
-        },
-        "item": {
-          "type": "ListItem",
-          "props": {
-            "title": "{{file_name}}"
-          },
-          "defaultClick": {
-            "action": "getPhoto",
-            "method": "POST",
-            "params": {
-              "id": "{{id}}"
-            },
-            "then": {
-              "setState": {
-                "selectedPhoto": "{{result}}",
-                "fullscreenPhotoId": "{{id}}"
-              }
-            }
-          },
-          "actions": [
-            {
-              "type": "IconButton",
-              "props": {
-                "icon": "fullscreen",
-                "tooltip": "Agrandir"
-              },
-              "action": {
-                "action": "getPhoto",
-                "method": "POST",
-                "params": {
-                  "id": "{{id}}"
-                },
-                "then": {
-                  "setState": {
-                    "selectedPhoto": "{{result}}",
-                    "fullscreenPhotoId": "{{id}}"
-                  }
-                }
-              }
-            },
-            {
-              "type": "IconButton",
-              "props": {
-                "icon": "trash",
-                "tooltip": "Supprimer"
-              },
-              "action": [
-                {
-                  "action": "deletePhoto",
-                  "method": "POST",
-                  "params": {
-                    "id": "{{id}}"
-                  }
-                },
-                {
-                  "action": "listPhotos",
-                  "method": "POST"
-                }
-              ]
-            }
-          ]
-        }
-      },
-
-      {
-        "type": "Modal",
-        "visible": "{{fullscreenPhotoId != null}}",
-
-        "content": {
-          "type": "ImageViewer",
-          "source": {
-            "binding": "getPhoto",
-            "method": "POST"
-          },
-          "params": {
-            "id": "{{fullscreenPhotoId}}"
-          }
-        },
-
-        "actions": [
-          {
-            "type": "Button",
-            "props": {
-              "label": "Fermer"
-            },
-            "action": {
-              "type": "setState",
-              "target": "fullscreenPhotoId",
-              "value": null
-            }
-          }
-        ]
-      },
-
-      {
-        "type": "Header",
-        "props": {
-          "title": "Médias (audio / vidéo)"
         }
       },
 
@@ -209,6 +33,7 @@
               "uploadTarget": "media-upload"
             }
           },
+
           {
             "type": "Button",
             "props": {

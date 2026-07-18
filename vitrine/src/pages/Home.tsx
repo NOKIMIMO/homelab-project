@@ -9,6 +9,7 @@ import {
   Activity,
   ShieldCheck,
   Sliders,
+  Film,
   Image,
   BookOpenText,
   CloudSun,
@@ -16,6 +17,7 @@ import {
   Users,
   Settings2,
   ArrowRight,
+  Download,
 } from 'lucide-react'
 import { useLanguage, type Lang } from '../i18n/LanguageContext'
 
@@ -23,7 +25,7 @@ const FLOW = ['UI JSON', 'ComponentRenderer', 'POST /api/{id}/{fn}', 'AppletCont
 
 type Feature = { icon: ComponentType<{ size?: number; className?: string }>; title: string; body: string }
 type Step = { title: string; body: ReactNode }
-type ModuleCard = { icon: ComponentType<{ size?: number; className?: string }>; name: string; body: string; tags: string[] }
+type ModuleCard = { icon: ComponentType<{ size?: number; className?: string }>; name: string; body: string; tags: string[]; file: string }
 type OpsCard = { icon: ComponentType<{ size?: number; className?: string }>; title: string; body: string }
 
 const TEXT: Record<
@@ -88,13 +90,14 @@ const TEXT: Record<
     archLabel: 'Architecture',
     archTitle: "Flux d'un appel de module",
     archSub: "De l'interface JSON jusqu'à la base de données, sans écrire de contrôleur.",
-    modulesLabel: 'Modules inclus',
-    modulesTitle: 'Prêts à l’emploi',
-    modulesSub: 'Trois modules de démonstration illustrant les capacités de la plateforme.',
+    modulesLabel: 'Module',
+    modulesTitle: 'Prêt à l’emploi',
+    modulesSub: 'Quatre modules de démonstration illustrant les capacités de la plateforme. Téléchargeables directement, prêts à déposer dans ton dossier de modules.',
     modules: [
-      { icon: Image, name: 'Photos', body: 'Upload, stockage et visualisation de photos.', tags: ['UPLOAD_FILE', 'GET_FILE', 'LIST', 'DELETE'] },
-      { icon: BookOpenText, name: 'Reader', body: 'Liseuse photo organisée en séries et chapitres, dépendante du module Photos.', tags: ['dépendance', 'CREATE', 'READ', 'LIST'] },
-      { icon: CloudSun, name: 'Météo', body: 'Appel OpenWeatherMap, cache des résultats en base. Clé API configurable.', tags: ['FETCH_EXTERNAL', 'params.json', 'LIST'] },
+      { icon: Image, name: 'Photos', body: 'Upload, stockage et visualisation de photos.', tags: ['UPLOAD_FILE', 'GET_FILE', 'LIST', 'DELETE'], file: 'photos.zip' },
+      { icon: Film, name: 'Médiathèque', body: 'Upload, stockage et lecture de fichiers audio et vidéo.', tags: ['UPLOAD_FILE', 'GET_FILE', 'LIST', 'DELETE'], file: 'mediatheque.zip' },
+      { icon: BookOpenText, name: 'Reader', body: 'Liseuse photo organisée en séries et chapitres, dépendante du module Photos.', tags: ['dépendance', 'CREATE', 'READ', 'LIST'], file: 'reader.zip' },
+      { icon: CloudSun, name: 'Météo', body: 'Appel OpenWeatherMap, cache des résultats en base. Clé API configurable.', tags: ['FETCH_EXTERNAL', 'params.json', 'LIST'], file: 'weather.zip' },
     ],
     opsLabel: 'Administration',
     opsTitle: "Panel d'administration",
@@ -137,13 +140,14 @@ const TEXT: Record<
     archLabel: 'Architecture',
     archTitle: 'Flow of a module call',
     archSub: 'From the JSON interface down to the database, with no controller to write.',
-    modulesLabel: 'Included modules',
+    modulesLabel: 'Module',
     modulesTitle: 'Ready to use',
-    modulesSub: 'Three demo modules illustrating the platform’s capabilities.',
+    modulesSub: 'Four demo modules illustrating the platform’s capabilities. Downloadable straight from here, ready to drop into your modules folder.',
     modules: [
-      { icon: Image, name: 'Photos', body: 'Upload, storage and viewing of photos.', tags: ['UPLOAD_FILE', 'GET_FILE', 'LIST', 'DELETE'] },
-      { icon: BookOpenText, name: 'Reader', body: 'Photo reader organized into series and chapters, depends on the Photos module.', tags: ['dependency', 'CREATE', 'READ', 'LIST'] },
-      { icon: CloudSun, name: 'Weather', body: 'Calls OpenWeatherMap, caches results in the database. Configurable API key.', tags: ['FETCH_EXTERNAL', 'params.json', 'LIST'] },
+      { icon: Image, name: 'Photos', body: 'Upload, storage and viewing of photos.', tags: ['UPLOAD_FILE', 'GET_FILE', 'LIST', 'DELETE'], file: 'photos.zip' },
+      { icon: Film, name: 'Media Library', body: 'Upload, storage and playback of audio and video files.', tags: ['UPLOAD_FILE', 'GET_FILE', 'LIST', 'DELETE'], file: 'mediatheque.zip' },
+      { icon: BookOpenText, name: 'Reader', body: 'Photo reader organized into series and chapters, depends on the Photos module.', tags: ['dependency', 'CREATE', 'READ', 'LIST'], file: 'reader.zip' },
+      { icon: CloudSun, name: 'Weather', body: 'Calls OpenWeatherMap, caches results in the database. Configurable API key.', tags: ['FETCH_EXTERNAL', 'params.json', 'LIST'], file: 'weather.zip' },
     ],
     opsLabel: 'Administration',
     opsTitle: 'Admin panel',
@@ -260,7 +264,7 @@ function Home() {
       <h2 className="text-3xl font-bold mb-2">{t.modulesTitle}</h2>
       <p className="text-base-content/60 max-w-xl mb-8">{t.modulesSub}</p>
 
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {t.modules.map((m) => (
           <div key={m.name} className="card bg-base-100 border border-base-content/10">
             <div className="card-body gap-2">
@@ -274,6 +278,9 @@ function Home() {
                   </span>
                 ))}
               </div>
+              <a href={`/modules/${m.file}`} download className="btn btn-outline btn-sm gap-2 mt-2 self-start">
+                <Download size={14} /> {m.file}
+              </a>
             </div>
           </div>
         ))}
