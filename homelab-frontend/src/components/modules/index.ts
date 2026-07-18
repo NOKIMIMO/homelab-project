@@ -8,6 +8,7 @@ export { ElementList } from './ElementList';
 export { ListItem } from './ListItem';
 export { Modal } from './Modal';
 export { ImageViewer } from './ImageViewer';
+export { MediaPlayer } from './MediaPlayer';
 export { CodeBlock } from './CodeBlock';
 export { ReaderCarousel } from './ReaderCarousel';
 export { TextInput } from './TextInput';

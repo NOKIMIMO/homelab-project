@@ -117,7 +117,7 @@ export interface ElementListComponent {
     emptyMessage?: string;
   };
   source: BindingSource;
-  preview?: ImageViewerComponent;
+  preview?: ImageViewerComponent | MediaPlayerComponent;
   item: ListItemComponent;
 }
 
@@ -143,6 +143,19 @@ export interface ImageViewerComponent {
     src?: string;
     alt?: string;
     displayViewerMode?: 'light' | 'full'; // ← add this
+  };
+}
+
+export interface MediaPlayerComponent {
+  type: 'MediaPlayer';
+  source?: BindingSource;
+  params?: Record<string, unknown>;
+  props?: {
+    src?: string;
+    mediaType?: 'audio' | 'video';
+    displayViewerMode?: 'light' | 'full';
+    autoPlay?: boolean;
+    loop?: boolean;
   };
 }
 
@@ -187,6 +200,7 @@ export type RendererComponent =
   | ListItemComponent
   | ModalComponent
   | ImageViewerComponent
+  | MediaPlayerComponent
   | TextInputComponent
   | CodeBlockComponent;
 
