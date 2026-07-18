@@ -123,7 +123,7 @@ fun getModuleAsset(
     fun installModuleZip(@RequestPart("file") file: MultipartFile) = moduleService.installModuleZip(file)
 
     @GetMapping("/{id}/export")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or @permissionService.currentUserHasAdminPermission('ADMIN_ACCESS')")
     fun exportModule(@PathVariable id: String): ResponseEntity<Resource> {
         val zip = moduleService.exportModuleZip(id)
         return ResponseEntity.ok()

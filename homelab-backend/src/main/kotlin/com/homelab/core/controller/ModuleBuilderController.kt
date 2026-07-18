@@ -8,7 +8,9 @@ import org.springframework.web.bind.annotation.*
 
 @RestController
 @RequestMapping("/api/admin/module-builder")
-@PreAuthorize("hasRole('ADMIN')")
+// Module building is an ordinary admin-panel task: available to full admins and ADMIN_ACCESS holders
+// alike, matching the rest of /api/admin. None of these operations touch the administrator account.
+@PreAuthorize("hasRole('ADMIN') or @permissionService.currentUserHasAdminPermission('ADMIN_ACCESS')")
 @CrossOrigin(origins = ["*"])
 class ModuleBuilderController(
     private val moduleBuilderService: ModuleBuilderService

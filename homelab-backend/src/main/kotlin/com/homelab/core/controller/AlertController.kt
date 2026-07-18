@@ -24,21 +24,24 @@ class AlertController(
 ) {
 
     // ----- Rule management (admin only) -----
+    // "Admin" here means full admins and ADMIN_ACCESS holders alike, matching the rest of the admin
+    // panel: configuring alert rules is an ordinary admin-panel task that never touches the
+    // administrator account.
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or @permissionService.currentUserHasAdminPermission('ADMIN_ACCESS')")
     @GetMapping("/rules")
     fun listRules() = alertService.listRules().map { it.toDto() }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or @permissionService.currentUserHasAdminPermission('ADMIN_ACCESS')")
     @PostMapping("/rules")
     fun createRule(@RequestBody req: AlertRuleRequest) = alertService.createRule(req).toDto()
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or @permissionService.currentUserHasAdminPermission('ADMIN_ACCESS')")
     @PutMapping("/rules/{id}")
     fun updateRule(@PathVariable id: Long, @RequestBody req: AlertRuleRequest) =
         alertService.updateRule(id, req).toDto()
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or @permissionService.currentUserHasAdminPermission('ADMIN_ACCESS')")
     @DeleteMapping("/rules/{id}")
     fun deleteRule(@PathVariable id: Long): ResponseEntity<Void> {
         alertService.deleteRule(id)

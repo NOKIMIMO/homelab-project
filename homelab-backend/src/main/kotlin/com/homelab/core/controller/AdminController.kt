@@ -196,10 +196,15 @@ class AdminController(
             .associate { it.config.id to it.config.permissions }
 
     @PutMapping("/users/{id}/permissions")
-    fun setUserPermissions(@PathVariable id: Long, @RequestBody permissions: List<String>): ResponseEntity<Void> {
-        userService.updateUserPermissions(id, permissions.toSet())
-        return ResponseEntity.ok().build()
-    }
+    fun setUserPermissions(@PathVariable id: Long, @RequestBody permissions: List<String>): ResponseEntity<Any> =
+        // UserService refuses to change the administrator's permissions (see its guard), so this stays
+        // reserved even though the endpoint itself is open to ADMIN_ACCESS holders.
+        try {
+            userService.updateUserPermissions(id, permissions.toSet())
+            ResponseEntity.ok().build()
+        } catch (e: IllegalArgumentException) {
+            ResponseEntity.status(403).body(mapOf("success" to false, "message" to e.message))
+        }
 
     @PutMapping("/users/{id}/roles")
     fun setUserRoles(@PathVariable id: Long, @RequestBody roleIds: List<Long>): ResponseEntity<Any> =
@@ -270,6 +275,18 @@ class AdminController(
         }
         val user = userService.findByEmail(req.email)
             ?: return ResponseEntity.badRequest().body(mapOf("success" to false, "message" to "User no longer exists"))
+        // Approving a reset hands the approver a working one-time password for the target account.
+        // For the administrator that would let an ADMIN_ACCESS holder take over the admin account, so
+        // approving a reset that targets the administrator is reserved to the real admin - a locked-out
+        // administrator recovers through the recovery-code flow (/api/auth/reset), not this one.
+        val callerIsFullAdmin = SecurityContextHolder.getContext().authentication
+            ?.authorities?.any { it.authority == "ROLE_ADMIN" } == true
+        if (user.isAdmin && !callerIsFullAdmin) {
+            return ResponseEntity.status(403).body(mapOf(
+                "success" to false,
+                "message" to "Only the administrator can approve a password reset for the administrator account"
+            ))
+        }
         val temporaryPassword = userService.issueTemporaryPassword(user.id!!)
         req.status = "APPROVED"
         req.processedAt = LocalDateTime.now()
