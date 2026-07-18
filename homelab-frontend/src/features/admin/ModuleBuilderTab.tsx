@@ -211,17 +211,18 @@ export default function ModuleBuilderTab() {
                         >
                           <Columns3 size={12} /> Column
                         </button>
-                        <button
-                          className="btn btn-xs btn-error btn-ghost"
-                          disabled={busyId === mod.id}
-                          onClick={() => setPendingDelete(mod)}
-                        >
-                          <Trash2 size={12} />
-                        </button>
                       </>
                     ) : (
                       <span className="text-xs opacity-30 italic">not editable here</span>
                     )}
+                    <button
+                      className="btn btn-xs btn-error btn-ghost"
+                      disabled={busyId === mod.id}
+                      onClick={() => setPendingDelete(mod)}
+                      title={`Delete ${mod.name}`}
+                    >
+                      <Trash2 size={12} />
+                    </button>
                   </td>
                 </tr>
               ))

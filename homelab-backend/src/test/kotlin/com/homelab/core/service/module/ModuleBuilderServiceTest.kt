@@ -222,6 +222,18 @@ class ModuleBuilderServiceTest {
     }
 
     @Test
+    fun `deleteModule removes a module directory even when it was not created by the builder`() {
+        val dir = File(scanRoot, "weather").apply { mkdirs() }
+        File(dir, "manifest.json").writeText("""{"id":"weather","name":"weather","dataObjects":[]}""")
+        moduleConfigMemory.put("weather", dummyConfig("weather"), dir)
+
+        service.deleteModule("weather", dropData = false)
+
+        org.mockito.Mockito.verify(moduleService).unregisterModule("weather")
+        assertTrue(!dir.exists())
+    }
+
+    @Test
     fun `getFullSpec returns the persisted request for a builder-created module`() {
         service.createModule(simpleRequest())
         moduleConfigMemory.put("notes", dummyConfig("notes"), File(scanRoot, "notes"))

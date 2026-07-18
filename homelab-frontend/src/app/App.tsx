@@ -65,7 +65,7 @@ function AppLayout() {
             </label>
           </div>
           <div className="flex-1">
-            <span className="btn btn-ghost normal-case text-xl font-bold">Homelab Core</span>
+            <span className="normal-case text-xl font-bold">Homelab</span>
           </div>
         </div>
 

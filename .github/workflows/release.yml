@@ -93,8 +93,11 @@ jobs:
               -p 80:80 \
               -e POSTGRES_USER=user \
               -e POSTGRES_PASSWORD=change-me \
+              -e HOMELAB_STORAGE_PATH=/data \
+              -e HOMELAB_LOGS_PATH=/data/logs \
               -v homelab-data:/var/lib/postgresql/data \
-              -v ./modules:/app_root/modules:ro \
+              -v /root/modules:/app_root/modules:rw \
+              -v homelab-storage:/data \
               ${{ steps.vars.outputs.image }}:${{ steps.vars.outputs.tag }}
             ```
 

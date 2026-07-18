@@ -33,9 +33,20 @@ docker run -d --name homelab \
   -p 80:80 \
   -e POSTGRES_USER=user \
   -e POSTGRES_PASSWORD=change-me \
+  -e HOMELAB_STORAGE_PATH=/data \
+  -e HOMELAB_LOGS_PATH=/data/logs \
   -v homelab-data:/var/lib/postgresql/data \
-  -v ./modules:/app_root/modules:ro \
+  -v ./modules:/app_root/modules:rw \
+  -v homelab-storage:/data \
   ghcr.io/nokimimo/homelab-project:latest
+```
+
+
+```bash
+docker pull ghcr.io/nokimimo/homelab-project:latest
+
+ docker run -d   --name homelab   -p 80:80   -e POSTGRES_USER=user  -e POSTGRES_PASSWORD='change-me'   -v homelab-data:/var/lib/postgresql/data   -v /root/modules:/app_root/modules:rw   ghcr.io/nokimimo/homelab-project:latest
+
 ```
 
 `./modules` is the host folder scanned for modules (`HOMELAB_MODULES_SCAN_PATH=/app_root/modules`) --- drop a module's `manifest.json` + files there.

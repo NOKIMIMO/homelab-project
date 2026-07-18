@@ -317,8 +317,13 @@ class ModuleBuilderService(
         return getSchema(moduleId)
     }
 
+    // Unlike getSchema/getFullSpec/updateModule/addColumn, deletion doesn't touch the builder.json
+    // spec, so it isn't restricted to builder-created modules: any module directory discovered by
+    // the normal scan (moduleConfigMemory) can be removed here, matching listBuilderModules()
+    // which already lists every module, custom or not.
     fun deleteModule(moduleId: String, dropData: Boolean) {
-        val directory = requireBuilderModuleDirectory(moduleId)
+        val directory = moduleConfigMemory.getDirectory(moduleId)
+            ?: throw NotFoundException("Module '$moduleId' not found")
 
         moduleService.unregisterModule(moduleId)
 
