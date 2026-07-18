@@ -1,24 +1,34 @@
 {
   "page": {
-    "id": "photos_page",
+    "id": "media_page",
     "layout": "vertical",
 
     "bindings": {
-      "list": "listPhotos",
+      "photoList": "listPhotos",
       "selectedPhoto": "getPhoto",
-      "upload": "addPhoto"
+      "uploadPhoto": "addPhoto",
+      "mediaList": "listMedia",
+      "selectedMedia": "getMedia",
+      "uploadMedia": "addMedia"
     },
 
     "state": {
       "fullscreenPhotoId": null,
-      "uploading": false
+      "fullscreenMediaId": null
     },
 
     "components": [
       {
         "type": "Header",
         "props": {
-          "title": "Stockage Photo"
+          "title": "Médiathèque"
+        }
+      },
+
+      {
+        "type": "Header",
+        "props": {
+          "title": "Photos"
         }
       },
 
@@ -28,16 +38,15 @@
           {
             "type": "Button",
             "props": {
-              "label": "Upload photo",
+              "label": "Ajouter une photo",
               "icon": "upload",
               "uploadTarget": "photos-upload"
             }
           },
-
           {
             "type": "Button",
             "props": {
-              "label": "Refresh",
+              "label": "Rafraîchir",
               "icon": "refresh"
             },
             "action": {
@@ -68,84 +77,6 @@
       },
 
       {
-        "type": "List",
-        "props": {
-          "emptyMessage": "Aucune photo disponible."
-        },
-        "source": {
-          "binding": "listPhotos",
-          "method": "POST"
-        },
-
-        "item": {
-          "type": "ListItem",
-
-          "props": {
-            "title": "{{file_name}}",
-            "subtitle": "ID: {{id}}"
-          },
-
-          "defaultClick": {
-            "action": "getPhoto",
-            "method": "POST",
-            "params": {
-              "id": "{{id}}"
-            },
-            "then": {
-              "setState": {
-                "selectedPhoto": "{{result}}",
-                "fullscreenPhotoId": "{{id}}"
-              }
-            }
-          },
-
-          "actions": [
-            {
-              "type": "IconButton",
-              "props": {
-                "icon": "fullscreen",
-                "tooltip": "Agrandir"
-              },
-              "action": {
-                "action": "getPhoto",
-                "method": "POST",
-                "params": {
-                  "id": "{{id}}"
-                },
-                "then": {
-                  "setState": {
-                    "selectedPhoto": "{{result}}",
-                    "fullscreenPhotoId": "{{id}}"
-                  }
-                }
-              }
-            },
-
-            {
-              "type": "IconButton",
-              "props": {
-                "icon": "trash",
-                "tooltip": "Supprimer"
-              },
-              "action": [
-                {
-                  "action": "deletePhoto",
-                  "method": "POST",
-                  "params": {
-                    "id": "{{id}}"
-                  }
-                },
-                {
-                  "action": "listPhotos",
-                  "method": "POST"
-                }
-              ]
-            }
-          ]
-        }
-      },
-
-      {
         "type": "ElementList",
         "props": {
           "emptyMessage": "Aucune photo disponible."
@@ -170,8 +101,7 @@
         "item": {
           "type": "ListItem",
           "props": {
-            "title": "{{file_name}}",
-            "subtitle": "ID: {{id}}"
+            "title": "{{file_name}}"
           },
           "defaultClick": {
             "action": "getPhoto",
@@ -241,7 +171,6 @@
             "binding": "getPhoto",
             "method": "POST"
           },
-
           "params": {
             "id": "{{fullscreenPhotoId}}"
           }
@@ -256,6 +185,173 @@
             "action": {
               "type": "setState",
               "target": "fullscreenPhotoId",
+              "value": null
+            }
+          }
+        ]
+      },
+
+      {
+        "type": "Header",
+        "props": {
+          "title": "Médias (audio / vidéo)"
+        }
+      },
+
+      {
+        "type": "ActionBar",
+        "components": [
+          {
+            "type": "Button",
+            "props": {
+              "label": "Ajouter un média",
+              "icon": "upload",
+              "uploadTarget": "media-upload"
+            }
+          },
+          {
+            "type": "Button",
+            "props": {
+              "label": "Rafraîchir",
+              "icon": "refresh"
+            },
+            "action": {
+              "action": "listMedia",
+              "method": "POST"
+            }
+          }
+        ]
+      },
+
+      {
+        "type": "FileUploadZone",
+        "props": {
+          "id": "media-upload",
+          "accept": "audio/*,video/*",
+          "multiple": false
+        },
+        "action": [
+          {
+            "action": "addMedia",
+            "method": "POST"
+          },
+          {
+            "action": "listMedia",
+            "method": "POST"
+          }
+        ]
+      },
+
+      {
+        "type": "ElementList",
+        "props": {
+          "emptyMessage": "Aucun média disponible."
+        },
+        "source": {
+          "binding": "listMedia",
+          "method": "POST"
+        },
+        "preview": {
+          "type": "MediaPlayer",
+          "source": {
+            "binding": "getMedia",
+            "method": "POST"
+          },
+          "params": {
+            "id": "{{id}}"
+          }
+        },
+        "item": {
+          "type": "ListItem",
+          "props": {
+            "title": "{{file_name}}"
+          },
+          "defaultClick": {
+            "action": "getMedia",
+            "method": "POST",
+            "params": {
+              "id": "{{id}}"
+            },
+            "then": {
+              "setState": {
+                "selectedMedia": "{{result}}",
+                "fullscreenMediaId": "{{id}}"
+              }
+            }
+          },
+          "actions": [
+            {
+              "type": "IconButton",
+              "props": {
+                "icon": "fullscreen",
+                "tooltip": "Agrandir"
+              },
+              "action": {
+                "action": "getMedia",
+                "method": "POST",
+                "params": {
+                  "id": "{{id}}"
+                },
+                "then": {
+                  "setState": {
+                    "selectedMedia": "{{result}}",
+                    "fullscreenMediaId": "{{id}}"
+                  }
+                }
+              }
+            },
+            {
+              "type": "IconButton",
+              "props": {
+                "icon": "trash",
+                "tooltip": "Supprimer"
+              },
+              "action": [
+                {
+                  "action": "deleteMedia",
+                  "method": "POST",
+                  "params": {
+                    "id": "{{id}}"
+                  }
+                },
+                {
+                  "action": "listMedia",
+                  "method": "POST"
+                }
+              ]
+            }
+          ]
+        }
+      },
+
+      {
+        "type": "Modal",
+        "visible": "{{fullscreenMediaId != null}}",
+
+        "content": {
+          "type": "MediaPlayer",
+          "source": {
+            "binding": "getMedia",
+            "method": "POST"
+          },
+          "params": {
+            "id": "{{fullscreenMediaId}}"
+          },
+          "props": {
+            "displayViewerMode": "full",
+            "autoPlay": true
+          }
+        },
+
+        "actions": [
+          {
+            "type": "Button",
+            "props": {
+              "label": "Fermer"
+            },
+            "action": {
+              "type": "setState",
+              "target": "fullscreenMediaId",
               "value": null
             }
           }

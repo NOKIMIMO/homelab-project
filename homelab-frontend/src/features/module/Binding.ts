@@ -59,7 +59,12 @@ export function createBindingHandler(
       return (await res.json()) as unknown;
     }
 
-    if (contentType.startsWith('image/') || contentType.includes('application/octet-stream')) {
+    if (
+      contentType.startsWith('image/') ||
+      contentType.startsWith('audio/') ||
+      contentType.startsWith('video/') ||
+      contentType.includes('application/octet-stream')
+    ) {
       const blob = await res.blob();
       const objectUrl = URL.createObjectURL(blob);
       registerObjectUrl?.(objectUrl);
