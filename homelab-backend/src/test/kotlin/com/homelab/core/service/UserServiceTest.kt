@@ -144,6 +144,15 @@ class UserServiceTest {
     }
 
     @Test
+    fun `updateUserPermissions refuses to change the administrator's permissions`() {
+        val admin = User(email = "admin@example.com", isAdmin = true)
+        `when`(userRepository.findById(1L)).thenReturn(Optional.of(admin))
+
+        assertThrows(IllegalArgumentException::class.java) { service.updateUserPermissions(1L, setOf("read:photos")) }
+        verify(userRepository, never()).save(any(User::class.java))
+    }
+
+    @Test
     fun `issueTemporaryPassword sets mustResetPassword and returns a matching plaintext password`() {
         val user = User(email = "user@example.com")
         `when`(userRepository.findById(1L)).thenReturn(Optional.of(user))

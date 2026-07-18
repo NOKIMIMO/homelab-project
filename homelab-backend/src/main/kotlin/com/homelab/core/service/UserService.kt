@@ -84,8 +84,11 @@ class UserService(
 
     fun findByEmail(email: String): User? = repository.findByEmail(email).orElse(null)
 
+    // The administrator's own account is off-limits, mirroring updateUserRoles: an ADMIN_ACCESS
+    // holder must not be able to overwrite the administrator's direct per-module permissions either.
     fun updateUserPermissions(id: Long, permissions: Set<String>) {
         val user = repository.findById(id).orElseThrow { NotFoundException("User with id $id not found") }
+        if (user.isAdmin) throw IllegalArgumentException("The administrator's permissions cannot be changed")
         user.permissions = permissions.toMutableSet()
         repository.save(user)
     }
